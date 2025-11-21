@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- 16 Pre-loaded Colorants for LargoTint Machine -->
+        
+        <record id="colorant_c1_black" model="product.template">
+            <field name="name">C1 - Black</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C1</field>
+            <field name="standard_price" eval="50.0"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c2_white" model="product.template">
+            <field name="name">C2 - White</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C2</field>
+            <field name="standard_price" eval="45.0"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c3_red" model="product.template">
+            <field name="name">C3 - Red</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C3</field>
+            <field name="standard_price" eval="55.0"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c4_yellow" model="product.template">
+            <field name="name">C4 - Yellow</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C4</field>
+            <field name="standard_price" eval="52.0"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c5_blue" model="product.template">
+            <field name="name">C5 - Blue</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C5</field>
+            <field name="standard_price" eval="58.0"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c6_green" model="product.template">
+            <field name="name">C6 - Green</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C6</field>
+            <field name="standard_price" eval="53.0"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c7_orange" model="product.template">
+            <field name="name">C7 - Orange</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C7</field>
+            <field name="standard_price" eval="54.0"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c8_magenta" model="product.template">
+            <field name="name">C8 - Magenta</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C8</field>
+            <field name="standard_price" eval="56.0"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c9_cyan" model="product.template">
+            <field name="name">C9 - Cyan</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C9</field>
+            <field name="standard_price" eval="57.0"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c10_brown" model="product.template">
+            <field name="name">C10 - Brown</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C10</field>
+            <field name="standard_price" eval="51.0"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c11_violet" model="product.template">
+            <field name="name">C11 - Violet</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C11</field>
+            <field name="standard_price" eval="59.0"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c12_lime" model="product.template">
+            <field name="name">C12 - Lime</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C12</field>
+            <field name="standard_price" eval="52.5"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c13_ochre" model="product.template">
+            <field name="name">C13 - Ochre</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C13</field>
+            <field name="standard_price" eval="50.5"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c14_maroon" model="product.template">
+            <field name="name">C14 - Maroon</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C14</field>
+            <field name="standard_price" eval="55.5"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c15_teal" model="product.template">
+            <field name="name">C15 - Teal</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C15</field>
+            <field name="standard_price" eval="56.5"/>
+            <field name="tracking">none</field>
+        </record>
+
+        <record id="colorant_c16_navy" model="product.template">
+            <field name="name">C16 - Navy</field>
+            <field name="categ_id" ref="product_category_colorants"/>
+            <field name="uom_id" ref="uom.product_uom_litre"/>
+            <field name="uom_po_id" ref="uom.product_uom_litre"/>
+            <field name="is_colorant" eval="True"/>
+            <field name="colorant_code">C16</field>
+            <field name="standard_price" eval="58.5"/>
+            <field name="tracking">none</field>
+        </record>
+    </data>
+</odoo>

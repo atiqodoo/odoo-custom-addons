@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================ -->
+    <!-- DUPLICATE MO WIZARD FORM                                         -->
+    <!-- ================================================================ -->
+    <record id="view_mrp_production_duplicate_wizard_form" model="ir.ui.view">
+        <field name="name">mrp.production.duplicate.wizard.form</field>
+        <field name="model">mrp.production.duplicate.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Duplicate Tinting Manufacturing Order">
+                <header>
+                    <button name="action_duplicate_mos"
+                            string="Create Duplicates"
+                            type="object"
+                            class="oe_highlight"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </header>
+                
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        <h4>🎨 Duplicate Tinting MO</h4>
+                        <p class="mb-0">
+                            This will create multiple identical Manufacturing Orders
+                            for the same tinted product with the exact same formula.
+                        </p>
+                    </div>
+                    
+                    <group>
+                        <group string="Source Information">
+                            <field name="source_mo_id" readonly="1"/>
+                            <field name="product_name" readonly="1"/>
+                        </group>
+                        
+                        <group string="Duplication Settings">
+                            <field name="quantity"
+                                   help="Number of identical MOs to create"/>
+                            <field name="auto_confirm"
+                                   help="Automatically confirm the new MOs"/>
+                        </group>
+                    </group>
+                    
+                    <separator string="Preview"/>
+                    <field name="preview_message" nolabel="1" widget="html"/>
+                    
+                    <div class="alert alert-warning mt-3" role="alert">
+                        <strong>⚠ Important:</strong>
+                        <ul class="mb-0">
+                            <li>Each MO will produce exactly 1.0 unit</li>
+                            <li>All MOs will use the same BOM and formula</li>
+                            <li>Colorant quantities will be identical</li>
+                            <li>You'll need to manufacture each MO separately</li>
+                        </ul>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

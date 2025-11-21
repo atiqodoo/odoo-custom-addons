@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Security Group: Vendor Restriction Override -->
+        <record id="group_vendor_restriction_override" model="res.groups">
+            <field name="name">Purchase: Vendor Restriction Override</field>
+            <field name="comment">Users in this group can bypass vendor-based product filtering on RFQs/Purchase Orders.</field>
+            <field name="implied_ids" eval="[(4, ref('purchase.group_purchase_user'))]"/>
+            <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+        </record>
+    </data>
+</odoo>

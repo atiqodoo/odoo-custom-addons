@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_tint_wizard_user,tint.wizard.user,model_tint_wizard,mrp.group_mrp_user,1,1,1,1
+access_tint_wizard_manager,tint.wizard.manager,model_tint_wizard,mrp.group_mrp_manager,1,1,1,1
+access_tint_wizard_colorant_line_user,tint.wizard.colorant.line.user,model_tint_wizard_colorant_line,mrp.group_mrp_user,1,1,1,1
+access_tint_wizard_colorant_line_manager,tint.wizard.colorant.line.manager,model_tint_wizard_colorant_line,mrp.group_mrp_manager,1,1,1,1
+access_colorant_mapping_wizard_user,colorant.mapping.wizard.user,model_colorant_mapping_wizard,mrp.group_mrp_user,1,1,1,1
+access_colorant_mapping_wizard_manager,colorant.mapping.wizard.manager,model_colorant_mapping_wizard,mrp.group_mrp_manager,1,1,1,1
+access_colorant_mapping_line_user,colorant.mapping.line.user,model_colorant_mapping_line,mrp.group_mrp_user,1,1,1,1
+access_colorant_mapping_line_manager,colorant.mapping.line.manager,model_colorant_mapping_line,mrp.group_mrp_manager,1,1,1,1
+access_mrp_production_duplicate_wizard_user,mrp.production.duplicate.wizard.user,model_mrp_production_duplicate_wizard,mrp.group_mrp_user,1,1,1,1
+access_mrp_production_duplicate_wizard_manager,mrp.production.duplicate.wizard.manager,model_mrp_production_duplicate_wizard,mrp.group_mrp_manager,1,1,1,1

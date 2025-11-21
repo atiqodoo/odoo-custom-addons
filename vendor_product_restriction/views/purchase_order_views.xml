@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ONLY Purchase Order Form View (WORKS 100%) -->
+        <record id="view_purchase_order_form_vendor_restriction" model="ir.ui.view">
+            <field name="name">purchase.order.form.vendor.restriction</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="arch" type="xml">
+
+                <!-- Help text above vendor field -->
+                <xpath expr="//field[@name='partner_id']" position="before">
+                    <div class="alert alert-info mb-3" role="alert"
+                         invisible="user_has_vendor_override">
+                        <i class="fa fa-info-circle"/>
+                        <strong>Product Filtering Active:</strong>
+                        Products available for selection will be filtered based on the vendor you choose.
+                        Only products configured for the selected vendor will appear in the product dropdown.
+                    </div>
+                    <div class="alert alert-success mb-3" role="alert"
+                         invisible="not user_has_vendor_override">
+                        <i class="fa fa-check-circle"/>
+                        <strong>Override Active:</strong>
+                        You can select any purchasable product regardless of vendor mapping.
+                    </div>
+                </xpath>
+
+                <xpath expr="//field[@name='partner_id']" position="attributes">
+                    <attribute name="options">{'no_quick_create': True}</attribute>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!-- Tree view (safe) -->
+        <record id="view_purchase_order_list_vendor_restriction" model="ir.ui.view">
+            <field name="name">purchase.order.list.vendor.restriction</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="attributes">
+                    <attribute name="optional">show</attribute>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

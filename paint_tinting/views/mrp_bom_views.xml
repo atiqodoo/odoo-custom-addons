@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- BOM Form View - Add Tinting Fields -->
+    <record id="view_mrp_bom_form_tinting" model="ir.ui.view">
+        <field name="name">mrp.bom.form.tinting</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Add is_tinting_bom field -->
+            <xpath expr="//field[@name='product_tmpl_id']" position="after">
+                <field name="is_tinting_bom" invisible="1"/>
+            </xpath>
+            
+            <!-- Add Tinting Information at the end of the sheet -->
+            <xpath expr="//sheet" position="inside">
+                <group string="Tinting Information" 
+                       invisible="not is_tinting_bom">
+                    <group>
+                        <field name="fandeck_id" readonly="1"/>
+                        <field name="colour_code_id" readonly="1"/>
+                        <field name="base_variant_id" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="pack_size_uom_id" readonly="1"/>
+                        <field name="total_cost_excl_vat"/>
+                        <field name="total_cost_incl_vat"/>
+                    </group>
+                    <group string="Notes" colspan="2">
+                        <field name="tinting_notes" nolabel="1" readonly="1"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- BOM List View - Add Tinting Fields -->
+    <record id="view_mrp_bom_list_tinting" model="ir.ui.view">
+        <field name="name">mrp.bom.list.tinting</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-info">is_tinting_bom</attribute>
+            </xpath>
+            
+            <xpath expr="//field[@name='product_tmpl_id']" position="after">
+                <field name="is_tinting_bom" optional="hide"/>
+                <field name="total_cost_incl_vat" optional="hide" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- BOM Search View - Add Tinting Filter -->
+    <record id="view_mrp_bom_search_tinting" model="ir.ui.view">
+        <field name="name">mrp.bom.search.tinting</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.view_mrp_bom_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter string="Tinting BOMs" name="tinting_boms"
+                        domain="[('is_tinting_bom', '=', True)]"/>
+                <separator/>
+                <filter string="By Fandeck" name="group_fandeck"
+                        context="{'group_by': 'fandeck_id'}"/>
+                <filter string="By Base Variant" name="group_base"
+                        context="{'group_by': 'base_variant_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Tinting BOMs Action -->
+    <record id="action_tinting_boms" model="ir.actions.act_window">
+        <field name="name">Tinting BOMs</field>
+        <field name="res_model">mrp.bom</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_tinting_bom', '=', True)]</field>
+        <field name="context">{'search_default_tinting_boms': 1}</field>
+    </record>
+</odoo>

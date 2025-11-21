@@ -1,0 +1,41 @@
+# Odoo specific
+*.pyc
+__pycache__/
+*.log
+*.pot
+*.po
+*.mo
+*.egg-info/
+*.egg
+/dist/
+/build/
+
+# Session data
+/sessions/
+
+# Database dumps
+*.dump
+*.zip
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Odoo config files (don't commit passwords!)
+odoo.conf
+*.conf
+
+# Local development files
+local/
+dev/

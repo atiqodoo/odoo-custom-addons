@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Product Template Form View - Add Tinting Fields -->
+    <record id="view_product_template_form_tinting" model="ir.ui.view">
+        <field name="name">product.template.form.tinting</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Add Tinting notebook page -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Tinting" name="tinting" 
+                      invisible="not is_tinted_product and not is_colorant">
+                    <group>
+                        <group string="Product Type">
+                            <field name="is_tinted_product"/>
+                            <field name="is_colorant"/>
+                            <field name="paint_type" 
+                                   invisible="not is_tinted_product"/>
+                        </group>
+                        
+                        <group string="Colorant Information" 
+                               invisible="not is_colorant">
+                            <field name="colorant_code"/>
+                        </group>
+                    </group>
+                    
+                    <group invisible="not is_tinted_product">
+                        <group string="Colour Information">
+                            <field name="fandeck_id" readonly="1"/>
+                            <field name="colour_code_id" readonly="1"/>
+                            <field name="colour_name" readonly="1"/>
+                        </group>
+                        
+                        <group string="Cost Information">
+                            <field name="cost_price_excl_vat" readonly="1"/>
+                            <field name="cost_price_incl_vat" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Product List View - Add Tinting Filters -->
+    <record id="view_product_template_list_tinting" model="ir.ui.view">
+        <field name="name">product.template.list.tinting</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-info">is_tinted_product</attribute>
+                <attribute name="decoration-success">is_colorant</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Product Search View - Add Tinting Filters -->
+    <record id="view_product_template_search_tinting" model="ir.ui.view">
+        <field name="name">product.template.search.tinting</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter string="Tinted Products" name="tinted_products"
+                        domain="[('is_tinted_product', '=', True)]"/>
+                <filter string="Colorants" name="colorants"
+                        domain="[('is_colorant', '=', True)]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="Paint Type" name="group_paint_type"
+                            context="{'group_by': 'paint_type'}"/>
+                    <filter string="Fandeck" name="group_fandeck"
+                            context="{'group_by': 'fandeck_id'}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Tinted Products Action -->
+    <record id="action_tinted_products" model="ir.actions.act_window">
+        <field name="name">Tinted Products</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_tinted_product', '=', True)]</field>
+        <field name="context">{'search_default_tinted_products': 1}</field>
+    </record>
+
+    <!-- Colorants Action -->
+    <record id="action_colorants" model="ir.actions.act_window">
+        <field name="name">Colorants</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_colorant', '=', True)]</field>
+        <field name="context">{'search_default_colorants': 1}</field>
+    </record>
+</odoo>

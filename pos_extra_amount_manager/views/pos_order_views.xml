@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- POS Order Form - Inheritance -->
+    <record id="view_pos_order_form_extra_amount" model="ir.ui.view">
+        <field name="name">pos.order.form.extra</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            <!-- Header Buttons -->
+            <xpath expr="//header" position="inside">
+                <button name="action_calculate_extra_amount" string="Calculate Extra" type="object" class="btn-primary" invisible="extra_state != 'draft'"/>
+                <button name="action_open_distribution_wizard" string="Distribute" type="object" class="btn-success" invisible="extra_state == 'draft'"/>
+                <button name="action_reset_extra_state" string="Reset" type="object" class="btn-secondary" groups="point_of_sale.group_pos_manager" invisible="extra_state == 'draft'"/>
+                <field name="extra_state" widget="statusbar" statusbar_visible="draft,calculated,distributed"/>
+            </xpath>
+
+            <!-- Smart Button -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_distributions" type="object" class="oe_stat_button" icon="fa-money" invisible="distribution_count == 0">
+                    <field name="distribution_count" widget="statinfo" string="Distributions"/>
+                </button>
+            </xpath>
+
+            <!-- Extra Amounts Tab with Complete Lines Display -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Extra Amounts" name="extra_amounts_page">
+                    <group string="Summary" name="summary_group">
+                        <group>
+                            <field name="total_extra_amount" widget="monetary"/>
+                            <field name="total_extra_cogs" widget="monetary"/>
+                        </group>
+                        <group>
+                            <field name="total_distributed_amount" widget="monetary"/>
+                            <field name="remaining_extra_amount" widget="monetary"/>
+                        </group>
+                    </group>
+                    
+                    <separator string="Order Lines - Extra Amount Details"/>
+                    <field name="lines" nolabel="1" mode="tree,form">
+                        <form>
+                            <group>
+                                <group>
+                                    <field name="product_id"/>
+                                    <field name="qty"/>
+                                    <field name="price_unit"/>
+                                    <field name="price_subtotal_incl"/>
+                                </group>
+                                <group>
+                                    <field name="calculate_with_quantity"/>
+                                    <field name="pricelist_price_incl"/>
+                                    <field name="paid_price_per_unit"/>
+                                    <field name="extra_amount_per_unit"/>
+                                    <field name="total_extra_amount"/>
+                                    <field name="product_cost"/>
+                                </group>
+                            </group>
+                        </form>
+                        <list editable="bottom" create="false" delete="false">
+                            <field name="product_id" readonly="1"/>
+                            <field name="qty" readonly="1"/>
+                            <field name="price_unit" readonly="1" widget="monetary"/>
+                            <field name="price_subtotal_incl" readonly="1" widget="monetary"/>
+                            <field name="calculate_with_quantity" widget="boolean_toggle"/>
+                            <field name="pricelist_price_incl" widget="monetary" readonly="1" optional="show"/>
+                            <field name="paid_price_per_unit" widget="monetary" readonly="1" optional="show"/>
+                            <field name="extra_amount_per_unit" widget="monetary" readonly="1"/>
+                            <field name="total_extra_amount" widget="monetary" readonly="1"
+                                   decoration-success="total_extra_amount &gt; 0"
+                                   decoration-danger="total_extra_amount &lt; 0"/>
+                            <field name="product_cost" widget="monetary" readonly="1" optional="hide"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

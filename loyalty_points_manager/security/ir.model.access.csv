@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_loyalty_points_adjustment_user,loyalty.points.adjustment.user,model_loyalty_points_adjustment,base.group_user,1,1,1,0
+access_loyalty_points_adjustment_manager,loyalty.points.adjustment.manager,model_loyalty_points_adjustment,sales_team.group_sale_manager,1,1,1,1
+access_loyalty_points_wizard_user,loyalty.points.wizard.user,model_loyalty_points_wizard,base.group_user,1,1,1,1

@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================ -->
+    <!-- TINTING WIZARD - SINGLE PAGE REDESIGN                            -->
+    <!-- ================================================================ -->
+    <record id="view_tint_wizard_form" model="ir.ui.view">
+        <field name="name">tint.wizard.form.single.page</field>
+        <field name="model">tint.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Paint Tinting Wizard">
+                <header>
+                    <button name="action_create_tinted_product"
+                            string="Create Tinted Product &amp; MO"
+                            type="object"
+                            class="oe_highlight"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </header>
+
+                <sheet>
+                    <!-- Hidden field to preserve colorant lines -->
+                    <field name="colorant_line_ids" invisible="1"/>
+
+                    <!-- ============================================== -->
+                    <!-- BASE PRODUCT SECTION                           -->
+                    <!-- ============================================== -->
+                    <group string="Base Product">
+                        <field name="base_variant_id"
+                               placeholder="Select any product to use as base paint..."
+                               options="{'no_create': True}"/>
+                    </group>
+
+                    <!-- ============================================== -->
+                    <!-- COLOUR INFORMATION SECTION                     -->
+                    <!-- ============================================== -->
+                    <group string="Colour Information">
+                        <group>
+                            <field name="fandeck_id"
+                                   placeholder="Select existing or create new fandeck..."
+                                   help="Type to search existing fandecks or create a new one"/>
+                            
+                            <field name="colour_code_id"
+                                   placeholder="Select existing or create new colour code..."
+                                   context="{'default_fandeck_id': fandeck_id}"
+                                   help="Will be filtered by fandeck. Create new if needed."/>
+                            
+                            <field name="colour_name"
+                                   placeholder="Auto-filled from colour code"
+                                   readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ============================================== -->
+                    <!-- BASE COST DISPLAY                              -->
+                    <!-- ============================================== -->
+                    <group string="Base Paint Cost" invisible="not base_variant_id">
+                        <group>
+                            <label for="base_cost_excl_vat" string="Cost (Excl. VAT)"/>
+                            <div class="o_row">
+                                <field name="base_cost_excl_vat"
+                                       class="oe_inline"
+                                       readonly="1"/>
+                                <span class="oe_inline"> KES</span>
+                            </div>
+                        </group>
+                        <group>
+                            <label for="base_cost_incl_vat" string="Cost (Incl. VAT 16%)"/>
+                            <div class="o_row">
+                                <field name="base_cost_incl_vat"
+                                       class="oe_inline"
+                                       readonly="1"/>
+                                <span class="oe_inline"> KES</span>
+                            </div>
+                        </group>
+                    </group>
+
+                    <!-- ============================================== -->
+                    <!-- COLORANTS & COST SUMMARY TABS                  -->
+                    <!-- ============================================== -->
+                    <notebook>
+                        <!-- TAB 1: COLORANT INPUT -->
+                        <page string="Colorants" name="colorants">
+                            <div class="alert alert-info" role="alert">
+                                <strong>📝 Instructions:</strong>
+                                Enter the number of shots from your LargoTint machine.
+                                <br/>
+                                <em>1 shot = 0.616 ml | Costs update automatically</em>
+                            </div>
+
+                            <field name="colorant_line_ids" nolabel="1">
+                                <list editable="bottom" create="0" delete="0">
+                                    <field name="colorant_name"
+                                           string="Colorant"
+                                           readonly="1"/>
+                                    <field name="colorant_code"
+                                           string="Code"
+                                           readonly="1"/>
+                                    <field name="shots"
+                                           string="Shots"
+                                           sum="Total Shots"/>
+                                    <field name="ml_volume"
+                                           string="ml"
+                                           sum="Total ml"
+                                           readonly="1"/>
+                                    <field name="qty_litres"
+                                           string="Litres"
+                                           sum="Total L"
+                                           readonly="1"/>
+                                    <field name="available_stock"
+                                           string="Stock (L)"
+                                           readonly="1"
+                                           decoration-danger="stock_warning"/>
+                                    <field name="unit_cost_excl_vat"
+                                           string="Unit Cost"
+                                           readonly="1"/>
+                                    <field name="line_cost_incl_vat"
+                                           string="Line Cost"
+                                           sum="Total Cost (Incl. VAT)"
+                                           readonly="1"/>
+                                    <field name="stock_warning" column_invisible="1"/>
+                                </list>
+                            </field>
+
+                            <!-- Stock Warnings Display -->
+                            <div class="mt-3">
+                                <field name="stock_warning_message"
+                                       nolabel="1"
+                                       widget="html"/>
+                            </div>
+                        </page>
+
+                        <!-- TAB 2: COST SUMMARY -->
+                        <page string="Cost Summary" name="cost_summary">
+                            <group>
+                                <group string="Base Paint">
+                                    <field name="base_variant_id" readonly="1"/>
+                                    <field name="base_cost_excl_vat" readonly="1"/>
+                                    <field name="base_cost_incl_vat" readonly="1"/>
+                                </group>
+                                
+                                <group string="Colorants">
+                                    <label for="total_colorant_ml" string="Total Volume"/>
+                                    <div class="o_row">
+                                        <field name="total_colorant_ml"
+                                               class="oe_inline"
+                                               readonly="1"/>
+                                        <span class="oe_inline"> ml</span>
+                                    </div>
+                                    
+                                    <field name="colorant_cost_excl_vat"
+                                           string="Cost (Excl. VAT)"
+                                           readonly="1"/>
+                                    <field name="colorant_cost_incl_vat"
+                                           string="Cost (Incl. VAT)"
+                                           readonly="1"/>
+                                </group>
+                            </group>
+
+                            <separator string="Total Cost"/>
+                            
+                            <group>
+                                <group>
+                                    <label for="total_cost_excl_vat"
+                                           string="TOTAL (Excl. VAT)"
+                                           class="fw-bold"/>
+                                    <div class="o_row">
+                                        <field name="total_cost_excl_vat"
+                                               class="oe_inline fw-bold"
+                                               readonly="1"/>
+                                        <span class="oe_inline fw-bold"> KES</span>
+                                    </div>
+                                </group>
+                                
+                                <group>
+                                    <label for="total_cost_incl_vat"
+                                           string="TOTAL (Incl. VAT 16%)"
+                                           class="fw-bold"/>
+                                    <div class="o_row">
+                                        <field name="total_cost_incl_vat"
+                                               class="oe_inline fw-bold"
+                                               readonly="1"/>
+                                        <span class="oe_inline fw-bold"> KES</span>
+                                    </div>
+                                </group>
+                            </group>
+
+                            <group string="Notes">
+                                <field name="notes"
+                                       nolabel="1"
+                                       placeholder="Enter any special instructions or notes..."/>
+                            </group>
+                        </page>
+                    </notebook>
+
+                    <!-- Hidden fields -->
+                    <field name="has_stock_warnings" invisible="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- ACTION TO OPEN WIZARD                                            -->
+    <!-- ================================================================ -->
+    <record id="action_tint_wizard" model="ir.actions.act_window">
+        <field name="name">Tint New Paint</field>
+        <field name="res_model">tint.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

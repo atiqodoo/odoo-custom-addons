@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================ -->
+    <!-- MRP PRODUCTION FORM - ADD DUPLICATE FUNCTIONALITY & PARTNER FIELD -->
+    <!-- ================================================================ -->
+    <record id="view_mrp_production_form_tinting" model="ir.ui.view">
+        <field name="name">mrp.production.form.tinting</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="arch" type="xml">
+            
+            <!-- Add fields and smart button in button_box -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="is_tinting_mo" invisible="1"/>
+                <field name="source_mo_id" invisible="1"/>
+                <field name="duplicate_mo_count" invisible="1"/>
+                
+                <button name="action_view_duplicate_mos"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-clone"
+                        invisible="not is_tinting_mo or duplicate_mo_count == 0">
+                    <field name="duplicate_mo_count" widget="statinfo" string="Duplicates"/>
+                </button>
+            </xpath>
+            
+            <!-- Add Duplicate Buttons in Header -->
+            <xpath expr="//header" position="inside">
+                <button name="action_open_duplicate_wizard"
+                        string="Duplicate MO"
+                        type="object"
+                        class="btn-primary"
+                        invisible="not is_tinting_mo"
+                        help="Create multiple identical tinting MOs"/>
+                
+                <button name="action_duplicate_single"
+                        string="Quick Duplicate (1×)"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="not is_tinting_mo"
+                        help="Quickly create one duplicate MO"/>
+            </xpath>
+            
+            <!-- Make product_qty readonly for tinting MOs -->
+            <xpath expr="//field[@name='product_qty']" position="attributes">
+                <attribute name="readonly">is_tinting_mo</attribute>
+            </xpath>
+            
+            <!-- Add visual warning banner -->
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-warning" role="alert" invisible="not is_tinting_mo">
+                    <strong>🎨 Tinting Manufacturing Order</strong>
+                    <p class="mb-0">
+                        Quantity is locked to 1.0 unit. Use "Duplicate MO" button to create more.
+                    </p>
+                </div>
+            </xpath>
+            
+            <!-- ADD PARTNER FIELD - Positioned after product_id field -->
+            <xpath expr="//field[@name='product_id']" position="after">
+                <field name="partner_id" 
+                       context="{'search_default_customer': 1, 'show_vat': True}" 
+                       options="{'no_create_edit': False}"
+                       placeholder="Search or create customer/contact..."/>
+            </xpath>
+            
+        </field>
+    </record>
+    
+    <!-- ================================================================ -->
+    <!-- MRP PRODUCTION LIST - ADD TINTING INDICATOR & PARTNER FIELD      -->
+    <!-- ================================================================ -->
+    <record id="view_mrp_production_list_tinting" model="ir.ui.view">
+        <field name="name">mrp.production.list.tinting</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_tree_view"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-info">is_tinting_mo</attribute>
+            </xpath>
+            
+            <xpath expr="//field[@name='product_id']" position="after">
+                <field name="is_tinting_mo" string="🎨" optional="show"/>
+                <field name="partner_id" optional="show"/>
+            </xpath>
+            
+        </field>
+    </record>
+
+</odoo>

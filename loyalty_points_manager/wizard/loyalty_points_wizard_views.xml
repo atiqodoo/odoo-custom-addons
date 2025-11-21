@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Wizard Form View -->
+    <record id="view_loyalty_points_wizard_form" model="ir.ui.view">
+        <field name="name">loyalty.points.wizard.form</field>
+        <field name="model">loyalty.points.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Manage Loyalty Points">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id" 
+                                   placeholder="Search customer..."
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <field name="current_balance" 
+                                   widget="float"
+                                   force_save="1"/>
+                            <field name="operation_type" widget="radio"/>
+                        </group>
+                        <group>
+                            <field name="points_amount" 
+                                   widget="float"/>
+                            <field name="new_balance" 
+                                   widget="float"
+                                   force_save="1"
+                                   decoration-success="new_balance >= 0"
+                                   decoration-danger="new_balance &lt; 0"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Reason">
+                        <field name="reason" 
+                               placeholder="Enter the reason for this adjustment..."
+                               nolabel="1"/>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Accounting Information" name="accounting">
+                            <group>
+                                <group>
+                                    <field name="company_id" invisible="1"/>
+                                    <field name="currency_id" invisible="1"/>
+                                    <field name="journal_id" 
+                                           placeholder="Select journal for accounting entry..."/>
+                                    <field name="points_value" 
+                                           widget="monetary"/>
+                                </group>
+                                <group>
+                                    <field name="debit_account_id" 
+                                           placeholder="Select debit account..."/>
+                                    <field name="credit_account_id" 
+                                           placeholder="Select credit account..."/>
+                                </group>
+                            </group>
+                            <group>
+                                <div class="alert alert-info" role="alert">
+                                    <strong>Accounting Integration:</strong>
+                                    <ul>
+                                        <li>If accounting fields are filled, a journal entry will be created automatically</li>
+                                        <li><strong>Add Points:</strong> Debit = Expense/Asset Account, Credit = Liability Account</li>
+                                        <li><strong>Reduce Points:</strong> Debit = Liability Account, Credit = Expense/Asset Account</li>
+                                        <li>Leave empty to skip accounting integration</li>
+                                    </ul>
+                                </div>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button string="Apply" 
+                            name="action_apply" 
+                            type="object" 
+                            class="btn-primary"
+                            data-hotkey="q"/>
+                    <button string="Cancel" 
+                            name="action_cancel" 
+                            type="object" 
+                            class="btn-secondary"
+                            data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Action -->
+    <record id="action_loyalty_points_wizard" model="ir.actions.act_window">
+        <field name="name">Manage Loyalty Points</field>
+        <field name="res_model">loyalty.points.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+    </record>
+
+    <!-- Submenu Item -->
+    <menuitem id="menu_loyalty_points_wizard"
+              name="Manage Points"
+              parent="menu_loyalty_points_root"
+              action="action_loyalty_points_wizard"
+              sequence="10"/>
+
+</odoo>

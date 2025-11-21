@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_pos_extra" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.pos.extra</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@id='pos_connected_devices_section']" position="after">
+                <block title="Extra Amount Management" id="pos_extra_amount_settings">
+                    <setting string="Default Commission COGS Account"
+                             help="Default COGS account for commission distributions">
+                        <div class="content-group">
+                            <div class="row mt16">
+                                <label for="pos_extra_cogs_commission_account_id" string="COGS Account" class="col-lg-4 o_light_label"/>
+                                <field name="pos_extra_cogs_commission_account_id"
+                                       create="false"
+                                       placeholder="Select COGS account"/>
+                            </div>
+                            <div class="text-muted">
+                                This COGS account will be debited when distributing extra amounts.
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Main Tinting Menu -->
+    <menuitem id="menu_paint_tinting_root"
+              name="Paint Tinting"
+              sequence="45"
+              web_icon="paint_tinting,static/description/icon.png"/>
+
+    <!-- Operations Menu -->
+    <menuitem id="menu_paint_tinting_operations"
+              name="Operations"
+              parent="menu_paint_tinting_root"
+              sequence="10"/>
+
+    <menuitem id="menu_tint_new_paint"
+              name="Tint New Paint"
+              parent="menu_paint_tinting_operations"
+              action="action_tint_wizard"
+              sequence="10"/>
+
+    <!-- Products Menu -->
+    <menuitem id="menu_paint_tinting_products"
+              name="Products"
+              parent="menu_paint_tinting_root"
+              sequence="20"/>
+
+    <menuitem id="menu_tinted_products"
+              name="Tinted Products"
+              parent="menu_paint_tinting_products"
+              action="action_tinted_products"
+              sequence="10"/>
+
+    <menuitem id="menu_colorants"
+              name="Colorants"
+              parent="menu_paint_tinting_products"
+              action="action_colorants"
+              sequence="20"/>
+
+    <!-- Recipes Menu -->
+    <menuitem id="menu_paint_tinting_recipes"
+              name="Recipes (BOMs)"
+              parent="menu_paint_tinting_root"
+              sequence="30"/>
+
+    <menuitem id="menu_tinting_boms"
+              name="Tinting BOMs"
+              parent="menu_paint_tinting_recipes"
+              action="action_tinting_boms"
+              sequence="10"/>
+
+    <!-- Configuration Menu -->
+    <menuitem id="menu_paint_tinting_config"
+              name="Configuration"
+              parent="menu_paint_tinting_root"
+              sequence="90"/>
+
+    <menuitem id="menu_map_colorants"
+              name="Map Colorants"
+              parent="menu_paint_tinting_config"
+              action="action_colorant_mapping_wizard"
+              sequence="10"/>
+</odoo>
