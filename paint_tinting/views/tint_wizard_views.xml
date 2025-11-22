@@ -17,9 +17,6 @@
                 </header>
 
                 <sheet>
-                    <!-- Hidden field to preserve colorant lines -->
-                    <field name="colorant_line_ids" invisible="1"/>
-
                     <!-- ============================================== -->
                     <!-- BASE PRODUCT SECTION                           -->
                     <!-- ============================================== -->
@@ -86,8 +83,10 @@
                                 <em>1 shot = 0.616 ml | Costs update automatically</em>
                             </div>
 
+                            <!-- CRITICAL FIX: Include colorant_id as invisible field -->
                             <field name="colorant_line_ids" nolabel="1">
                                 <list editable="bottom" create="0" delete="0">
+                                    <field name="colorant_id" column_invisible="1"/>
                                     <field name="colorant_name"
                                            string="Colorant"
                                            readonly="1"/>

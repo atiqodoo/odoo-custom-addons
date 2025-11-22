@@ -236,9 +236,13 @@ class TintWizard(models.TransientModel):
         _logger.info("✅ Colorant lines setup completed")
 
     def _force_recompute_all(self):
-        """Force recompute of all computed fields"""
+        """Force recompute of all computed fields - ONLY use when colorant lines need updating"""
         _logger.info("🔄 _force_recompute_all() - Triggering full recomputation")
         self.ensure_one()
+        
+        # CRITICAL FIX: Ensure colorant lines exist BEFORE recomputing
+        _logger.info("  🛡️ Ensuring colorant lines exist before recomputation...")
+        self._ensure_colorant_lines()
         
         # Recompute colorant line fields
         _logger.info("  Recomputing colorant line fields...")
@@ -261,25 +265,41 @@ class TintWizard(models.TransientModel):
 
     @api.onchange('base_variant_id')
     def _onchange_base_variant_id(self):
-        """Recompute everything when base product changes"""
+        """Recompute only base costs when base product changes - DON'T touch colorant lines"""
         _logger.info("🎯 Onchange triggered: base_variant_id updated")
         _logger.info(f"  Base product changed to: {self.base_variant_id.display_name if self.base_variant_id else 'None'}")
-        self._force_recompute_all()
-        return {
-            'warning': {
-                'title': _('Costs Updated'),
-                'message': _('Costs have been recalculated based on the new base product.')
+        
+        # CRITICAL FIX: DON'T touch colorant lines - just recompute wizard-level costs
+        # Colorant lines will remain intact, only base costs need updating
+        _logger.info("  💰 Recomputing base costs only (preserving colorant lines)...")
+        
+        # Force recompute of base cost
+        self._compute_base_cost()
+        
+        # Totals will auto-recompute via @api.depends
+        self._compute_totals()
+        self._compute_warnings()
+        
+        _logger.info("✅ Base cost recomputation completed (colorant lines preserved)")
+        
+        # Show warning if base product is selected
+        if self.base_variant_id:
+            return {
+                'warning': {
+                    'title': _('Costs Updated'),
+                    'message': _('Costs have been recalculated based on the new base product.')
+                }
             }
-        }
 
-    # FIX 1: Remove invalid onchange decorator - use individual line onchange instead
-    # @api.onchange('colorant_line_ids.shots')  # REMOVED - This is invalid syntax
-    
     @api.onchange('fandeck_id', 'colour_code_id')
     def _onchange_colour_selection(self):
         """Recompute warnings when colour selection changes"""
         _logger.info("🎯 Onchange triggered: colour_selection updated")
         _logger.info(f"  Fandeck: {self.fandeck_id.name if self.fandeck_id else 'None'}, Colour Code: {self.colour_code_id.code if self.colour_code_id else 'None'}")
+        
+        # CRITICAL FIX: DON'T touch colorant lines, only recompute warnings
+        _logger.info("  ⚠️ Recomputing warnings only (preserving colorant lines)...")
+        
         self._compute_warnings()
 
     @api.onchange('fandeck_id')
