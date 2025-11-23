@@ -41,6 +41,8 @@
         'views/mrp_bom_views.xml',
         'views/mrp_production_views.xml', 
         'views/mrp_production_duplicate_wizard_views.xml',
+        'views/tinting_formula_views.xml', 
+        #'views/colour_code_views.xml',
         'views/menu_views.xml',
     ],
     'demo': [],

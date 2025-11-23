@@ -128,6 +128,31 @@ class TintWizard(models.TransientModel):
     colour_name = fields.Char(related='colour_code_id.name', readonly=True)
     notes = fields.Text(string='Notes')
     colorant_line_ids = fields.One2many('tint.wizard.colorant.line', 'wizard_id', string='Colorant Lines')
+    
+      # ============================================================
+    # NEW: FORMULA FIELDS (add these 3 fields)
+    # ============================================================
+    formula_id = fields.Many2one(
+        'tinting.formula',
+        string='Applied Formula',
+        readonly=True,
+        help='Formula currently applied to this wizard'
+    )
+    
+    formula_applied = fields.Boolean(
+        string='Formula Applied',
+        default=False,
+        help='True if a formula has been auto-filled'
+    )
+    
+    available_formulas = fields.Integer(
+        string='Available Formulas',
+        compute='_compute_available_formulas',
+        help='Number of formula variants available for selected colour'
+    )
+    # ============================================================
+    # END NEW FIELDS
+    # =
 
     total_colorant_ml = fields.Float(compute='_compute_totals', digits=(10, 3))
     total_cost_excl_vat = fields.Float(compute='_compute_totals', digits='Product Price')
@@ -186,6 +211,25 @@ class TintWizard(models.TransientModel):
         
         _logger.info("=" * 80)
         return res
+     # ============================================================
+    # NEW: FORMULA COMPUTE METHOD
+    # ============================================================
+    @api.depends('colour_code_id')
+    def _compute_available_formulas(self):
+        """
+        Count available formula variants for selected color
+        Shows how many saved formulas exist for this colour code
+        """
+        _logger.debug("🔄 Computing available formulas count...")
+        for wizard in self:
+            if wizard.colour_code_id:
+                wizard.available_formulas = wizard.colour_code_id.formula_count
+                _logger.debug(f"  Colour {wizard.colour_code_id.code}: {wizard.available_formulas} formulas available")
+            else:
+                wizard.available_formulas = 0
+    # ============================================================
+    # END NEW COMPUTE METHOD
+    # ============================================================
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -262,25 +306,69 @@ class TintWizard(models.TransientModel):
         self._compute_totals()
         self._compute_warnings()
         _logger.info("✅ Full recomputation completed")
-
+         
     @api.onchange('base_variant_id')
     def _onchange_base_variant_id(self):
-        """Recompute only base costs when base product changes - DON'T touch colorant lines"""
+        """When base product changes, recalculate costs but preserve colorant lines"""
         _logger.info("🎯 Onchange triggered: base_variant_id updated")
         _logger.info(f"  Base product changed to: {self.base_variant_id.display_name if self.base_variant_id else 'None'}")
         
-        # CRITICAL FIX: DON'T touch colorant lines - just recompute wizard-level costs
-        # Colorant lines will remain intact, only base costs need updating
-        _logger.info("  💰 Recomputing base costs only (preserving colorant lines)...")
+        # Check if colorant lines already have shots entered
+        has_existing_shots = any(line.shots > 0 for line in self.colorant_line_ids)
         
-        # Force recompute of base cost
-        self._compute_base_cost()
+        if has_existing_shots:
+            _logger.info(f"  🛡️ Colorant shots already entered - preserving existing values")
+            _logger.info(f"  💰 Recomputing base costs only...")
+            
+            # Recompute costs only (preserve colorant shots)
+            self._compute_base_cost()
+            self._compute_totals()
+            self._compute_warnings()
+            
+            _logger.info("✅ Base cost recomputation completed (colorant lines preserved)")
+            
+            # Show warning that costs were updated
+            if self.base_variant_id:
+                return {
+                    'warning': {
+                        'title': _('Costs Updated'),
+                        'message': _('Costs have been recalculated based on the new base product.\n\n'
+                                   '✓ Colorant shots have been preserved.\n\n'
+                                   'Note: Different brands may use different formulas for the same color.')
+                    }
+                }
+        else:
+            _logger.info(f"  💰 No shots entered - recomputing costs and searching for formula...")
+            
+            # Recompute costs
+            self._compute_base_cost()
+            self._compute_totals()
+            self._compute_warnings()
+            
+            # Search for formula ONLY if no shots are entered yet
+            if self.base_variant_id and self.colour_code_id:
+                _logger.info("🔍 Both base and colour selected - searching for formula...")
+                self._search_and_apply_formula()
+            
+            _logger.info("✅ Base cost recomputation completed")
+            
+            # Show warning if base product is selected
+            if self.base_variant_id:
+                return {
+                    'warning': {
+                        'title': _('Base Product Selected'),
+                        'message': _('Base product costs have been calculated.')
+                    }
+                }
         
-        # Totals will auto-recompute via @api.depends
-        self._compute_totals()
-        self._compute_warnings()
-        
-        _logger.info("✅ Base cost recomputation completed (colorant lines preserved)")
+         # NEW: SEARCH AND APPLY FORMULA (if both base and colour are set)
+        # ============================================================
+        if self.base_variant_id and self.colour_code_id:
+            _logger.info("🔍 Both base and colour selected - searching for formula...")
+            self._search_and_apply_formula()
+        # ============================================================
+        # END NEW FORMULA SEARCH
+        # ============================================================
         
         # Show warning if base product is selected
         if self.base_variant_id:
@@ -291,16 +379,27 @@ class TintWizard(models.TransientModel):
                 }
             }
 
-    @api.onchange('fandeck_id', 'colour_code_id')
+    @api.onchange('colour_code_id', 'fandeck_id')
     def _onchange_colour_selection(self):
-        """Recompute warnings when colour selection changes"""
+        """When colour selection changes, search for matching formula"""
         _logger.info("🎯 Onchange triggered: colour_selection updated")
         _logger.info(f"  Fandeck: {self.fandeck_id.name if self.fandeck_id else 'None'}, Colour Code: {self.colour_code_id.code if self.colour_code_id else 'None'}")
         
-        # CRITICAL FIX: DON'T touch colorant lines, only recompute warnings
-        _logger.info("  ⚠️ Recomputing warnings only (preserving colorant lines)...")
-        
+        # Only recompute warnings (preserve colorant lines)
+        _logger.info(f"  ⚠️ Recomputing warnings only (preserving colorant lines)...")
         self._compute_warnings()
+        
+        # Search for formula ONLY if shots are empty
+        if self.base_variant_id and self.colour_code_id:
+            # Check if colorant lines already have shots
+            has_existing_shots = any(line.shots > 0 for line in self.colorant_line_ids)
+            
+            if has_existing_shots:
+                _logger.info("🛡️ Colorant shots already entered - preserving existing values")
+                _logger.info("  (Use Cost Summary to compare different brands with same shots)")
+            else:
+                _logger.info("🔍 Both base and colour selected - searching for formula...")
+                self._search_and_apply_formula()
 
     @api.onchange('fandeck_id')
     def _onchange_fandeck_id(self):
@@ -322,6 +421,17 @@ class TintWizard(models.TransientModel):
         if self.colour_code_id and self.colour_code_id.fandeck_id:
             _logger.info(f"  Auto-setting fandeck to: {self.colour_code_id.fandeck_id.name}")
             self.fandeck_id = self.colour_code_id.fandeck_id
+            
+          
+        # ============================================================
+        # NEW: SEARCH AND APPLY FORMULA (if both base and colour are set)
+        # ============================================================
+        if self.base_variant_id and self.colour_code_id:
+            _logger.info("🔍 Both base and colour selected - searching for formula...")
+            self._search_and_apply_formula()
+        # ============================================================
+        # END NEW FORMULA SEARCH
+        # ============================================================
 
     @api.depends('base_variant_id')
     def _compute_base_cost(self):
@@ -395,6 +505,176 @@ class TintWizard(models.TransientModel):
             'view_mode': 'form',
             'target': 'new',
         }
+        
+      # ============================================================
+    # NEW: FORMULA AUTO-FILL METHODS
+    # ============================================================
+    def _search_and_apply_formula(self):
+        """
+        Search for matching formula and auto-fill shots
+        Called when both base_variant_id and colour_code_id are set
+        """
+        self.ensure_one()
+        
+        _logger.info("=" * 80)
+        _logger.info("🔍 FORMULA SEARCH - Starting...")
+        _logger.info("=" * 80)
+        
+        # Extract category & UOM from base product
+        # Extract category, UOM, and attribute from base product
+        base_category = self.base_variant_id.categ_id
+        base_uom = self.base_variant_id.uom_id
+        
+        # Get product attribute NAME (if exists) - for cross-brand matching
+       # Get product attribute NAME (if exists) - for cross-brand matching
+        base_attribute_name = False
+        if self.base_variant_id.product_template_attribute_value_ids:
+            # Get the first attribute value and normalize its name
+            attr = self.base_variant_id.product_template_attribute_value_ids[0]
+            if attr:
+                attr_name = str(attr.name).lower().strip()
+                # Remove variant code if present (e.g., "accent base/e/b3" → "accent base")
+                if '/' in attr_name:
+                    attr_name = attr_name.split('/')[0].strip()
+                base_attribute_name = attr_name
+                
+        _logger.info(f"  Base Product: {self.base_variant_id.display_name}")
+        _logger.info(f"  Category: {base_category.name} (ID: {base_category.id})")
+        _logger.info(f"  UOM: {base_uom.name} (ID: {base_uom.id})")
+        _logger.info(f"  Attribute: {base_attribute_name if base_attribute_name else 'None'}")
+        _logger.info(f"  Colour Code: {self.colour_code_id.code}")
+        _logger.info(f"  Available formulas for this colour: {self.available_formulas}")
+        
+        # Search for formula using attribute NAME (not ID) for cross-brand matching
+        matching_formula = self.colour_code_id.get_formula(
+            base_category.id,
+            base_uom.id,
+            base_attribute_name
+        )
+        
+        if matching_formula:
+            _logger.info(f"  ✅ FORMULA FOUND: {matching_formula.name}")
+            _logger.info(f"  Formula ID: {matching_formula.id}")
+            _logger.info(f"  Formula contains {len(matching_formula.formula_line_ids)} colorant lines")
+            _logger.info(f"  Total shots in formula: {matching_formula.total_shots}")
+            return self._apply_formula(matching_formula)
+        else:
+            _logger.info(f"  ❌ NO MATCHING FORMULA FOUND")
+            _logger.info(f"  Available formulas for {self.colour_code_id.code}: {self.available_formulas}")
+            if self.available_formulas > 0:
+                _logger.info(f"  💡 Other formula variants exist for this colour (different category/UOM)")
+            self._clear_formula_shots()
+        
+        _logger.info("=" * 80)
+
+    def _apply_formula(self, formula):
+        """
+        Apply formula shots to wizard colorant lines
+        Updates wizard line shots based on saved formula
+        """
+        self.ensure_one()
+        
+        _logger.info("🎨 APPLYING FORMULA TO WIZARD...")
+        _logger.info(f"  Formula: {formula.name}")
+        
+        # Build dict of shots: {colorant_code: shots}
+        formula_shots = formula.get_shots_dict()
+        
+        _logger.info(f"  Formula contains {len(formula_shots)} colorants with shots:")
+        for code, shots in formula_shots.items():
+            _logger.info(f"    {code}: {shots} shots")
+        
+        # Apply to wizard lines
+        applied_count = 0
+        for wizard_line in self.colorant_line_ids:
+            colorant_code = wizard_line.colorant_code
+            
+            if colorant_code in formula_shots:
+                shots = formula_shots[colorant_code]
+                wizard_line.shots = shots
+                applied_count += 1
+                _logger.info(f"    ✓ Applied {colorant_code}: {shots} shots")
+            else:
+                wizard_line.shots = 0.0
+        
+        # Set formula reference
+        self.formula_id = formula
+        self.formula_applied = True
+        
+        # Update usage counter
+        formula.increment_usage_counter()
+        
+        _logger.info(f"  ✅ FORMULA APPLIED SUCCESSFULLY")
+        _logger.info(f"  Applied {applied_count} colorant values")
+        _logger.info(f"  You can still manually adjust shots if needed")
+        
+        # Show success notification
+        return {
+            'warning': {
+                'title': '✓ Formula Applied!',
+                'message': f'Loaded formula: {formula.name}\n'
+                          f'Applied {applied_count} colorant shots.\n\n'
+                          f'Formula has been used {formula.times_used} times.\n'
+                          f'You can still manually adjust shots if needed.'
+            }
+        }
+
+    def _clear_formula_shots(self):
+        """
+        Clear all shots when no formula found
+        Resets wizard to manual entry mode
+        """
+        self.ensure_one()
+        
+        _logger.info("🔄 CLEARING FORMULA - Manual entry required")
+        
+        for wizard_line in self.colorant_line_ids:
+            wizard_line.shots = 0.0
+        
+        self.formula_id = False
+        self.formula_applied = False
+        
+        _logger.info("  ✅ All shots cleared - Ready for manual input")
+
+    def action_view_available_formulas(self):
+        """
+        Show available formula variants for this colour
+        Opens popup showing all formulas for selected colour code
+        """
+        self.ensure_one()
+        
+        if not self.colour_code_id:
+            _logger.warning("⚠ No colour code selected - cannot view formulas")
+            return
+        
+        _logger.info(f"📋 Opening available formulas for colour: {self.colour_code_id.code}")
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Available Formulas for {self.colour_code_id.code}',
+            'res_model': 'tinting.formula',
+            'view_mode': 'tree,form',
+            'domain': [('colour_code_id', '=', self.colour_code_id.id)],
+            'context': {
+                'default_colour_code_id': self.colour_code_id.id,
+                'search_default_active': 1,
+            },
+            'target': 'new',
+        }
+
+    def action_clear_formula(self):
+        """
+        Manually clear applied formula
+        Button action to reset wizard and allow manual entry
+        """
+        self.ensure_one()
+        _logger.info("🎯 User manually cleared formula")
+        self._clear_formula_shots()
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
+    # ============================================================
+    # END NEW FORMULA METHODS
+    # ============================================================
+
 
     def action_create_tinted_product(self):
         """Main method: Create tinted product, BOM, and Manufacturing Order"""

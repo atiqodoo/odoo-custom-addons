@@ -9,3 +9,9 @@ access_colorant_mapping_line_user,colorant.mapping.line.user,model_colorant_mapp
 access_colorant_mapping_line_manager,colorant.mapping.line.manager,model_colorant_mapping_line,mrp.group_mrp_manager,1,1,1,1
 access_mrp_production_duplicate_wizard_user,mrp.production.duplicate.wizard.user,model_mrp_production_duplicate_wizard,mrp.group_mrp_user,1,1,1,1
 access_mrp_production_duplicate_wizard_manager,mrp.production.duplicate.wizard.manager,model_mrp_production_duplicate_wizard,mrp.group_mrp_manager,1,1,1,1
+access_tinting_formula_user,access.tinting.formula.user,model_tinting_formula,base.group_user,1,0,0,0
+access_tinting_formula_manager,access.tinting.formula.manager,model_tinting_formula,mrp.group_mrp_user,1,1,1,0
+access_tinting_formula_admin,access.tinting.formula.admin,model_tinting_formula,base.group_system,1,1,1,1
+access_tinting_formula_line_user,access.tinting.formula.line.user,model_tinting_formula_line,base.group_user,1,0,0,0
+access_tinting_formula_line_manager,access.tinting.formula.line.manager,model_tinting_formula_line,mrp.group_mrp_user,1,1,1,1
+access_tinting_formula_line_admin,access.tinting.formula.line.admin,model_tinting_formula_line,base.group_system,1,1,1,1
