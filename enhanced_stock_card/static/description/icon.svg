@@ -1,0 +1,8 @@
+<svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" fill="#3498db"/>
+  <text x="64" y="45" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle">SC</text>
+  <text x="64" y="90" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Stock Card</text>
+  <rect x="20" y="100" width="25" height="8" fill="white" opacity="0.8"/>
+  <rect x="50" y="95" width="25" height="13" fill="white" opacity="0.8"/>
+  <rect x="80" y="90" width="25" height="18" fill="white" opacity="0.8"/>
+</svg>

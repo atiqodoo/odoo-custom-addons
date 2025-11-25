@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Enhanced Stock Card Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        .feature {
+            background: #ecf0f1;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .highlight {
+            background: #3498db;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        ul {
+            margin: 10px 0;
+        }
+        li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Enhanced Stock Card Report</h1>
+    
+    <p>
+        <strong>Complete stock movement report with AVCO costing, purchase tracking, 
+        and POS sales analysis.</strong>
+    </p>
+
+    <h2>Key Features</h2>
+    
+    <div class="feature">
+        <h3>📊 Comprehensive Movement Tracking</h3>
+        <ul>
+            <li>Physical IN/OUT/Balance quantities</li>
+            <li>All move types: Purchase, Sales, POS, Manufacturing, Transfers, Adjustments</li>
+            <li>Internal transfer tracking with dual-line display</li>
+            <li>Chronological ordering (date + sequence + ID)</li>
+        </ul>
+    </div>
+
+    <div class="feature">
+        <h3>💰 Financial Integration</h3>
+        <ul>
+            <li><span class="highlight">AVCO Unit Cost</span> from stock.valuation.layer</li>
+            <li><span class="highlight">Purchase Unit Price & Amount</span> (incl. VAT)</li>
+            <li><span class="highlight">POS Unit Price & Amount</span> (incl. taxes)</li>
+            <li>Running totals for purchases and POS sales</li>
+            <li>Inventory value tracking</li>
+        </ul>
+    </div>
+
+    <div class="feature">
+        <h3>🎯 100% Reconciliation</h3>
+        <ul>
+            <li>Stock quantities match stock.quant</li>
+            <li>Values from stock.valuation.layer (accounting source of truth)</li>
+            <li>Purchase amounts match supplier invoices</li>
+            <li>POS amounts match session cash totals</li>
+        </ul>
+    </div>
+
+    <div class="feature">
+        <h3>📈 Advanced Analysis</h3>
+        <ul>
+            <li>Per-transaction margin analysis</li>
+            <li>Price variance tracking</li>
+            <li>Purchase vs selling price comparison</li>
+            <li>Opening balance calculation</li>
+            <li>Flexible date range filtering</li>
+        </ul>
+    </div>
+
+    <div class="feature">
+        <h3>📄 Multiple Export Formats</h3>
+        <ul>
+            <li><strong>PDF Report</strong> - Professional layout with 16 columns</li>
+            <li><strong>Excel Export</strong> - Full data with formatting and analysis</li>
+            <li>Separate page per product option</li>
+            <li>Summary sheet with totals</li>
+        </ul>
+    </div>
+
+    <h2>Report Columns (16 Total)</h2>
+    <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse: collapse;">
+        <tr style="background-color: #3498db; color: white;">
+            <th>Column</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td colspan="2" style="background-color: #ecf0f1;"><strong>Movement Information</strong></td>
+        </tr>
+        <tr><td>Date</td><td>Transaction date</td></tr>
+        <tr><td>Reference</td><td>Document number</td></tr>
+        <tr><td>Type</td><td>Move type (Purchase, Sale, POS, etc.)</td></tr>
+        <tr><td>Partner</td><td>Customer or supplier name</td></tr>
+        
+        <tr>
+            <td colspan="2" style="background-color: #ecf0f1;"><strong>Physical Quantities</strong></td>
+        </tr>
+        <tr><td>IN</td><td>Quantity received</td></tr>
+        <tr><td>OUT</td><td>Quantity delivered</td></tr>
+        <tr><td>Balance</td><td>Running balance quantity</td></tr>
+        
+        <tr>
+            <td colspan="2" style="background-color: #ecf0f1;"><strong>Valuation (AVCO)</strong></td>
+        </tr>
+        <tr><td>Unit Cost</td><td>AVCO cost per unit</td></tr>
+        <tr><td>Value</td><td>This move's value change</td></tr>
+        <tr><td>Running Value</td><td>Total inventory value</td></tr>
+        
+        <tr>
+            <td colspan="2" style="background-color: #ecf0f1;"><strong>Purchase Data (Incl. VAT)</strong></td>
+        </tr>
+        <tr style="background-color: #E7F3FF;"><td>Purchase Unit Price</td><td>Price paid per unit (with VAT)</td></tr>
+        <tr><td>Purchase Amount</td><td>Total purchase amount</td></tr>
+        <tr><td>Running Purchase</td><td>Cumulative purchase total</td></tr>
+        
+        <tr>
+            <td colspan="2" style="background-color: #ecf0f1;"><strong>POS Data (Incl. Taxes)</strong></td>
+        </tr>
+        <tr style="background-color: #E8F5E9;"><td>POS Unit Price</td><td>Selling price per unit (with taxes)</td></tr>
+        <tr><td>POS Amount</td><td>Total sale amount</td></tr>
+        <tr><td>Running POS</td><td>Cumulative sales total</td></tr>
+    </table>
+
+    <h2>Usage</h2>
+    <ol>
+        <li>Navigate to <strong>Inventory → Reporting → Stock Card Report</strong></li>
+        <li>Select products (or leave empty for all)</li>
+        <li>Choose warehouse or specific locations</li>
+        <li>Set date range</li>
+        <li>Configure options (internal transfers, grouping)</li>
+        <li>Click <strong>Print PDF</strong> or <strong>Export Excel</strong></li>
+    </ol>
+
+    <h2>Technical Details</h2>
+    <ul>
+        <li><strong>Version:</strong> 18.0.1.0.0</li>
+        <li><strong>Odoo Edition:</strong> Enterprise (Community compatible)</li>
+        <li><strong>Dependencies:</strong> stock, stock_account, purchase_stock, sale_stock, point_of_sale, mrp</li>
+        <li><strong>License:</strong> LGPL-3</li>
+    </ul>
+
+    <h2>Requirements</h2>
+    <ul>
+        <li>Odoo 18.0 Enterprise or Community</li>
+        <li>Anglo-Saxon accounting mode</li>
+        <li>Automated inventory valuation</li>
+        <li>AVCO (Average Cost) costing method</li>
+        <li>Python library: xlsxwriter (for Excel export)</li>
+    </ul>
+
+    <h2>Support</h2>
+    <p>
+        For issues, questions, or feature requests, please contact your system administrator 
+        or the module developer.
+    </p>
+
+    <hr>
+    <p style="text-align: center; color: #7f8c8d; font-size: 0.9em;">
+        Enhanced Stock Card Report | Odoo 18 Enterprise | © 2025
+    </p>
+</body>
+</html>

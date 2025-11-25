@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Definition -->
+    <record id="action_report_stock_card" model="ir.actions.report">
+        <field name="name">Stock Card Report</field>
+        <field name="model">stock.card.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">enhanced_stock_card.report_stock_card_document</field>
+        <field name="report_file">enhanced_stock_card.report_stock_card_document</field>
+        <field name="print_report_name">'Stock_Card_%s_%s' % (object.date_from, object.date_to)</field>
+        <field name="binding_model_id" ref="model_stock_card_wizard"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <!-- Report Template -->
+    <template id="report_stock_card_document">
+        <t t-call="web.html_container">
+            <t t-foreach="data.get('products_data', [])" t-as="product_data">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-size: 10pt;">
+                        <!-- Product Header -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h3 class="text-center mb-3">Stock Card Report</h3>
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <td style="width: 25%;"><strong>Product:</strong></td>
+                                        <td style="width: 75%;">
+                                            <span t-out="product_data['product'].default_code"/> - 
+                                            <span t-out="product_data['product'].name"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Category:</strong></td>
+                                        <td><span t-out="product_data['product'].categ_id.name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Period:</strong></td>
+                                        <td>
+                                            <span t-esc="data['date_from']"/> to <span t-esc="data['date_to']"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Locations:</strong></td>
+                                        <td>
+                                            <span t-esc="', '.join(data['locations'].mapped('complete_name'))"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Stock Card Table -->
+                        <table class="table table-sm table-bordered" style="font-size: 8pt;">
+                            <thead>
+                                <tr style="background-color: #e9ecef;">
+                                    <th class="text-center">Date</th>
+                                    <th class="text-center">Reference</th>
+                                    <th class="text-center">Type</th>
+                                    <th class="text-center">Partner</th>
+                                    <th class="text-right">In</th>
+                                    <th class="text-right">Out</th>
+                                    <th class="text-right">Balance</th>
+                                    <th class="text-right">Unit Cost</th>
+                                    <th class="text-right">Value</th>
+                                    <th class="text-right">Run Value</th>
+                                    <th class="text-right" style="background-color: #E7F3FF;">Purch U.Price</th>
+                                    <th class="text-right">Purch Amt</th>
+                                    <th class="text-right">Run Purch</th>
+                                    <th class="text-right" style="background-color: #E8F5E9;">POS U.Price</th>
+                                    <th class="text-right">POS Amt</th>
+                                    <th class="text-right">Run POS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Opening Balance Row -->
+                                <tr style="background-color: #fff3cd; font-weight: bold;">
+                                    <td colspan="4">Opening Balance</td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.3f' % product_data['opening']['qty']"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.2f' % product_data['opening']['unit_cost']"/>
+                                    </td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.2f' % product_data['opening']['value']"/>
+                                    </td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.2f' % product_data['opening']['purchase_total']"/>
+                                    </td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.2f' % product_data['opening']['pos_total']"/>
+                                    </td>
+                                </tr>
+
+                                <!-- Movement Rows -->
+                                <tr t-foreach="product_data['moves']" t-as="move">
+                                    <td>
+                                        <span t-esc="move['date'].strftime('%Y-%m-%d')"/>
+                                    </td>
+                                    <td>
+                                        <span t-esc="move['reference']"/>
+                                    </td>
+                                    <td>
+                                        <span t-esc="move['move_type']"/>
+                                    </td>
+                                    <td>
+                                        <span t-esc="move['partner']"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-if="move['qty_in']" t-esc="'%.3f' % move['qty_in']"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-if="move['qty_out']" t-esc="'%.3f' % move['qty_out']"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.3f' % move['balance_qty']"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.2f' % move['unit_cost']"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.2f' % move['value']"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.2f' % move['running_value']"/>
+                                    </td>
+                                    <td class="text-right" style="background-color: #E7F3FF;">
+                                        <span t-if="move['purchase_unit_price']" t-esc="'%.2f' % move['purchase_unit_price']"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-if="move['purchase_amount']" t-esc="'%.2f' % move['purchase_amount']"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.2f' % move['running_purchase']"/>
+                                    </td>
+                                    <td class="text-right" style="background-color: #E8F5E9;">
+                                        <span t-if="move['pos_unit_price']" t-esc="'%.2f' % move['pos_unit_price']"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-if="move['pos_amount']" t-esc="'%.2f' % move['pos_amount']"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.2f' % move['running_pos']"/>
+                                    </td>
+                                </tr>
+
+                                <!-- Closing Balance Row -->
+                                <tr style="border-top: 2px solid black; font-weight: bold; background-color: #f8f9fa;">
+                                    <td colspan="4">Closing Balance</td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.3f' % product_data['closing']['qty']"/>
+                                    </td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.2f' % product_data['closing']['value']"/>
+                                    </td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.2f' % product_data['closing']['total_purchases']"/>
+                                    </td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">
+                                        <span t-esc="'%.2f' % product_data['closing']['total_pos']"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Footer Note -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <p style="font-size: 8pt; font-style: italic;">
+                                    <strong>Note:</strong> Values calculated from stock.valuation.layer (AVCO costing). 
+                                    Purchase amounts include VAT. POS amounts include all taxes.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
