@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_pos_two_tier" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.pos.two.tier</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@id='pos_connected_devices_section']" position="after">
+                <block title="Commission Distribution (Two-Tier System)" id="pos_commission_distribution_settings">
+                    
+                    <!-- TIER 1: Extra Amount Commission -->
+                    <setting string="TIER 1: Extra Amount Commission"
+                             help="Default COGS account for extra amount commission payouts">
+                        <div class="content-group">
+                            <div class="row mt16">
+                                <label for="pos_extra_cogs_commission_account_id" 
+                                       string="Extra Commission COGS Account" 
+                                       class="col-lg-4 o_light_label"/>
+                                <field name="pos_extra_cogs_commission_account_id"
+                                       create="false"
+                                       placeholder="Select COGS account for extra commissions"/>
+                            </div>
+                            <div class="row mt16">
+                                <label for="pos_output_vat_account_id" 
+                                       string="Output VAT Account" 
+                                       class="col-lg-4 o_light_label"/>
+                                <field name="pos_output_vat_account_id"
+                                       create="false"
+                                       placeholder="Select Output VAT account"/>
+                            </div>
+                            <div class="text-muted">
+                                Extra commission journal entries will split VAT:
+                                <br/>• COGS account (excl VAT portion)
+                                <br/>• Output VAT account (VAT portion)
+                            </div>
+                        </div>
+                    </setting>
+                    
+                    <!-- TIER 2: Base Profit Commission -->
+                    <setting string="TIER 2: Base Profit Commission"
+                             help="Default COGS account for base profit commission payouts (separate from extra for better reporting)">
+                        <div class="content-group">
+                            <div class="row mt16">
+                                <label for="pos_base_profit_cogs_commission_account_id" 
+                                       string="Base Profit Commission COGS Account" 
+                                       class="col-lg-4 o_light_label"/>
+                                <field name="pos_base_profit_cogs_commission_account_id"
+                                       create="false"
+                                       placeholder="Select COGS account for base profit commissions"/>
+                            </div>
+                            <div class="text-muted">
+                                This COGS account will be debited when distributing base profit commissions.
+                                Use a separate account from TIER 1 for better P&amp;L analysis.
+                            </div>
+                        </div>
+                    </setting>
+                    
+                    <!-- Help Note -->
+                    <div class="alert alert-info" role="alert" style="margin-top: 15px;">
+                        <p><strong>Two-Tier Commission System:</strong></p>
+                        <ul>
+                            <li><strong>TIER 1 (Extra):</strong> Commission on premium pricing above pricelist</li>
+                            <li><strong>TIER 2 (Base Profit):</strong> Commission on pricelist profit margin (excl VAT)</li>
+                        </ul>
+                        <p>Separate accounts allow you to track different commission types in P&amp;L reports.</p>
+                    </div>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>
