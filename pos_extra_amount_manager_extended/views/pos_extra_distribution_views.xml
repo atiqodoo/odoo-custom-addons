@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_pos_extra_distribution_list" model="ir.ui.view">
+        <field name="name">pos.extra.distribution.list</field>
+        <field name="model">pos.extra.distribution</field>
+        <field name="arch" type="xml">
+            <list string="Extra Distributions" create="false" delete="false">
+                <field name="create_date"/>
+                <field name="pos_order_id"/>
+                <field name="distribution_amount" widget="monetary" sum="Total"/>
+                <field name="distribution_cogs" widget="monetary" sum="Total"/>
+                <field name="percent"/>
+                <field name="payment_journal_id"/>
+                <field name="partner_id"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'posted'"
+                       decoration-info="state == 'draft'"
+                       decoration-muted="state == 'cancelled'"/>
+                <button name="action_view_journal_entries" type="object" string="View" icon="fa-book"
+                        invisible="state != 'posted'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_pos_extra_distribution_form" model="ir.ui.view">
+        <field name="name">pos.extra.distribution.form</field>
+        <field name="model">pos.extra.distribution</field>
+        <field name="arch" type="xml">
+            <form string="Extra Distribution" create="false" delete="false">
+                <header>
+                    <button name="action_view_journal_entries" string="View Entry" type="object" class="btn-primary" invisible="state != 'posted'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,posted"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="display_name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Reference">
+                            <field name="pos_order_id" readonly="1"/>
+                            <field name="create_date" readonly="1"/>
+                        </group>
+                        <group string="Amounts">
+                            <field name="distribution_amount" widget="monetary" readonly="1" string="Total Amount (Incl VAT)"/>
+                            <field name="distribution_amount_excl_vat" widget="monetary" readonly="1" string="Amount Excl VAT"/>
+                            <field name="vat_amount" widget="monetary" readonly="1" string="VAT Amount"/>
+                            <field name="vat_rate" readonly="1" string="VAT Rate (%)"/>
+                            <field name="distribution_cogs" widget="monetary" readonly="1"/>
+                            <field name="percent" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Payment">
+                            <field name="payment_journal_id" readonly="1"/>
+                            <field name="partner_id" readonly="1"/>
+                        </group>
+                        <group string="Accounts">
+                            <field name="cogs_commission_account_id" readonly="1"/>
+                            <field name="output_vat_account_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Journal" invisible="state != 'posted'">
+                            <field name="commission_move_id"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action & Menu -->
+    <record id="action_pos_extra_distribution" model="ir.actions.act_window">
+        <field name="name">Extra Distributions</field>
+        <field name="res_model">pos.extra.distribution</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_pos_extra_distribution"
+              name="Extra Distributions"
+              parent="point_of_sale.menu_point_root"
+              action="action_pos_extra_distribution"
+              sequence="20"/>
+</odoo>

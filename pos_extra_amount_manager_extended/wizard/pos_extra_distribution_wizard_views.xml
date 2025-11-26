@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Wizard Form -->
+    <record id="view_pos_extra_distribution_wizard_form" model="ir.ui.view">
+        <field name="name">pos.extra.distribution.wizard.form</field>
+        <field name="model">pos.extra.distribution.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Distribute Extra Amount">
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        <p><strong>TIER 1: Distribute extra amount charged in this POS order.</strong></p>
+                        <p>You can enter either a percentage or a fixed amount.</p>
+                    </div>
+
+                    <group>
+                        <group string="Order" col="2">
+                            <field name="pos_order_id" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Available" col="2">
+                            <field name="total_extra_amount" widget="monetary" readonly="1"/>
+                            <field name="remaining_extra_amount" widget="monetary" readonly="1"
+                                   decoration-warning="remaining_extra_amount &lt; total_extra_amount"/>
+                            <field name="total_extra_cogs" widget="monetary" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <separator string="Distribution Amount"/>
+                    <group>
+                        <group>
+                            <field name="input_method" widget="radio"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group>
+                            <field name="percent" invisible="input_method != 'percent'" required="input_method == 'percent'"/>
+                            <field name="amount" widget="monetary" invisible="input_method != 'amount'" required="input_method == 'amount'"/>
+                        </group>
+                        <group>
+                            <field name="distribution_amount" widget="monetary" readonly="1"
+                                   decoration-success="distribution_amount &gt; 0 and distribution_amount &lt;= remaining_extra_amount"
+                                   decoration-danger="distribution_amount &gt; remaining_extra_amount"/>
+                            <field name="distribution_cogs" widget="monetary" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <separator string="Payment &amp; Recipient"/>
+                    <group>
+                        <group>
+                            <field name="payment_journal_id" create="false"/>
+                            <field name="partner_id" context="{'res_partner_search_mode': 'customer'}" create="false"/>
+                        </group>
+                        <group>
+                            <field name="cogs_commission_account_id" string="Extra Commission COGS Account" create="false"/>
+                            <field name="output_vat_account_id" string="Output VAT Account" create="false"/>
+                        </group>
+                    </group>
+
+                    <div class="alert alert-info" role="alert" style="margin-top: 15px;">
+                        <p><strong>VAT Split Journal Entry:</strong></p>
+                        <ul>
+                            <li>Dr COGS Commission (excl VAT)</li>
+                            <li>Dr Output VAT (VAT portion)</li>
+                            <li>Cr Cash/Bank (total incl VAT)</li>
+                        </ul>
+                    </div>
+                </sheet>
+
+                <footer>
+                    <button name="action_distribute" string="Create Distribution" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Action -->
+    <record id="action_pos_extra_distribution_wizard" model="ir.actions.act_window">
+        <field name="name">Distribute Extra Amount</field>
+        <field name="res_model">pos.extra.distribution.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Wizard Form -->
+    <record id="view_pos_base_profit_distribution_wizard_form" model="ir.ui.view">
+        <field name="name">pos.base.profit.distribution.wizard.form</field>
+        <field name="model">pos.base.profit.distribution.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Share Base Profit">
+                <sheet>
+                    <div class="alert alert-success" role="alert">
+                        <p><strong>TIER 2: Distribute base profit from this POS order.</strong></p>
+                        <p>Enter either a percentage of remaining profit or a fixed amount.</p>
+                        <p><em>Note: Profit is calculated excluding VAT for accurate accounting.</em></p>
+                    </div>
+
+                    <!-- Order Reference -->
+                    <group>
+                        <group string="Order" col="2">
+                            <field name="pos_order_id" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Available Base Profit -->
+                    <group>
+                        <group string="Available Base Profit" col="2">
+                            <field name="total_base_profit" 
+                                   widget="monetary" 
+                                   readonly="1"
+                                   decoration-success="total_base_profit &gt; 0"
+                                   decoration-danger="total_base_profit &lt; 0"/>
+                            <field name="remaining_base_profit" 
+                                   widget="monetary" 
+                                   readonly="1"
+                                   decoration-warning="remaining_base_profit &lt; total_base_profit"/>
+                        </group>
+                    </group>
+
+                    <separator string="Distribution Amount"/>
+                    
+                    <!-- Input Method -->
+                    <group>
+                        <group>
+                            <field name="input_method" widget="radio"/>
+                        </group>
+                    </group>
+
+                    <!-- Input Fields -->
+                    <group>
+                        <group>
+                            <field name="percent" 
+                                   invisible="input_method != 'percent'" 
+                                   required="input_method == 'percent'"/>
+                            <field name="amount" 
+                                   widget="monetary" 
+                                   invisible="input_method != 'amount'" 
+                                   required="input_method == 'amount'"/>
+                        </group>
+                        <group>
+                            <field name="distribution_amount" 
+                                   widget="monetary" 
+                                   readonly="1"
+                                   decoration-success="distribution_amount &gt; 0 and distribution_amount &lt;= remaining_base_profit"
+                                   decoration-danger="distribution_amount &gt; remaining_base_profit"/>
+                        </group>
+                    </group>
+
+                    <separator string="Payment &amp; Recipient"/>
+                    
+                    <!-- Payment Details -->
+                    <group>
+                        <group>
+                            <field name="payment_journal_id" 
+                                   create="false"
+                                   placeholder="Select payment journal (Cash/Bank)"/>
+                            <field name="partner_id" 
+                                   context="{'res_partner_search_mode': 'customer'}" 
+                                   create="false"
+                                   placeholder="Select recipient"/>
+                        </group>
+                        <group>
+                            <field name="cogs_commission_account_id" 
+                                   string="Base Profit COGS Account" 
+                                   create="false"
+                                   placeholder="Select COGS account"/>
+                        </group>
+                    </group>
+
+                    <!-- Info Note -->
+                    <div class="alert alert-info" role="alert" style="margin-top: 15px;">
+                        <p><strong>Journal Entry Created:</strong></p>
+                        <ul>
+                            <li>Debit: COGS Commission Account (Base Profit)</li>
+                            <li>Credit: Cash/Bank Account</li>
+                        </ul>
+                        <p><em>Note: Only commission payout recorded. Sale revenue and product COGS already in POS entries.</em></p>
+                    </div>
+                </sheet>
+
+                <footer>
+                    <button name="action_distribute" 
+                            string="Create Distribution" 
+                            type="object" 
+                            class="btn-primary" 
+                            data-hotkey="q"/>
+                    <button string="Cancel" 
+                            class="btn-secondary" 
+                            special="cancel" 
+                            data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Action -->
+    <record id="action_pos_base_profit_distribution_wizard" model="ir.actions.act_window">
+        <field name="name">Share Base Profit</field>
+        <field name="res_model">pos.base.profit.distribution.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
