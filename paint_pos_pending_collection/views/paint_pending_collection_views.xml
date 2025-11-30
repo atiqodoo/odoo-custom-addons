@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Pending Collection List View -->
+    <record id="view_paint_pending_collection_list" model="ir.ui.view">
+        <field name="name">paint.pending.collection.list</field>
+        <field name="model">paint.pending.collection</field>
+        <field name="arch" type="xml">
+            <list string="Pending Collections" decoration-success="state == 'done'" 
+                  decoration-warning="state == 'partial'" decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="pos_reference"/>
+                <field name="partner_id"/>
+                <field name="partner_phone" optional="show"/>
+                <field name="partner_mobile" optional="show"/>
+                <field name="date_left"/>
+                <field name="days_pending"/>
+                <field name="total_pending_qty"/>
+                <field name="total_collected_qty" optional="hide"/>
+                <field name="state" widget="badge" 
+                       decoration-success="state == 'done'"
+                       decoration-warning="state == 'partial'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Pending Collection Form View -->
+    <record id="view_paint_pending_collection_form" model="ir.ui.view">
+        <field name="name">paint.pending.collection.form</field>
+        <field name="model">paint.pending.collection</field>
+        <field name="arch" type="xml">
+            <form string="Pending Collection">
+                <header>
+                    <button name="action_collect_items" string="Customer Collected" 
+                            type="object" class="oe_highlight"
+                            invisible="state in ['done', 'cancelled']"/>
+                    <button name="action_print_label" string="Print Label" 
+                            type="object" class="oe_highlight"/>
+                    <button name="action_cancel" string="Cancel / Return to Stock" 
+                            type="object" 
+                            confirm="Are you sure you want to cancel this pending collection and return items to stock?"
+                            invisible="state in ['done', 'cancelled']"/>
+                    <field name="state" widget="statusbar" 
+                           statusbar_visible="draft,partial,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_print_label" 
+                                type="object" class="oe_stat_button" icon="fa-print">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Print</span>
+                                <span class="o_stat_text">Label</span>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="pos_order_id" readonly="1"/>
+                            <field name="pos_reference" readonly="1"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="partner_phone" readonly="1"/>
+                            <field name="partner_mobile" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="date_left" readonly="1"/>
+                            <field name="date_collected" readonly="1" 
+                                   invisible="state != 'done'"/>
+                            <field name="days_pending"/>
+                            <field name="holding_location_id" 
+                                   readonly="state in ['done', 'cancelled']"/>
+                            <field name="company_id" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Pending Items" name="items">
+                            <field name="collection_line_ids" 
+                                   readonly="state in ['done', 'cancelled']">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id"/>
+                                    <field name="pending_qty"/>
+                                    <field name="collected_qty" readonly="1"/>
+                                    <field name="remaining_qty" readonly="1"/>
+                                    <field name="tint_color_code"/>
+                                    <field name="lot_id" optional="hide"/>
+                                    <field name="description" optional="hide"/>
+                                    <field name="product_uom_id"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="total_pending_qty"/>
+                                <field name="total_collected_qty"/>
+                            </group>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="notes" placeholder="Additional notes..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Pending Collection Search View -->
+    <record id="view_paint_pending_collection_search" model="ir.ui.view">
+        <field name="name">paint.pending.collection.search</field>
+        <field name="model">paint.pending.collection</field>
+        <field name="arch" type="xml">
+            <search string="Search Pending Collections">
+                <field name="name"/>
+                <field name="pos_reference"/>
+                <field name="partner_id"/>
+                <field name="partner_phone"/>
+                <field name="partner_mobile"/>
+                <field name="barcode"/>
+                <separator/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Partial" name="partial" domain="[('state', '=', 'partial')]"/>
+                <filter string="Completed" name="done" domain="[('state', '=', 'done')]"/>
+                <filter string="Cancelled" name="cancelled" domain="[('state', '=', 'cancelled')]"/>
+                <separator/>
+                <filter string="Active" name="active" 
+                        domain="[('state', 'in', ['draft', 'partial'])]"/>
+                <separator/>
+                <filter string="0-7 Days" name="week" 
+                        domain="[('days_pending', '&lt;=', 7), ('state', 'in', ['draft', 'partial'])]"/>
+                <filter string="8-30 Days" name="month" 
+                        domain="[('days_pending', '&gt;', 7), ('days_pending', '&lt;=', 30), ('state', 'in', ['draft', 'partial'])]"/>
+                <filter string="Over 30 Days" name="old" 
+                        domain="[('days_pending', '&gt;', 30), ('state', 'in', ['draft', 'partial'])]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="Customer" name="group_partner" 
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter string="Status" name="group_state" 
+                            context="{'group_by': 'state'}"/>
+                    <filter string="Date Left" name="group_date" 
+                            context="{'group_by': 'date_left'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Pending Collection Kanban View -->
+    <record id="view_paint_pending_collection_kanban" model="ir.ui.view">
+        <field name="name">paint.pending.collection.kanban</field>
+        <field name="model">paint.pending.collection</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="pos_reference"/>
+                <field name="partner_id"/>
+                <field name="date_left"/>
+                <field name="days_pending"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_content">
+                            <div class="row">
+                                <div class="col-12">
+                                    <strong><field name="name"/></strong>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-8">
+                                    <field name="partner_id"/>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <field name="state" widget="badge"/>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 text-muted">
+                                    <span><field name="pos_reference"/></span>
+                                    <span class="float-end">
+                                        <field name="days_pending"/> days
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    
+    <!-- Pending Collection Action -->
+    <record id="action_paint_pending_collection" model="ir.actions.act_window">
+        <field name="name">Pending Collections</field>
+        <field name="res_model">paint.pending.collection</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a pending collection
+            </p>
+            <p>
+                Register items that customers have paid for but left in store for later collection.
+            </p>
+        </field>
+    </record>
+    
+</odoo>

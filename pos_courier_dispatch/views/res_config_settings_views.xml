@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Extend Settings View -->
+    <record id="res_config_settings_view_form_inherit_courier" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.courier</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('settings')]" position="inside">
+                <h2>Courier Dispatch</h2>
+                <div class="row mt16 o_settings_container">
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+                            <label for="courier_cogs_account_id" string="Courier Dispatch Accounting"/>
+                            <div class="text-muted">
+                                Configure accounting settings for courier dispatches
+                            </div>
+                            <div class="content-group">
+                                <div class="row mt16">
+                                    <label for="courier_cogs_account_id" string="Courier COGS Account" class="col-lg-4 o_light_label"/>
+                                    <field name="courier_cogs_account_id" 
+                                           class="oe_inline" 
+                                           placeholder="Select COGS account for courier fees..."/>
+                                </div>
+                                <div class="row">
+                                    <label for="default_courier_journal_id" string="Default Payment Journal" class="col-lg-4 o_light_label"/>
+                                    <field name="default_courier_journal_id" 
+                                           class="oe_inline" 
+                                           placeholder="Select default journal..."/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

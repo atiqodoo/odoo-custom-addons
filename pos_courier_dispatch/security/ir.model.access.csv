@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_courier_dispatch_user,courier.dispatch.user,model_courier_dispatch,group_courier_user,1,1,1,0
+access_courier_dispatch_manager,courier.dispatch.manager,model_courier_dispatch,group_courier_manager,1,1,1,1
+access_courier_dispatch_line_user,courier.dispatch.line.user,model_courier_dispatch_line,group_courier_user,1,1,1,0
+access_courier_dispatch_line_manager,courier.dispatch.line.manager,model_courier_dispatch_line,group_courier_manager,1,1,1,1
+access_courier_company_user,courier.company.user,model_courier_company,group_courier_user,1,0,0,0
+access_courier_company_manager,courier.company.manager,model_courier_company,group_courier_manager,1,1,1,1
+access_register_courier_dispatch_wizard_user,register.courier.dispatch.wizard.user,model_register_courier_dispatch_wizard,group_courier_user,1,1,1,1
+access_register_courier_dispatch_wizard_line_user,register.courier.dispatch.wizard.line.user,model_register_courier_dispatch_wizard_line,group_courier_user,1,1,1,1
+access_confirm_delivery_wizard_user,confirm.delivery.wizard.user,model_confirm_delivery_wizard,group_courier_user,1,1,1,1

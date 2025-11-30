@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Pending Collection Label Report -->
+    <record id="action_report_pending_collection_label" model="ir.actions.report">
+        <field name="name">Pending Collection Label</field>
+        <field name="model">paint.pending.collection</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">paint_pos_pending_collection.report_pending_collection_label</field>
+        <field name="report_file">paint_pos_pending_collection.report_pending_collection_label</field>
+        <field name="binding_model_id" ref="model_paint_pending_collection"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+    
+</odoo>

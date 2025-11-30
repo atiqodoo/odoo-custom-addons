@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Confirm Delivery Wizard Form View -->
+    <record id="view_confirm_delivery_wizard_form" model="ir.ui.view">
+        <field name="name">confirm.delivery.wizard.form</field>
+        <field name="model">confirm.delivery.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Confirm Delivery">
+                <sheet>
+                    <div class="alert alert-info mb-3" role="alert">
+                        <strong>Confirm Customer Receipt</strong>
+                        <p>Use this form to confirm that the customer has received the dispatched items.</p>
+                    </div>
+                    
+                    <group>
+                        <group>
+                            <field name="dispatch_id" readonly="1"/>
+                            <field name="confirmation_date"/>
+                        </group>
+                        <group>
+                            <field name="condition_ok" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Documentation">
+                        <field name="notes" placeholder="Any complaints, damages, or issues reported by customer..."/>
+                    </group>
+                    
+                    <separator string="Proof of Delivery Photos (Optional)"/>
+                    <field name="photo_ids" widget="many2many_binary" nolabel="1"/>
+                    
+                    <separator string="Customer Signature (Optional)"/>
+                    <field name="customer_signature" widget="image" nolabel="1"/>
+                    
+                </sheet>
+                
+                <footer>
+                    <button name="action_confirm" 
+                            string="Confirm Receipt" 
+                            type="object" 
+                            class="btn-primary" 
+                            data-hotkey="q"/>
+                    <button string="Cancel" 
+                            class="btn-secondary" 
+                            special="cancel" 
+                            data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open Confirm Delivery Wizard -->
+    <record id="action_confirm_delivery_wizard" model="ir.actions.act_window">
+        <field name="name">Confirm Delivery</field>
+        <field name="res_model">confirm.delivery.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_courier_dispatch"/>
+        <field name="binding_view_types">form</field>
+    </record>
+
+</odoo>

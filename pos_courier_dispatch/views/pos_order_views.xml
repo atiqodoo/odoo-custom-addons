@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Extend POS Order Form View -->
+    <record id="view_pos_order_form_inherit_courier" model="ir.ui.view">
+        <field name="name">pos.order.form.inherit.courier</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- Add Dispatch via Courier button in header -->
+            <xpath expr="//header" position="inside">
+                <button name="action_register_courier_dispatch" 
+                        string="Dispatch via Courier" 
+                        type="object" 
+                        class="btn-primary" 
+                        groups="pos_courier_dispatch.group_courier_user"/>
+            </xpath>
+            
+            <!-- Add smart button for courier dispatches -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_courier_dispatches" 
+                        type="object" 
+                        class="oe_stat_button" 
+                        icon="fa-truck" 
+                        invisible="courier_dispatch_count == 0" 
+                        groups="pos_courier_dispatch.group_courier_user">
+                    <field name="courier_dispatch_count" widget="statinfo" string="Courier Dispatches"/>
+                </button>
+            </xpath>
+            
+            <!-- Add courier dispatch fields (must be in sheet to be loaded) -->
+            <xpath expr="//sheet" position="before">
+                <field name="courier_dispatch_count" invisible="1"/>
+                <field name="courier_dispatch_ok" invisible="1"/>
+            </xpath>
+            
+        </field>
+    </record>
+
+</odoo>

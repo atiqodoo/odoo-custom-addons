@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Courier Dispatch Form View -->
+    <record id="view_courier_dispatch_form" model="ir.ui.view">
+        <field name="name">courier.dispatch.form</field>
+        <field name="model">courier.dispatch</field>
+        <field name="arch" type="xml">
+            <form string="Courier Dispatch">
+                <header>
+                    <button name="action_dispatch" 
+                            string="Mark as In Transit" 
+                            type="object" 
+                            class="oe_highlight" 
+                            invisible="state != 'draft'"/>
+                    <button name="action_mark_delivered" 
+                            string="Mark as Delivered" 
+                            type="object" 
+                            class="oe_highlight" 
+                            invisible="state != 'in_transit'" 
+                            groups="pos_courier_dispatch.group_courier_manager"/>
+                    <button name="action_confirm_receipt" 
+                            string="Confirm Receipt" 
+                            type="object" 
+                            class="oe_highlight" 
+                            invisible="state != 'delivered'" 
+                            groups="pos_courier_dispatch.group_courier_manager"/>
+                    <button name="action_cancel" 
+                            string="Cancel" 
+                            type="object" 
+                            invisible="state not in ('draft', 'in_transit')" 
+                            groups="pos_courier_dispatch.group_courier_manager" 
+                            confirm="Are you sure you want to cancel this dispatch?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_transit,delivered,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group name="dispatch_info" string="Dispatch Information">
+                            <field name="pos_order_id" readonly="1"/>
+                            <field name="customer_id" readonly="1"/>
+                            <field name="dispatch_date" readonly="state != 'draft'"/>
+                            <field name="delivery_date" readonly="1" invisible="not delivery_date"/>
+                            <field name="confirmation_date" readonly="1" invisible="not confirmation_date"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group name="courier_info" string="Courier Details">
+                            <field name="courier_company_id" readonly="state != 'draft'"/>
+                            <field name="courier_name" readonly="state != 'draft'"/>
+                            <field name="courier_phone" readonly="state != 'draft'"/>
+                            <field name="courier_reference" readonly="state != 'draft'"/>
+                            <field name="vehicle_plate" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group name="payment_info" string="Payment Information">
+                            <field name="courier_payment_responsible" readonly="state != 'draft'"/>
+                            <field name="courier_fee" readonly="state != 'draft'"/>
+                            <field name="company_fee_portion" invisible="courier_payment_responsible == 'customer'"/>
+                            <field name="payment_journal_id" 
+                                   readonly="state != 'draft'" 
+                                   invisible="courier_payment_responsible == 'customer'" 
+                                   required="courier_payment_responsible in ('company', 'shared')"/>
+                            <field name="payment_move_id" readonly="1" invisible="not payment_move_id"/>
+                        </group>
+                        <group name="delivery_address" string="Delivery Address">
+                            <field name="delivery_street"/>
+                            <field name="delivery_street2"/>
+                            <field name="delivery_city"/>
+                            <field name="delivery_state_id"/>
+                            <field name="delivery_zip"/>
+                            <field name="delivery_country_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Dispatch Items" name="dispatch_items">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom" string="Items">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id" readonly="1"/>
+                                    <field name="ordered_qty" readonly="1"/>
+                                    <field name="quantity"/>
+                                    <field name="price_unit" readonly="1"/>
+                                    <field name="subtotal" readonly="1" sum="Total"/>
+                                    <field name="weight"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="total_quantity" string="Total Quantity"/>
+                                <field name="total_weight" string="Total Weight (kg)"/>
+                                <field name="total_value" string="Total Value" widget="monetary"/>
+                            </group>
+                        </page>
+                        <page string="Documentation" name="documentation">
+                            <group>
+                                <field name="delivery_instructions"/>
+                                <field name="notes"/>
+                            </group>
+                            <field name="attachment_ids" widget="many2many_binary"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Courier Dispatch List View -->
+    <record id="view_courier_dispatch_list" model="ir.ui.view">
+        <field name="name">courier.dispatch.list</field>
+        <field name="model">courier.dispatch</field>
+        <field name="arch" type="xml">
+            <list string="Courier Dispatches" multi_edit="1">
+                <field name="name" readonly="1"/>
+                <field name="dispatch_date"/>
+                <field name="pos_order_id"/>
+                <field name="customer_id"/>
+                <field name="courier_name"/>
+                <field name="courier_reference"/>
+                <field name="courier_payment_responsible"/>
+                <field name="courier_fee" sum="Total Fees"/>
+                <field name="total_quantity" sum="Total Qty"/>
+                <field name="state" widget="badge" 
+                       decoration-info="state == 'draft'" 
+                       decoration-primary="state == 'in_transit'" 
+                       decoration-warning="state == 'delivered'" 
+                       decoration-success="state == 'confirmed'" 
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Courier Dispatch Kanban View -->
+    <record id="view_courier_dispatch_kanban" model="ir.ui.view">
+        <field name="name">courier.dispatch.kanban</field>
+        <field name="model">courier.dispatch</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="customer_id"/>
+                <field name="courier_name"/>
+                <field name="courier_fee"/>
+                <field name="dispatch_date"/>
+                <field name="state"/>
+                <field name="currency_id"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title">
+                                        <field name="name"/>
+                                    </strong>
+                                    <br/>
+                                    <span class="text-muted">
+                                        <field name="customer_id"/>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <i class="fa fa-user"/> <field name="courier_name"/>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <field name="courier_fee" widget="monetary"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="o_kanban_record_bottom">
+                                <div class="oe_kanban_bottom_left">
+                                    <i class="fa fa-clock-o"/> <field name="dispatch_date" widget="date"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Courier Dispatch Search View -->
+    <record id="view_courier_dispatch_search" model="ir.ui.view">
+        <field name="name">courier.dispatch.search</field>
+        <field name="model">courier.dispatch</field>
+        <field name="arch" type="xml">
+            <search string="Search Courier Dispatches">
+                <field name="name" string="Dispatch Reference"/>
+                <field name="pos_order_id" string="POS Order"/>
+                <field name="customer_id" string="Customer"/>
+                <field name="courier_name" string="Courier"/>
+                <field name="courier_reference" string="Tracking Number"/>
+                <separator/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="In Transit" name="in_transit" domain="[('state', '=', 'in_transit')]"/>
+                <filter string="Delivered" name="delivered" domain="[('state', '=', 'delivered')]"/>
+                <filter string="Confirmed" name="confirmed" domain="[('state', '=', 'confirmed')]"/>
+                <separator/>
+                <filter string="Company Pays" name="company_pays" domain="[('courier_payment_responsible', '=', 'company')]"/>
+                <filter string="Customer Pays" name="customer_pays" domain="[('courier_payment_responsible', '=', 'customer')]"/>
+                <separator/>
+                <filter string="Today" name="today" domain="[('dispatch_date', '&gt;=', datetime.datetime.combine(context_today(), datetime.time(0,0,0))), ('dispatch_date', '&lt;=', datetime.datetime.combine(context_today(), datetime.time(23,59,59)))]"/>
+                <filter string="This Week" name="this_week" domain="[('dispatch_date', '&gt;=', (context_today() - datetime.timedelta(days=context_today().weekday())).strftime('%Y-%m-%d')), ('dispatch_date', '&lt;=', (context_today() + datetime.timedelta(days=6-context_today().weekday())).strftime('%Y-%m-%d'))]"/>
+                <filter string="This Month" name="this_month" domain="[('dispatch_date', '&gt;=', datetime.datetime.now().strftime('%Y-%m-01'))]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Customer" name="group_customer" context="{'group_by': 'customer_id'}"/>
+                    <filter string="Courier" name="group_courier" context="{'group_by': 'courier_name'}"/>
+                    <filter string="Payment Responsible" name="group_payment" context="{'group_by': 'courier_payment_responsible'}"/>
+                    <filter string="Dispatch Date" name="group_date" context="{'group_by': 'dispatch_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Courier Dispatch Calendar View -->
+    <record id="view_courier_dispatch_calendar" model="ir.ui.view">
+        <field name="name">courier.dispatch.calendar</field>
+        <field name="model">courier.dispatch</field>
+        <field name="arch" type="xml">
+            <calendar string="Courier Dispatches" 
+                      date_start="dispatch_date" 
+                      color="state" 
+                      mode="month" 
+                      event_open_popup="1">
+                <field name="name"/>
+                <field name="customer_id"/>
+                <field name="courier_name"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Courier Dispatch Pivot View -->
+    <record id="view_courier_dispatch_pivot" model="ir.ui.view">
+        <field name="name">courier.dispatch.pivot</field>
+        <field name="model">courier.dispatch</field>
+        <field name="arch" type="xml">
+            <pivot string="Courier Dispatch Analysis">
+                <field name="dispatch_date" interval="month" type="row"/>
+                <field name="state" type="col"/>
+                <field name="courier_fee" type="measure"/>
+                <field name="total_quantity" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Courier Dispatch Graph View -->
+    <record id="view_courier_dispatch_graph" model="ir.ui.view">
+        <field name="name">courier.dispatch.graph</field>
+        <field name="model">courier.dispatch</field>
+        <field name="arch" type="xml">
+            <graph string="Courier Dispatch Analysis" type="bar">
+                <field name="dispatch_date" interval="month"/>
+                <field name="courier_fee" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Action: Courier Dispatch -->
+    <record id="action_courier_dispatch" model="ir.actions.act_window">
+        <field name="name">Courier Dispatches</field>
+        <field name="res_model">courier.dispatch</field>
+        <field name="view_mode">list,kanban,form,calendar,pivot,graph</field>
+        <field name="search_view_id" ref="view_courier_dispatch_search"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first courier dispatch!
+            </p>
+            <p>
+                Courier dispatches allow you to track items sent to customers via courier services.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action: View Stock Moves from Dispatch -->
+    <record id="action_view_stock_moves_from_dispatch" model="ir.actions.act_window">
+        <field name="name">Stock Moves</field>
+        <field name="res_model">stock.move</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('courier_dispatch_id', '=', active_id)]</field>
+        <field name="context">{'create': False, 'delete': False}</field>
+    </record>
+
+</odoo>

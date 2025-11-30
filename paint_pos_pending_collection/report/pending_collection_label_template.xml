@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <template id="report_pending_collection_label">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="text-center" style="border: 2px solid #000; padding: 20px; margin: 20px;">
+                            
+                            <!-- Header -->
+                            <h2 style="margin-bottom: 20px;">
+                                <strong>PENDING COLLECTION</strong>
+                            </h2>
+                            
+                            <!-- Barcode -->
+                            <div style="margin: 20px 0;">
+                                <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', o.barcode, 600, 100)" 
+                                     style="max-width: 100%; height: auto;" 
+                                     alt="Barcode"/>
+                                <div style="margin-top: 5px; font-size: 18px;">
+                                    <strong><span t-field="o.name"/></strong>
+                                </div>
+                            </div>
+                            
+                            <!-- Customer Info -->
+                            <div style="margin: 30px 0; text-align: left; font-size: 14px;">
+                                <table class="table table-sm" style="width: 100%;">
+                                    <tr>
+                                        <td style="width: 30%;"><strong>Customer:</strong></td>
+                                        <td><span t-field="o.partner_id.name"/></td>
+                                    </tr>
+                                    <tr t-if="o.partner_phone">
+                                        <td><strong>Phone:</strong></td>
+                                        <td><span t-field="o.partner_phone"/></td>
+                                    </tr>
+                                    <tr t-if="o.partner_mobile">
+                                        <td><strong>Mobile:</strong></td>
+                                        <td><span t-field="o.partner_mobile"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>POS Receipt:</strong></td>
+                                        <td><span t-field="o.pos_reference"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Date Left:</strong></td>
+                                        <td><span t-field="o.date_left" t-options="{'widget': 'datetime'}"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Location:</strong></td>
+                                        <td><span t-field="o.holding_location_id.complete_name"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            <!-- Items List -->
+                            <div style="margin: 30px 0; text-align: left;">
+                                <h4><strong>Pending Items:</strong></h4>
+                                <table class="table table-sm table-bordered" style="width: 100%; font-size: 12px;">
+                                    <thead>
+                                        <tr style="background-color: #f0f0f0;">
+                                            <th>Product</th>
+                                            <th>Color Code</th>
+                                            <th class="text-end">Qty</th>
+                                            <th>Unit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="o.collection_line_ids" t-as="line">
+                                            <td><span t-field="line.product_id.name"/></td>
+                                            <td>
+                                                <span t-if="line.tint_color_code" t-field="line.tint_color_code"/>
+                                                <span t-else="">-</span>
+                                            </td>
+                                            <td class="text-end"><span t-field="line.pending_qty"/></td>
+                                            <td><span t-field="line.product_uom_id.name"/></td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="background-color: #f0f0f0;">
+                                            <td colspan="2"><strong>Total Pending:</strong></td>
+                                            <td class="text-end"><strong><span t-field="o.total_pending_qty"/></strong></td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            
+                            <!-- Notes -->
+                            <div t-if="o.notes" style="margin: 20px 0; text-align: left; font-size: 12px;">
+                                <p><strong>Notes:</strong></p>
+                                <p><span t-field="o.notes"/></p>
+                            </div>
+                            
+                            <!-- Footer -->
+                            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ccc; font-size: 11px; color: #666;">
+                                <p>
+                                    Please present this label when collecting your items.<br/>
+                                    Keep this safe - you will need it for collection.
+                                </p>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+    
+</odoo>
