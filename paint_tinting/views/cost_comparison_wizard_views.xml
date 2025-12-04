@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================ -->
+    <!-- COST COMPARISON WIZARD FORM VIEW                                 -->
+    <!-- ================================================================ -->
+    <record id="view_cost_comparison_wizard_form" model="ir.ui.view">
+        <field name="name">cost.comparison.wizard.form</field>
+        <field name="model">cost.comparison.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cost Comparison - Similar Products">
+                <sheet>
+                    <!-- ============================================== -->
+                    <!-- HEADER - COMPARISON CRITERIA                   -->
+                    <!-- ============================================== -->
+                    <div class="oe_title">
+                        <h1>Cost Comparison Across Brands</h1>
+                    </div>
+                    
+                    <group>
+                        <group string="Comparison Criteria">
+                            <field name="base_category_id" readonly="1"/>
+                            <field name="base_uom_id" readonly="1"/>
+                            <field name="base_attribute_name" readonly="1"/>
+                        </group>
+                        
+                        <group string="Statistics">
+                            <field name="total_products" readonly="1"/>
+                            <field name="avg_cost" readonly="1"/>
+                            <field name="lowest_cost" readonly="1"/>
+                            <field name="highest_profit" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ============================================== -->
+                    <!-- INSTRUCTIONS                                   -->
+                    <!-- ============================================== -->
+                    <div class="alert alert-info" role="alert">
+                        <strong>📊 How to use:</strong>
+                        <ul>
+                            <li><strong>Compare:</strong> All products shown have the same category, UOM, and attribute (e.g., "Deep Base")</li>
+                            <li><strong>Costs:</strong> Same colorant formula applied to each product's base cost</li>
+                            <li><strong>Edit Price:</strong> Click any selling price to modify - profit/margin will auto-update</li>
+                            <li><strong>Switch Product:</strong> Click "Use This" to replace your current base product with the selected one</li>
+                            <li><strong>Sort:</strong> Click column headers to sort by any field (cost, profit, margin, etc.)</li>
+                        </ul>
+                    </div>
+
+                    <!-- ============================================== -->
+                    <!-- COMPARISON LINES - EDITABLE LIST               -->
+                    <!-- ============================================== -->
+                    <field name="comparison_line_ids" nolabel="1">
+                        <list editable="bottom" create="0" delete="0" default_order="total_cost_incl_vat">
+                            <!-- ========================================== -->
+                            <!-- USE THIS BUTTON                            -->
+                            <!-- ========================================== -->
+                            <button name="action_use_this_product"
+                                    string="Use This"
+                                    type="object"
+                                    class="btn-primary"
+                                    help="Switch to this product in the tint wizard"/>
+                            
+                            <!-- ========================================== -->
+                            <!-- PRODUCT INFO                               -->
+                            <!-- ========================================== -->
+                            <field name="is_current_product" column_invisible="1"/>
+                            
+                            <field name="product_id"
+                                   string="Product"
+                                   readonly="1"
+                                   decoration-bf="is_current_product"
+                                   options="{'no_open': True}"/>
+                            
+                            <field name="brand_name"
+                                   string="Brand"
+                                   readonly="1"
+                                   optional="show"/>
+                            
+                            <!-- ========================================== -->
+                            <!-- COST BREAKDOWN                             -->
+                            <!-- ========================================== -->
+                            <field name="base_cost_incl_vat"
+                                   string="Base Cost (Incl. VAT)"
+                                   readonly="1"
+                                   optional="show"
+                                   sum="Total Base Cost"/>
+                            
+                            <field name="colorant_cost_incl_vat"
+                                   string="Colorant Cost (Incl. VAT)"
+                                   readonly="1"
+                                   optional="show"
+                                   sum="Total Colorant Cost"/>
+                            
+                            <field name="total_cost_incl_vat"
+                                   string="Total Cost (Incl. VAT)"
+                                   readonly="1"
+                                   optional="show"
+                                   decoration-success="total_cost_incl_vat == parent.lowest_cost"
+                                   sum="Total Cost"/>
+                            
+                            <!-- ========================================== -->
+                            <!-- PRICING & PROFIT - EDITABLE PRICE          -->
+                            <!-- ========================================== -->
+                            <field name="selling_price_incl_vat"
+                                   string="Selling Price (Incl. VAT)"
+                                   optional="show"
+                                   decoration-info="selling_price_incl_vat &gt; 0"/>
+                            
+                            <field name="profit_amount_incl_vat"
+                                   string="Profit (Incl. VAT)"
+                                   readonly="1"
+                                   optional="show"
+                                   decoration-success="profit_amount_incl_vat &gt; 800"
+                                   decoration-warning="profit_amount_incl_vat &gt;= 500 and profit_amount_incl_vat &lt;= 800"
+                                   decoration-danger="profit_amount_incl_vat &lt; 0"
+                                   sum="Total Profit"/>
+                            
+                            <field name="profit_margin_percent"
+                                   string="Margin %"
+                                   readonly="1"
+                                   optional="show"
+                                   decoration-success="profit_margin_percent &gt; 25"
+                                   decoration-warning="profit_margin_percent &gt;= 15 and profit_margin_percent &lt;= 25"
+                                   decoration-danger="profit_margin_percent &lt; 15"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- ACTION TO OPEN COST COMPARISON WIZARD                            -->
+    <!-- ================================================================ -->
+    <record id="action_cost_comparison_wizard" model="ir.actions.act_window">
+        <field name="name">Cost Comparison</field>
+        <field name="res_model">cost.comparison.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

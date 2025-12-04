@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Paint Tinting Module',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'category': 'Manufacturing',
     'summary': 'Custom paint tinting module with LargoTint integration for Crown Kenya PLC',
     'description': """
@@ -37,6 +37,7 @@
        # 'data/colorant_products_data.xml',
         'views/colorant_mapping_wizard_views.xml', 
         'views/tint_wizard_views.xml',
+        'views/cost_comparison_wizard_views.xml',
         'views/product_template_views.xml',
         'views/mrp_bom_views.xml',
         'views/mrp_production_views.xml', 

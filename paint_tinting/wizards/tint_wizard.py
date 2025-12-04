@@ -101,6 +101,7 @@ class TintWizardColorantLine(models.TransientModel):
             
             # Also trigger parent wizard recompute
             if line.wizard_id:
+                _logger.debug(f"  Triggering parent wizard recompute for wizard ID: {line.wizard_id.id}")
                 line.wizard_id._compute_totals()
                 line.wizard_id._compute_warnings()
 
@@ -115,6 +116,7 @@ class TintWizardColorantLine(models.TransientModel):
             line._compute_colorant_name()
             
             if line.wizard_id:
+                _logger.debug(f"  Triggering parent wizard warning recompute")
                 line.wizard_id._compute_warnings()
 
 
@@ -129,8 +131,8 @@ class TintWizard(models.TransientModel):
     notes = fields.Text(string='Notes')
     colorant_line_ids = fields.One2many('tint.wizard.colorant.line', 'wizard_id', string='Colorant Lines')
     
-      # ============================================================
-    # NEW: FORMULA FIELDS (add these 3 fields)
+    # ============================================================
+    # FORMULA FIELDS
     # ============================================================
     formula_id = fields.Many2one(
         'tinting.formula',
@@ -150,10 +152,10 @@ class TintWizard(models.TransientModel):
         compute='_compute_available_formulas',
         help='Number of formula variants available for selected colour'
     )
-    # ============================================================
-    # END NEW FIELDS
-    # =
 
+    # ============================================================
+    # COST FIELDS
+    # ============================================================
     total_colorant_ml = fields.Float(compute='_compute_totals', digits=(10, 3))
     total_cost_excl_vat = fields.Float(compute='_compute_totals', digits='Product Price')
     total_cost_incl_vat = fields.Float(compute='_compute_totals', digits='Product Price')
@@ -162,6 +164,41 @@ class TintWizard(models.TransientModel):
     colorant_cost_excl_vat = fields.Float(compute='_compute_totals', digits='Product Price')
     colorant_cost_incl_vat = fields.Float(compute='_compute_totals', digits='Product Price')
 
+    # ============================================================
+    # SELLING PRICE & PROFIT FIELDS
+    # ============================================================
+    selling_price_incl_vat = fields.Float(
+        string='Selling Price (Incl. VAT)',
+        digits='Product Price',
+        help='Final selling price including 16% VAT (default: cost + 30% markup)'
+    )
+    
+    profit_amount_incl_vat = fields.Float(
+        string='Profit Amount (Incl. VAT)',
+        digits='Product Price',
+        help='Profit amount (Selling Price - Total Cost)'
+    )
+    
+    profit_margin_percent = fields.Float(
+        string='Profit Margin %',
+        compute='_compute_profit_margin',
+        store=True,
+        digits=(5, 2),
+        help='Profit margin percentage: (Profit / Selling Price) × 100'
+    )
+    
+    # ============================================================
+    # NEW: FLAG TO TRACK MANUAL PRICE CHANGES
+    # ============================================================
+    selling_price_manually_set = fields.Boolean(
+        string='Price Manually Set',
+        default=False,
+        help='True if user has manually changed the selling price'
+    )
+
+    # ============================================================
+    # WARNING FIELDS
+    # ============================================================
     has_stock_warnings = fields.Boolean(compute='_compute_warnings')
     stock_warning_message = fields.Html(compute='_compute_warnings')
     has_mapping_warnings = fields.Boolean(compute='_compute_warnings')
@@ -171,7 +208,6 @@ class TintWizard(models.TransientModel):
     def default_get(self, fields_list):
         """
         Override default_get to populate colorant lines when wizard opens
-        ==================================================================
         """
         _logger.info("=" * 80)
         _logger.info("🚀 TintWizard.default_get() called - WIZARD OPENING")
@@ -195,6 +231,7 @@ class TintWizard(models.TransientModel):
                 code = colorant.product_tmpl_id.colorant_code.strip().upper()
                 if code and code.startswith('C'):
                     code_to_product[code] = colorant.id
+                    _logger.debug(f"    Mapped {code} -> {colorant.name}")
             
             # Create 16 lines for C1-C16
             lines = []
@@ -205,21 +242,17 @@ class TintWizard(models.TransientModel):
                     'colorant_id': product_id,
                     'shots': 0.0,
                 }))
+                _logger.debug(f"    Created line for {code} with product ID: {product_id}")
             
             res['colorant_line_ids'] = lines
             _logger.info(f"  ✅ Set {len(lines)} default colorant lines")
         
         _logger.info("=" * 80)
         return res
-     # ============================================================
-    # NEW: FORMULA COMPUTE METHOD
-    # ============================================================
+
     @api.depends('colour_code_id')
     def _compute_available_formulas(self):
-        """
-        Count available formula variants for selected color
-        Shows how many saved formulas exist for this colour code
-        """
+        """Count available formula variants for selected color"""
         _logger.debug("🔄 Computing available formulas count...")
         for wizard in self:
             if wizard.colour_code_id:
@@ -227,9 +260,7 @@ class TintWizard(models.TransientModel):
                 _logger.debug(f"  Colour {wizard.colour_code_id.code}: {wizard.available_formulas} formulas available")
             else:
                 wizard.available_formulas = 0
-    # ============================================================
-    # END NEW COMPUTE METHOD
-    # ============================================================
+                _logger.debug("  No colour code selected, formulas = 0")
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -280,18 +311,16 @@ class TintWizard(models.TransientModel):
         _logger.info("✅ Colorant lines setup completed")
 
     def _force_recompute_all(self):
-        """Force recompute of all computed fields - ONLY use when colorant lines need updating"""
+        """Force recompute of all computed fields"""
         _logger.info("🔄 _force_recompute_all() - Triggering full recomputation")
         self.ensure_one()
         
-        # CRITICAL FIX: Ensure colorant lines exist BEFORE recomputing
         _logger.info("  🛡️ Ensuring colorant lines exist before recomputation...")
         self._ensure_colorant_lines()
         
         # Recompute colorant line fields
         _logger.info("  Recomputing colorant line fields...")
         for line in self.colorant_line_ids:
-            # Force individual field recomputes
             line._compute_ml_volume()
             line._compute_qty_litres()
             line._compute_unit_cost_incl_vat()
@@ -306,132 +335,6 @@ class TintWizard(models.TransientModel):
         self._compute_totals()
         self._compute_warnings()
         _logger.info("✅ Full recomputation completed")
-         
-    @api.onchange('base_variant_id')
-    def _onchange_base_variant_id(self):
-        """When base product changes, recalculate costs but preserve colorant lines"""
-        _logger.info("🎯 Onchange triggered: base_variant_id updated")
-        _logger.info(f"  Base product changed to: {self.base_variant_id.display_name if self.base_variant_id else 'None'}")
-        
-        # Check if colorant lines already have shots entered
-        has_existing_shots = any(line.shots > 0 for line in self.colorant_line_ids)
-        
-        if has_existing_shots:
-            _logger.info(f"  🛡️ Colorant shots already entered - preserving existing values")
-            _logger.info(f"  💰 Recomputing base costs only...")
-            
-            # Recompute costs only (preserve colorant shots)
-            self._compute_base_cost()
-            self._compute_totals()
-            self._compute_warnings()
-            
-            _logger.info("✅ Base cost recomputation completed (colorant lines preserved)")
-            
-            # Show warning that costs were updated
-            if self.base_variant_id:
-                return {
-                    'warning': {
-                        'title': _('Costs Updated'),
-                        'message': _('Costs have been recalculated based on the new base product.\n\n'
-                                   '✓ Colorant shots have been preserved.\n\n'
-                                   'Note: Different brands may use different formulas for the same color.')
-                    }
-                }
-        else:
-            _logger.info(f"  💰 No shots entered - recomputing costs and searching for formula...")
-            
-            # Recompute costs
-            self._compute_base_cost()
-            self._compute_totals()
-            self._compute_warnings()
-            
-            # Search for formula ONLY if no shots are entered yet
-            if self.base_variant_id and self.colour_code_id:
-                _logger.info("🔍 Both base and colour selected - searching for formula...")
-                self._search_and_apply_formula()
-            
-            _logger.info("✅ Base cost recomputation completed")
-            
-            # Show warning if base product is selected
-            if self.base_variant_id:
-                return {
-                    'warning': {
-                        'title': _('Base Product Selected'),
-                        'message': _('Base product costs have been calculated.')
-                    }
-                }
-        
-         # NEW: SEARCH AND APPLY FORMULA (if both base and colour are set)
-        # ============================================================
-        if self.base_variant_id and self.colour_code_id:
-            _logger.info("🔍 Both base and colour selected - searching for formula...")
-            self._search_and_apply_formula()
-        # ============================================================
-        # END NEW FORMULA SEARCH
-        # ============================================================
-        
-        # Show warning if base product is selected
-        if self.base_variant_id:
-            return {
-                'warning': {
-                    'title': _('Costs Updated'),
-                    'message': _('Costs have been recalculated based on the new base product.')
-                }
-            }
-
-    @api.onchange('colour_code_id', 'fandeck_id')
-    def _onchange_colour_selection(self):
-        """When colour selection changes, search for matching formula"""
-        _logger.info("🎯 Onchange triggered: colour_selection updated")
-        _logger.info(f"  Fandeck: {self.fandeck_id.name if self.fandeck_id else 'None'}, Colour Code: {self.colour_code_id.code if self.colour_code_id else 'None'}")
-        
-        # Only recompute warnings (preserve colorant lines)
-        _logger.info(f"  ⚠️ Recomputing warnings only (preserving colorant lines)...")
-        self._compute_warnings()
-        
-        # Search for formula ONLY if shots are empty
-        if self.base_variant_id and self.colour_code_id:
-            # Check if colorant lines already have shots
-            has_existing_shots = any(line.shots > 0 for line in self.colorant_line_ids)
-            
-            if has_existing_shots:
-                _logger.info("🛡️ Colorant shots already entered - preserving existing values")
-                _logger.info("  (Use Cost Summary to compare different brands with same shots)")
-            else:
-                _logger.info("🔍 Both base and colour selected - searching for formula...")
-                self._search_and_apply_formula()
-
-    @api.onchange('fandeck_id')
-    def _onchange_fandeck_id(self):
-        """Update domain for colour codes when fandeck changes"""
-        _logger.info("🎯 Onchange triggered: fandeck_id updated")
-        if self.colour_code_id and self.colour_code_id.fandeck_id != self.fandeck_id:
-            _logger.info("  Clearing colour_code_id due to fandeck mismatch")
-            self.colour_code_id = False
-        return {
-            'domain': {
-                'colour_code_id': [('fandeck_id', '=', self.fandeck_id.id)] if self.fandeck_id else []
-            }
-        }
-
-    @api.onchange('colour_code_id')
-    def _onchange_colour_code_id(self):
-        """Auto-set fandeck when colour code is selected"""
-        _logger.info("🎯 Onchange triggered: colour_code_id updated")
-        if self.colour_code_id and self.colour_code_id.fandeck_id:
-            _logger.info(f"  Auto-setting fandeck to: {self.colour_code_id.fandeck_id.name}")
-            self.fandeck_id = self.colour_code_id.fandeck_id
-            
-          
-        # ============================================================
-        # NEW: SEARCH AND APPLY FORMULA (if both base and colour are set)
-        # ============================================================
-        if self.base_variant_id and self.colour_code_id:
-            _logger.info("🔍 Both base and colour selected - searching for formula...")
-            self._search_and_apply_formula()
-        # ============================================================
-        # END NEW FORMULA SEARCH
-        # ============================================================
 
     @api.depends('base_variant_id')
     def _compute_base_cost(self):
@@ -495,19 +398,218 @@ class TintWizard(models.TransientModel):
                 w.mapping_warning_message = "<div style='color:green;'>All colorants mapped</div>"
                 _logger.info("  ✅ All colorants properly mapped")
 
-    def action_open_colorant_mapping(self):
-        """Open colorant mapping wizard"""
-        _logger.info("🎯 action_open_colorant_mapping() - Opening mapping wizard")
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Map Colorants'),
-            'res_model': 'colorant.mapping.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-        }
+    # ============================================================
+    # FIXED: SELLING PRICE & PROFIT ONCHANGE METHODS
+    # ============================================================
+    @api.onchange('total_cost_incl_vat')
+    def _onchange_total_cost(self):
+        """
+        When total cost changes, auto-update selling price with 30% markup
+        UNLESS user has manually set the price
         
-      # ============================================================
-    # NEW: FORMULA AUTO-FILL METHODS
+        Formula: Selling Price = Total Cost × 1.30 (if not manually set)
+        """
+        _logger.info("🎯 Onchange triggered: total_cost_incl_vat updated")
+        _logger.info(f"  Total cost changed to: {self.total_cost_incl_vat} KES")
+        _logger.info(f"  Price manually set flag: {self.selling_price_manually_set}")
+        
+        # Only auto-update if price has NOT been manually set
+        if not self.selling_price_manually_set:
+            # Apply default 30% markup
+            old_price = self.selling_price_incl_vat
+            self.selling_price_incl_vat = self.total_cost_incl_vat * 1.30
+            self.profit_amount_incl_vat = self.selling_price_incl_vat - self.total_cost_incl_vat
+            _logger.info(f"  ✅ Auto-updated selling price: {old_price} → {self.selling_price_incl_vat} KES (30% markup)")
+            _logger.info(f"  Profit: {self.profit_amount_incl_vat} KES")
+        else:
+            # Price was manually set - just recalculate profit
+            old_profit = self.profit_amount_incl_vat
+            self.profit_amount_incl_vat = self.selling_price_incl_vat - self.total_cost_incl_vat
+            _logger.info(f"  🔒 Selling price manually set: {self.selling_price_incl_vat} KES")
+            _logger.info(f"  Profit recalculated: {old_profit} → {self.profit_amount_incl_vat} KES")
+
+    @api.onchange('selling_price_incl_vat')
+    def _onchange_selling_price(self):
+        """
+        When selling price changes, mark as manually set and recalculate profit
+        Formula: Profit = Selling Price - Total Cost
+        """
+        _logger.info("🎯 Onchange triggered: selling_price_incl_vat updated")
+        _logger.info(f"  Selling price changed to: {self.selling_price_incl_vat} KES")
+        
+        # Mark as manually set (user changed it)
+        if not self.selling_price_manually_set:
+            self.selling_price_manually_set = True
+            _logger.info(f"  🔒 Marked as manually set (user override)")
+        
+        if self.total_cost_incl_vat:
+            old_profit = self.profit_amount_incl_vat
+            self.profit_amount_incl_vat = self.selling_price_incl_vat - self.total_cost_incl_vat
+            _logger.info(f"  Recalculated profit: {old_profit} → {self.profit_amount_incl_vat} KES")
+            
+            # Trigger margin recompute
+            self._compute_profit_margin()
+
+    @api.onchange('profit_amount_incl_vat')
+    def _onchange_profit_amount(self):
+        """
+        When profit changes, recalculate selling price and mark as manually set
+        Formula: Selling Price = Total Cost + Profit
+        """
+        _logger.info("🎯 Onchange triggered: profit_amount_incl_vat updated")
+        _logger.info(f"  Profit amount changed to: {self.profit_amount_incl_vat} KES")
+        
+        if self.total_cost_incl_vat:
+            old_price = self.selling_price_incl_vat
+            self.selling_price_incl_vat = self.total_cost_incl_vat + self.profit_amount_incl_vat
+            self.selling_price_manually_set = True  # Mark as manually set
+            _logger.info(f"  Recalculated selling price: {old_price} → {self.selling_price_incl_vat} KES")
+            _logger.info(f"  🔒 Marked as manually set (user changed profit)")
+            
+            # Trigger margin recompute
+            self._compute_profit_margin()
+
+    @api.depends('profit_amount_incl_vat', 'selling_price_incl_vat')
+    def _compute_profit_margin(self):
+        """
+        Calculate profit margin percentage
+        Formula: (Profit / Selling Price) × 100
+        
+        Example:
+            Selling Price = 1,300 KES
+            Profit = 300 KES
+            Margin = (300 / 1,300) × 100 = 23.08%
+        """
+        _logger.info("🔄 Computing profit margin percentage...")
+        for wizard in self:
+            if wizard.selling_price_incl_vat > 0:
+                wizard.profit_margin_percent = (wizard.profit_amount_incl_vat / wizard.selling_price_incl_vat) * 100
+                _logger.debug(f"  Profit Margin: {wizard.profit_margin_percent:.2f}% (Profit: {wizard.profit_amount_incl_vat} / Selling: {wizard.selling_price_incl_vat})")
+            else:
+                wizard.profit_margin_percent = 0.0
+                _logger.debug("  No selling price set, margin = 0%")
+
+    # ============================================================
+    # BASE & COLOUR ONCHANGE METHODS
+    # ============================================================
+    @api.onchange('base_variant_id')
+    def _onchange_base_variant_id(self):
+        """When base product changes, recalculate costs and reset manual price flag"""
+        _logger.info("🎯 Onchange triggered: base_variant_id updated")
+        _logger.info(f"  Base product changed to: {self.base_variant_id.display_name if self.base_variant_id else 'None'}")
+        
+        # Reset manual price flag when base changes
+        if self.base_variant_id:
+            _logger.info("  🔄 Resetting manual price flag (new base product)")
+            self.selling_price_manually_set = False
+        
+        # Check if colorant lines already have shots entered
+        has_existing_shots = any(line.shots > 0 for line in self.colorant_line_ids)
+        
+        if has_existing_shots:
+            _logger.info(f"  🛡️ Colorant shots already entered - preserving existing values")
+            _logger.info(f"  💰 Recomputing base costs only...")
+            
+            # Recompute costs only (preserve colorant shots)
+            self._compute_base_cost()
+            self._compute_totals()
+            self._compute_warnings()
+            
+            _logger.info("✅ Base cost recomputation completed (colorant lines preserved)")
+            
+            # Show warning that costs were updated
+            if self.base_variant_id:
+                return {
+                    'warning': {
+                        'title': _('Costs Updated'),
+                        'message': _('Costs have been recalculated based on the new base product.\n\n'
+                                   '✓ Colorant shots have been preserved.\n'
+                                   '✓ Selling price will auto-update with 30% markup.\n\n'
+                                   'Note: Different brands may use different formulas for the same color.')
+                    }
+                }
+        else:
+            _logger.info(f"  💰 No shots entered - recomputing costs and searching for formula...")
+            
+            # Recompute costs
+            self._compute_base_cost()
+            self._compute_totals()
+            self._compute_warnings()
+            
+            # Search for formula ONLY if no shots are entered yet
+            if self.base_variant_id and self.colour_code_id:
+                _logger.info("🔍 Both base and colour selected - searching for formula...")
+                self._search_and_apply_formula()
+            
+            _logger.info("✅ Base cost recomputation completed")
+            
+            # Show warning if base product is selected
+            if self.base_variant_id:
+                return {
+                    'warning': {
+                        'title': _('Base Product Selected'),
+                        'message': _('Base product costs have been calculated.\n'
+                                'Selling price auto-calculated with 30% markup.')
+                    }
+                }
+
+    @api.onchange('colour_code_id', 'fandeck_id')
+    def _onchange_colour_selection(self):
+        """When colour selection changes, search for matching formula and reset manual price flag"""
+        _logger.info("🎯 Onchange triggered: colour_selection updated")
+        _logger.info(f"  Fandeck: {self.fandeck_id.name if self.fandeck_id else 'None'}, Colour Code: {self.colour_code_id.code if self.colour_code_id else 'None'}")
+        
+        # Reset manual price flag when colour changes
+        if self.colour_code_id:
+            _logger.info("  🔄 Resetting manual price flag (new colour selected)")
+            self.selling_price_manually_set = False
+        
+        # Only recompute warnings (preserve colorant lines)
+        _logger.info(f"  ⚠️ Recomputing warnings only (preserving colorant lines)...")
+        self._compute_warnings()
+        
+        # Search for formula ONLY if shots are empty
+        if self.base_variant_id and self.colour_code_id:
+            # Check if colorant lines already have shots
+            has_existing_shots = any(line.shots > 0 for line in self.colorant_line_ids)
+            
+            if has_existing_shots:
+                _logger.info("🛡️ Colorant shots already entered - preserving existing values")
+                _logger.info("  (Use Cost Summary to compare different brands with same shots)")
+            else:
+                _logger.info("🔍 Both base and colour selected - searching for formula...")
+                self._search_and_apply_formula()
+
+    @api.onchange('fandeck_id')
+    def _onchange_fandeck_id(self):
+        """Update domain for colour codes when fandeck changes"""
+        _logger.info("🎯 Onchange triggered: fandeck_id updated")
+        _logger.info(f"  Fandeck changed to: {self.fandeck_id.name if self.fandeck_id else 'None'}")
+        if self.colour_code_id and self.colour_code_id.fandeck_id != self.fandeck_id:
+            _logger.info("  Clearing colour_code_id due to fandeck mismatch")
+            self.colour_code_id = False
+        return {
+            'domain': {
+                'colour_code_id': [('fandeck_id', '=', self.fandeck_id.id)] if self.fandeck_id else []
+            }
+        }
+
+    @api.onchange('colour_code_id')
+    def _onchange_colour_code_id(self):
+        """Auto-set fandeck when colour code is selected"""
+        _logger.info("🎯 Onchange triggered: colour_code_id updated")
+        _logger.info(f"  Colour code changed to: {self.colour_code_id.code if self.colour_code_id else 'None'}")
+        if self.colour_code_id and self.colour_code_id.fandeck_id:
+            _logger.info(f"  Auto-setting fandeck to: {self.colour_code_id.fandeck_id.name}")
+            self.fandeck_id = self.colour_code_id.fandeck_id
+            
+        # Search and apply formula if both base and colour are set
+        if self.base_variant_id and self.colour_code_id:
+            _logger.info("🔍 Both base and colour selected - searching for formula...")
+            self._search_and_apply_formula()
+
+    # ============================================================
+    # FORMULA AUTO-FILL METHODS
     # ============================================================
     def _search_and_apply_formula(self):
         """
@@ -520,13 +622,11 @@ class TintWizard(models.TransientModel):
         _logger.info("🔍 FORMULA SEARCH - Starting...")
         _logger.info("=" * 80)
         
-        # Extract category & UOM from base product
         # Extract category, UOM, and attribute from base product
         base_category = self.base_variant_id.categ_id
         base_uom = self.base_variant_id.uom_id
         
         # Get product attribute NAME (if exists) - for cross-brand matching
-       # Get product attribute NAME (if exists) - for cross-brand matching
         base_attribute_name = False
         if self.base_variant_id.product_template_attribute_value_ids:
             # Get the first attribute value and normalize its name
@@ -557,12 +657,17 @@ class TintWizard(models.TransientModel):
             _logger.info(f"  Formula ID: {matching_formula.id}")
             _logger.info(f"  Formula contains {len(matching_formula.formula_line_ids)} colorant lines")
             _logger.info(f"  Total shots in formula: {matching_formula.total_shots}")
+            
+            # Reset manual price flag when applying formula
+            _logger.info("  🔄 Resetting manual price flag (formula applied)")
+            self.selling_price_manually_set = False
+            
             return self._apply_formula(matching_formula)
         else:
             _logger.info(f"  ❌ NO MATCHING FORMULA FOUND")
             _logger.info(f"  Available formulas for {self.colour_code_id.code}: {self.available_formulas}")
             if self.available_formulas > 0:
-                _logger.info(f"  💡 Other formula variants exist for this colour (different category/UOM)")
+                _logger.info(f"  💡 Other formula variants exist for this colour (different category/UOM/attribute)")
             self._clear_formula_shots()
         
         _logger.info("=" * 80)
@@ -671,11 +776,75 @@ class TintWizard(models.TransientModel):
         _logger.info("🎯 User manually cleared formula")
         self._clear_formula_shots()
         return {'type': 'ir.actions.client', 'tag': 'reload'}
-    # ============================================================
-    # END NEW FORMULA METHODS
-    # ============================================================
 
-
+    def action_open_colorant_mapping(self):
+        """Open colorant mapping wizard"""
+        _logger.info("🎯 action_open_colorant_mapping() - Opening mapping wizard")
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Map Colorants'),
+            'res_model': 'colorant.mapping.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
+        
+    def action_open_cost_comparison(self):
+        """
+        Open the cost comparison wizard to compare costs across different brands.
+        Shows products with same category, UOM, and attribute (e.g., Deep Base).
+        
+        CRITICAL FIX: Create wizard record BEFORE opening form view.
+        This ensures create() method runs and populates comparison lines.
+        Parent wizard ID must be passed via CONTEXT for default_get().
+        """
+        self.ensure_one()
+        
+        _logger.info("=" * 80)
+        _logger.info("🎯 ACTION: Open Cost Comparison Wizard")
+        _logger.info("=" * 80)
+        
+        # Validate base product is selected
+        if not self.base_variant_id:
+            raise UserError("Please select a base product first!")
+        
+        _logger.info(f"  Current base product: {self.base_variant_id.display_name}")
+        _logger.info(f"  Category: {self.base_variant_id.categ_id.name}")
+        _logger.info(f"  UOM: {self.base_variant_id.uom_id.name}")
+        _logger.info(f"  Current selling price: {self.selling_price_incl_vat:.2f} KES")
+        
+        # Count colorant lines with shots
+        colorant_count = len(self.colorant_line_ids.filtered(lambda l: l.shots > 0))
+        _logger.info(f"  Colorants with shots: {colorant_count}")
+        
+        # ============================================
+        # CRITICAL FIX: Pass parent_wizard_id via CONTEXT
+        # ============================================
+        _logger.info("  🚀 Creating comparison wizard record...")
+        
+        comparison_wizard = self.env['cost.comparison.wizard'].with_context(
+            default_parent_wizard_id=self.id  # ✅ Pass via context for default_get()
+        ).create({
+            'parent_wizard_id': self.id,  # ✅ Also pass in vals for create()
+        })
+        
+        _logger.info(f"  ✅ Wizard created with ID: {comparison_wizard.id}")
+        _logger.info(f"  ✅ Comparison lines: {len(comparison_wizard.comparison_line_ids)}")
+        _logger.info("  Opening comparison wizard...")
+        _logger.info("=" * 80)
+        
+        # Return action to open the EXISTING wizard record
+        return {
+            'name': 'Cost Comparison Across Brands',
+            'type': 'ir.actions.act_window',
+            'res_model': 'cost.comparison.wizard',
+            'res_id': comparison_wizard.id,  # ✅ Open specific record
+            'view_mode': 'form',
+            'target': 'new',
+        }
+   
+    # ============================================================
+    # PRODUCT CREATION METHOD
+    # ============================================================
     def action_create_tinted_product(self):
         """Main method: Create tinted product, BOM, and Manufacturing Order"""
         _logger.info("🚀 action_create_tinted_product() - Starting product creation process")
@@ -700,10 +869,20 @@ class TintWizard(models.TransientModel):
             _logger.error("❌ Validation failed: Colour code doesn't belong to selected fandeck")
             raise ValidationError(_("Colour code does not belong to selected fandeck."))
 
+        # STEP 1B: Validate selling price is set
+        _logger.info("📋 STEP 1B: Validating selling price...")
+        if not self.selling_price_incl_vat or self.selling_price_incl_vat <= 0:
+            _logger.error("❌ Validation failed: Selling price not set or invalid")
+            raise ValidationError(_("Selling price must be greater than zero.\nPlease check the Cost Summary tab."))
+        
+        _logger.info(f"  ✅ Selling price validated: {self.selling_price_incl_vat} KES")
+        _logger.info(f"  Cost price: {self.total_cost_incl_vat} KES")
+        _logger.info(f"  Profit: {self.profit_amount_incl_vat} KES ({self.profit_margin_percent:.2f}%)")
+
         # STEP 2: Check for existing product
         _logger.info("📋 STEP 2: Checking for existing product...")
         
-        # UPDATED: Option 3 - Include colour name with code in brackets
+        # Include colour name with code in brackets
         clean_product_name = f"{self.base_variant_id.display_name} – {self.colour_name} [{self.colour_code_id.code}]".strip()
         _logger.info(f"  Generated product name: '{clean_product_name}'")
         
@@ -718,10 +897,9 @@ class TintWizard(models.TransientModel):
         _logger.info("📋 STEP 3: Setting up product category...")
         categ = self.env['product.category'].search([('name', '=', 'Tinted Paint')], limit=1)
         if not categ:
-            # Create category with storable product configuration
             categ = self.env['product.category'].create({
                 'name': 'Tinted Paint',
-                'property_cost_method': 'fifo',  # or 'standard' based on your needs
+                'property_cost_method': 'fifo',
                 'property_valuation': 'real_time',
             })
             _logger.info(f"✅ Created Tinted Paint category with ID: {categ.id}")
@@ -738,48 +916,47 @@ class TintWizard(models.TransientModel):
             available_types = []
             _logger.warning("⚠ No 'type' field found in product.template")
         
-        # Check what type the base product uses
         base_type = getattr(self.base_variant_id, 'type', 'consu')
         _logger.info(f"  Base product type: {base_type}")
 
-        # STEP 5: Create product with DEBUG for product type issues
+        # STEP 5: Create product with selling price from wizard
         _logger.info("📋 STEP 5: Creating product template...")
+        _logger.info("=" * 80)
+        _logger.info("💰 PRICING SETUP - FROM WIZARD TO PRODUCT")
+        _logger.info("=" * 80)
+        _logger.info(f"  📊 Wizard Pricing Summary:")
+        _logger.info(f"     Cost (Excl. VAT): {self.total_cost_excl_vat} KES")
+        _logger.info(f"     Cost (Incl. VAT): {self.total_cost_incl_vat} KES")
+        _logger.info(f"     Selling Price (Incl. VAT): {self.selling_price_incl_vat} KES")
+        _logger.info(f"     Profit: {self.profit_amount_incl_vat} KES")
+        _logger.info(f"     Margin: {self.profit_margin_percent:.2f}%")
+        _logger.info(f"     Manually Set: {self.selling_price_manually_set}")
+        _logger.info("=" * 80)
         
-        # DEBUG: Check context and type validation
-        _logger.info("🔍 DEBUG: Product Type Analysis")
-        _logger.info(f"  Available types: {available_types}")
-        _logger.info(f"  Base type: {base_type}")
-        _logger.info(f"  Current context: {self.env.context}")
-        _logger.info(f"  Has 'product' in available types: {'product' in available_types}")
-        _logger.info(f"  Has 'stockable' in available types: {'stockable' in available_types}")
-        
-        # NUCLEAR FIX: Create product with context to skip ALL auto-naming
         product_vals = {
-            'name': clean_product_name,  # Use our clean name
-            'base_product_name': clean_product_name,  # Set same as name to prevent auto-naming
+            'name': clean_product_name,
+            'base_product_name': clean_product_name,
             'categ_id': categ.id,
             'uom_id': uom.id,
             'uom_po_id': uom.id,
-            'standard_price': self.total_cost_excl_vat,
-            'list_price': self.total_cost_incl_vat * 1.3,
+            'standard_price': self.total_cost_excl_vat,  # Cost price (for accounting)
+            'list_price': self.selling_price_incl_vat,   # ✅ SELLING PRICE (for POS)
             'is_tinted_product': True,
             'fandeck_id': self.fandeck_id.id,
             'colour_code_id': self.colour_code_id.id,
             'sale_ok': True,
             'purchase_ok': True,
-            'tracking': 'lot',  # Lot tracking for inventory
+            'tracking': 'lot',
             'description': f"Tinted paint: {self.base_variant_id.display_name} with {self.colour_code_id.code}",
             'default_code': f"TINT-{self.colour_code_id.code}-{fields.Datetime.now().strftime('%Y%m%d')}",
         }
 
-        _logger.info(f"  Product values prepared, creating product template...")
+        _logger.info(f"  📦 Product values prepared:")
+        _logger.info(f"     standard_price (cost): {product_vals['standard_price']} KES")
+        _logger.info(f"     list_price (selling): {product_vals['list_price']} KES")
+        _logger.info(f"  Creating product template...")
         
-        # DEBUG: Test product creation with detailed logging
-        _logger.info("🔍 DEBUG: Testing product creation approaches...")
-        
-        # FIX 2: Create product with context to disable auto-naming
         try:
-            # Approach A: Try 'product' type (standard Odoo)
             product_vals['type'] = 'product'
             _logger.info("  Attempting creation with type: 'product'")
             tmpl = self.env['product.template'].with_context(skip_auto_name=True).create(product_vals)
@@ -787,7 +964,6 @@ class TintWizard(models.TransientModel):
         except ValueError as e:
             _logger.warning(f"❌ Type 'product' failed: {e}")
             try:
-                # Approach B: Try 'stockable' type (some custom modules)
                 product_vals['type'] = 'stockable'
                 _logger.info("  Attempting creation with type: 'stockable'")
                 tmpl = self.env['product.template'].with_context(skip_auto_name=True).create(product_vals)
@@ -795,26 +971,23 @@ class TintWizard(models.TransientModel):
             except ValueError as e2:
                 _logger.warning(f"❌ Type 'stockable' failed: {e2}")
                 try:
-                    # Approach C: Use same type as base product
                     product_vals['type'] = base_type
                     _logger.info(f"  Attempting creation with base product type: '{base_type}'")
                     tmpl = self.env['product.template'].with_context(skip_auto_name=True).create(product_vals)
                     _logger.info(f"✅ Created product with base product type: '{base_type}'")
                 except Exception as e3:
                     _logger.error(f"❌ All type approaches failed: {e3}")
-                    # Approach D: Create without type and force update
                     del product_vals['type']
                     _logger.info("  Attempting creation without type specification")
                     tmpl = self.env['product.template'].with_context(skip_auto_name=True).create(product_vals)
                     _logger.warning("⚠ Created product without type specification")
 
-        # DEBUG: Verify what type we ended up with
+        # Verify product type
         _logger.info("🔍 DEBUG: Product creation result")
         if hasattr(tmpl, 'type'):
             current_type = tmpl.type
             _logger.info(f"  Product created with type: '{current_type}'")
             
-            # If not storable, try to update it
             if current_type != 'product':
                 _logger.warning(f"⚠ Product type is '{current_type}', not 'product'. Attempting to update...")
                 try:
@@ -831,29 +1004,39 @@ class TintWizard(models.TransientModel):
         else:
             _logger.warning("⚠ Product template has no 'type' field")
 
+        # VERIFY PRICES WERE SET CORRECTLY
+        _logger.info("=" * 80)
+        _logger.info("✅ PRICE VERIFICATION - PRODUCT CREATED")
+        _logger.info("=" * 80)
+        _logger.info(f"  Product ID: {tmpl.id}")
+        _logger.info(f"  Product Name: {tmpl.name}")
+        _logger.info(f"  standard_price (Cost): {tmpl.standard_price} KES")
+        _logger.info(f"  list_price (POS Selling): {tmpl.list_price} KES")
+        _logger.info(f"  Expected list_price: {self.selling_price_incl_vat} KES")
+        
+        if abs(tmpl.list_price - self.selling_price_incl_vat) > 0.01:
+            _logger.error(f"  ❌ PRICE MISMATCH! Product list_price ({tmpl.list_price}) != Wizard selling price ({self.selling_price_incl_vat})")
+        else:
+            _logger.info(f"  ✅ PRICE MATCH! Product will sell at {tmpl.list_price} KES in POS")
+        _logger.info("=" * 80)
+
         # STEP 6: Set up inventory configuration
         _logger.info("📋 STEP 6: Configuring inventory and routes...")
         _logger.info(f"  Product tracking: {getattr(tmpl, 'tracking', 'Not set')}")
         _logger.info(f"  Product category: {tmpl.categ_id.name}")
 
-        # Set up manufacturing route
         try:
             manufacture_route = self.env.ref('mrp.route_warehouse0_manufacture')
             if manufacture_route:
-                tmpl.write({
-                    'route_ids': [(4, manufacture_route.id)]  # Add manufacturing route
-                })
+                tmpl.write({'route_ids': [(4, manufacture_route.id)]})
                 _logger.info("✅ Added manufacturing route to product")
         except Exception as e:
             _logger.warning(f"⚠ Could not set manufacturing route: {e}")
 
-        # Try to set purchase route if available
         try:
             purchase_route = self.env.ref('purchase_stock.route_warehouse0_buy')
             if purchase_route:
-                tmpl.write({
-                    'route_ids': [(4, purchase_route.id)]  # Add purchase route
-                })
+                tmpl.write({'route_ids': [(4, purchase_route.id)]})
                 _logger.info("✅ Added purchase route to product")
         except Exception as e:
             _logger.warning(f"⚠ Could not set purchase route: {e}")
@@ -873,34 +1056,30 @@ class TintWizard(models.TransientModel):
         })
         _logger.info(f"✅ Created BOM ID: {bom.id}")
 
-        # Base product line - with cost tracking
         _logger.info("  Adding base product line to BOM...")
         self.env['mrp.bom.line'].create({
             'bom_id': bom.id,
             'product_id': self.base_variant_id.id,
             'product_qty': 1.0,
             'product_uom_id': uom.id,
-            'unit_cost_excl_vat': self.base_variant_id.standard_price,  # Set cost
+            'unit_cost_excl_vat': self.base_variant_id.standard_price,
         })
 
-        # Colorant lines - CRITICAL: Use exact quantities with cost tracking
         _logger.info("  Adding colorant lines to BOM...")
         for line in active:
             bom_line_vals = {
                 'bom_id': bom.id,
                 'product_id': line.colorant_id.id,
-                'product_qty': line.qty_litres,  # Exact quantity from wizard (0.006160 L)
-                'product_uom_id': line.colorant_id.uom_id.id,  # Use colorant's UoM
+                'product_qty': line.qty_litres,
+                'product_uom_id': line.colorant_id.uom_id.id,
                 'is_colorant_line': True,
                 'colorant_shots': line.shots,
-                'unit_cost_excl_vat': line.colorant_id.standard_price,  # Set cost
+                'unit_cost_excl_vat': line.colorant_id.standard_price,
             }
             
-            # Create the BOM line
             bom_line = self.env['mrp.bom.line'].create(bom_line_vals)
             _logger.info(f"    Added {line.colorant_code}: {line.shots} shots = {line.qty_litres}L")
             
-            # Force recompute of computed fields
             bom_line._compute_colorant_ml()
             bom_line._compute_unit_cost_incl_vat()
             bom_line._compute_line_costs()
@@ -919,13 +1098,10 @@ class TintWizard(models.TransientModel):
         mo.action_confirm()
         _logger.info("✅ MO confirmed")
         
-        # CRITICAL: Force exact quantities in MO moves to match BOM
         _logger.info("  Setting exact quantities in MO moves...")
         for move in mo.move_raw_ids:
-            # Find the corresponding BOM line
             bom_line = move.bom_line_id
             if bom_line and bom_line.is_colorant_line:
-                # Set exact quantity from BOM without rounding
                 exact_qty = bom_line.product_qty
                 move.write({
                     'product_uom_qty': exact_qty,
@@ -933,28 +1109,71 @@ class TintWizard(models.TransientModel):
                 })
                 _logger.info(f"    MO Move: {move.product_id.name} - Set exact quantity: {exact_qty} {move.product_uom.name}")
         
-        # Update product costs based on BOM totals
+        # STEP 9: Update product costs from BOM (but preserve selling price!)
+        _logger.info("📋 STEP 9: Updating product costs from BOM...")
+        _logger.info(f"  Current product prices:")
+        _logger.info(f"    standard_price (cost): {tmpl.standard_price} KES")
+        _logger.info(f"    list_price (selling): {tmpl.list_price} KES")
+        
+        # Update cost prices from BOM, but KEEP the selling price from wizard
         tmpl.write({
             'standard_price': bom.total_cost_excl_vat,
             'cost_price_excl_vat': bom.total_cost_excl_vat,
+            # DO NOT update list_price here - it should remain as wizard's selling_price_incl_vat
         })
         _logger.info("✅ Updated product costs from BOM")
+        _logger.info(f"  Updated product prices:")
+        _logger.info(f"    standard_price (cost): {tmpl.standard_price} KES (updated from BOM)")
+        _logger.info(f"    list_price (selling): {tmpl.list_price} KES (preserved from wizard)")
 
-        # STEP 9: Final verification and logging
-        _logger.info("📋 STEP 9: Final verification...")
+        # STEP 10: FINAL PRICE VERIFICATION AND EXPLICIT UPDATE
+        _logger.info("📋 STEP 10: Final price verification and update...")
+        _logger.info("=" * 80)
+        _logger.info("🎯 FINAL SELLING PRICE UPDATE")
+        _logger.info("=" * 80)
+        
+        # Force update list_price to ensure it matches wizard
+        if abs(tmpl.list_price - self.selling_price_incl_vat) > 0.01:
+            _logger.warning(f"  ⚠ Price drift detected! Forcing update...")
+            _logger.warning(f"    Current list_price: {tmpl.list_price} KES")
+            _logger.warning(f"    Expected: {self.selling_price_incl_vat} KES")
+            
+            tmpl.write({
+                'list_price': self.selling_price_incl_vat,  # Force correct selling price
+            })
+            _logger.info(f"  ✅ Forced list_price update to: {tmpl.list_price} KES")
+        else:
+            _logger.info(f"  ✅ list_price verified: {tmpl.list_price} KES")
+        
+        _logger.info("=" * 80)
+        _logger.info("💰 POS PRICING CONFIRMATION")
+        _logger.info("=" * 80)
+        _logger.info(f"  When scanned in POS, this product will sell at:")
+        _logger.info(f"  🏷️ {tmpl.list_price} KES (Incl. VAT)")
+        _logger.info(f"  💵 Cost: {tmpl.standard_price} KES")
+        _logger.info(f"  💰 Profit: {tmpl.list_price - tmpl.standard_price} KES")
+        _logger.info(f"  📊 Margin: {((tmpl.list_price - tmpl.standard_price) / tmpl.list_price * 100):.2f}%")
+        _logger.info("=" * 80)
+
+        # STEP 11: Final verification and logging
+        _logger.info("📋 STEP 11: Final product verification...")
         _logger.info("🎉 === PRODUCT CREATION SUMMARY ===")
         _logger.info(f"  Product: {tmpl.name}")
+        _logger.info(f"  Product ID: {tmpl.id}")
         _logger.info(f"  Type: {getattr(tmpl, 'type', 'Unknown')}")
         _logger.info(f"  Tracking: {getattr(tmpl, 'tracking', 'Unknown')}")
         _logger.info(f"  Category: {tmpl.categ_id.name}")
         _logger.info(f"  Sale OK: {tmpl.sale_ok}")
         _logger.info(f"  Purchase OK: {tmpl.purchase_ok}")
         _logger.info(f"  Routes: {tmpl.route_ids.mapped('name')}")
+        _logger.info(f"  💰 Cost Price (standard_price): {tmpl.standard_price} KES")
+        _logger.info(f"  🏷️ Selling Price (list_price): {tmpl.list_price} KES")
+        _logger.info(f"  💵 Profit per Unit: {tmpl.list_price - tmpl.standard_price} KES")
+        _logger.info(f"  📊 Profit Margin: {((tmpl.list_price - tmpl.standard_price) / tmpl.list_price * 100):.2f}%")
         _logger.info(f"  BOM Lines: {len(bom.bom_line_ids)}")
         _logger.info(f"  MO Created: {mo.name}")
         _logger.info("🎉 === CREATION PROCESS COMPLETED ===")
 
-        # Return to the created Manufacturing Order
         return {
             'type': 'ir.actions.act_window',
             'name': 'Tinted Paint',
@@ -963,3 +1182,5 @@ class TintWizard(models.TransientModel):
             'view_mode': 'form',
             'target': 'current',
         }
+        
+    
