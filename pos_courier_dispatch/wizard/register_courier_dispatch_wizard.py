@@ -11,6 +11,10 @@ class RegisterCourierDispatchWizard(models.TransientModel):
     _name = 'register.courier.dispatch.wizard'
     _description = 'Register Courier Dispatch Wizard'
 
+    # ====================
+    # BASIC FIELDS
+    # ====================
+    
     pos_order_id = fields.Many2one(
         'pos.order',
         string='POS Order',
@@ -24,7 +28,10 @@ class RegisterCourierDispatchWizard(models.TransientModel):
         help='Select customer for delivery. Leave empty if not applicable.',
     )
     
-    # Courier Information
+    # ====================
+    # COURIER INFORMATION
+    # ====================
+    
     courier_company_id = fields.Many2one(
         'courier.company',
         string='Courier Company',
@@ -49,7 +56,10 @@ class RegisterCourierDispatchWizard(models.TransientModel):
         string='Vehicle Plate',
     )
     
-    # Payment Details
+    # ====================
+    # PAYMENT FIELDS
+    # ====================
+    
     courier_payment_responsible = fields.Selection([
         ('customer', 'Customer Pays'),
         ('company', 'Company Pays'),
@@ -74,7 +84,40 @@ class RegisterCourierDispatchWizard(models.TransientModel):
         default=lambda self: self.env.company.currency_id,
     )
     
-    # Delivery Address
+    # ====================
+    # VAT FIELDS (NEW)
+    # ====================
+    
+    courier_fee_vat_inclusive = fields.Boolean(
+        string='Fee is VAT Inclusive',
+        default=lambda self: self._get_default_vat_inclusive(),
+        help='If true, courier fee includes VAT'
+    )
+    
+    vat_rate = fields.Float(
+        string='VAT Rate (%)',
+        compute='_compute_vat_rate',
+        help='VAT rate for courier services'
+    )
+    
+    courier_fee_net = fields.Monetary(
+        string='Fee (Net)',
+        currency_field='currency_id',
+        compute='_compute_vat_amounts',
+        help='Courier fee excluding VAT'
+    )
+    
+    courier_fee_vat = fields.Monetary(
+        string='VAT Amount',
+        currency_field='currency_id',
+        compute='_compute_vat_amounts',
+        help='VAT amount on courier fee'
+    )
+    
+    # ====================
+    # DELIVERY ADDRESS
+    # ====================
+    
     use_customer_address = fields.Boolean(
         string='Use Customer Address',
         default=True,
@@ -87,7 +130,10 @@ class RegisterCourierDispatchWizard(models.TransientModel):
     delivery_zip = fields.Char(string='Zip')
     delivery_country_id = fields.Many2one('res.country', string='Country')
     
-    # Documentation
+    # ====================
+    # DOCUMENTATION
+    # ====================
+    
     attachment_ids = fields.Many2many(
         'ir.attachment',
         'wizard_courier_dispatch_attachment_rel',
@@ -99,14 +145,20 @@ class RegisterCourierDispatchWizard(models.TransientModel):
     delivery_instructions = fields.Text(string='Delivery Instructions')
     notes = fields.Text(string='Notes')
     
-    # Dispatch Lines
+    # ====================
+    # DISPATCH LINES
+    # ====================
+    
     line_ids = fields.One2many(
         'register.courier.dispatch.wizard.line',
         'wizard_id',
         string='Items to Dispatch',
     )
     
-    # Computed
+    # ====================
+    # COMPUTED TOTALS
+    # ====================
+    
     total_quantity = fields.Float(
         string='Total Quantity',
         compute='_compute_totals',
@@ -118,12 +170,81 @@ class RegisterCourierDispatchWizard(models.TransientModel):
         compute='_compute_totals',
     )
 
+    # ====================
+    # DEFAULT METHODS (VAT)
+    # ====================
+    
+    def _get_default_vat_inclusive(self):
+        """Get default VAT inclusive setting from config"""
+        vat_inclusive = self.env['ir.config_parameter'].sudo().get_param(
+            'pos_courier_dispatch.courier_fee_vat_inclusive',
+            'True'
+        )
+        return vat_inclusive == 'True'
+
+    # ====================
+    # COMPUTED METHODS
+    # ====================
+
     @api.depends('line_ids.dispatch_qty', 'line_ids.subtotal')
     def _compute_totals(self):
         """Compute totals"""
         for wizard in self:
             wizard.total_quantity = sum(wizard.line_ids.mapped('dispatch_qty'))
             wizard.total_value = sum(wizard.line_ids.mapped('subtotal'))
+            
+            _logger.info(
+                f"[WIZARD] Totals computed: Qty={wizard.total_quantity}, Value={wizard.total_value}"
+            )
+    
+    # ====================
+    # COMPUTED METHODS - VAT (NEW)
+    # ====================
+    
+    @api.depends('currency_id')
+    def _compute_vat_rate(self):
+        """Get VAT rate from system parameters"""
+        for wizard in self:
+            vat_rate_param = self.env['ir.config_parameter'].sudo().get_param(
+                'pos_courier_dispatch.courier_vat_rate',
+                '16.0'
+            )
+            wizard.vat_rate = float(vat_rate_param)
+            
+            _logger.info(f"[WIZARD] VAT rate loaded: {wizard.vat_rate}%")
+    
+    @api.depends('courier_fee', 'vat_rate', 'courier_fee_vat_inclusive')
+    def _compute_vat_amounts(self):
+        """Calculate net and VAT amounts from courier fee"""
+        for wizard in self:
+            if not wizard.courier_fee:
+                wizard.courier_fee_net = 0.0
+                wizard.courier_fee_vat = 0.0
+                continue
+            
+            if wizard.courier_fee_vat_inclusive and wizard.vat_rate > 0:
+                # Fee is VAT inclusive - split it
+                divisor = 1 + (wizard.vat_rate / 100)
+                wizard.courier_fee_net = wizard.courier_fee / divisor
+                wizard.courier_fee_vat = wizard.courier_fee - wizard.courier_fee_net
+                
+                _logger.info(
+                    f"[WIZARD] VAT calc (Inclusive): Total={wizard.courier_fee:.2f}, "
+                    f"Net={wizard.courier_fee_net:.2f}, VAT={wizard.courier_fee_vat:.2f}"
+                )
+            else:
+                # Fee is net - calculate VAT on top
+                wizard.courier_fee_net = wizard.courier_fee
+                wizard.courier_fee_vat = wizard.courier_fee * (wizard.vat_rate / 100)
+                
+                _logger.info(
+                    f"[WIZARD] VAT calc (Exclusive): Net={wizard.courier_fee_net:.2f}, "
+                    f"VAT={wizard.courier_fee_vat:.2f}"
+                )
+    
+    # ====================
+    # ONCHANGE METHODS
+    # ====================
     
     @api.onchange('courier_company_id')
     def _onchange_courier_company(self):
@@ -133,6 +254,8 @@ class RegisterCourierDispatchWizard(models.TransientModel):
             self.courier_phone = self.courier_company_id.phone
             if self.courier_company_id.default_journal_id:
                 self.payment_journal_id = self.courier_company_id.default_journal_id
+            
+            _logger.info(f"[WIZARD] Auto-filled from courier company: {self.courier_company_id.name}")
     
     @api.onchange('customer_id')
     def _onchange_customer_id(self):
@@ -144,6 +267,8 @@ class RegisterCourierDispatchWizard(models.TransientModel):
             self.delivery_state_id = self.customer_id.state_id
             self.delivery_zip = self.customer_id.zip
             self.delivery_country_id = self.customer_id.country_id
+            
+            _logger.info(f"[WIZARD] Auto-filled address from customer: {self.customer_id.name}")
     
     @api.onchange('use_customer_address')
     def _onchange_use_customer_address(self):
@@ -155,16 +280,24 @@ class RegisterCourierDispatchWizard(models.TransientModel):
             self.delivery_state_id = self.customer_id.state_id
             self.delivery_zip = self.customer_id.zip
             self.delivery_country_id = self.customer_id.country_id
+            
+            _logger.info(f"[WIZARD] Address toggled to customer address")
     
     @api.onchange('courier_payment_responsible')
     def _onchange_payment_responsible(self):
         """Load default journal when company/shared pays"""
         if self.courier_payment_responsible in ['company', 'shared']:
             default_journal = self.env['ir.config_parameter'].sudo().get_param(
-                'pos_courier_dispatch.default_courier_journal_id'
-            )
+        'pos_courier_dispatch.courier_payment_journal_id'
+        )
+            
             if default_journal:
                 self.payment_journal_id = int(default_journal)
+                _logger.info(f"[WIZARD] Auto-filled payment journal from settings")
+    
+    # ====================
+    # DEFAULT_GET
+    # ====================
     
     @api.model
     def default_get(self, fields_list):
@@ -177,6 +310,7 @@ class RegisterCourierDispatchWizard(models.TransientModel):
         
         pos_order_id = self.env.context.get('default_pos_order_id')
         if not pos_order_id:
+            _logger.warning("[WIZARD] No POS order ID in context")
             return res
         
         pos_order = self.env['pos.order'].browse(pos_order_id)
@@ -188,7 +322,7 @@ class RegisterCourierDispatchWizard(models.TransientModel):
             res['customer_id'] = pos_order.partner_id.id
             _logger.info(f"[WIZARD] Customer from POS order: {pos_order.partner_id.name}")
         else:
-            _logger.info(f"[WIZARD] No customer on POS order - will need to select manually")
+            _logger.info(f"[WIZARD] No customer on POS order")
         
         # Set default address from customer
         if pos_order.partner_id:
@@ -200,6 +334,7 @@ class RegisterCourierDispatchWizard(models.TransientModel):
                 'delivery_zip': pos_order.partner_id.zip,
                 'delivery_country_id': pos_order.partner_id.country_id.id if pos_order.partner_id.country_id else False,
             })
+            _logger.info(f"[WIZARD] Set default delivery address from customer")
         
         # Get remaining quantities for this order
         remaining_qty = pos_order._get_remaining_quantities()
@@ -215,15 +350,15 @@ class RegisterCourierDispatchWizard(models.TransientModel):
                     'sequence': idx * 10,
                     'pos_order_line_id': pos_line.id,
                     'product_id': pos_line.product_id.id,
-                    'ordered_qty': pos_line.qty,  # Original ordered quantity
-                    'remaining_qty': remaining,  # Remaining quantity (not yet dispatched)
-                    'dispatch_qty': remaining,  # Default to REMAINING quantity
+                    'ordered_qty': pos_line.qty,
+                    'remaining_qty': remaining,
+                    'dispatch_qty': remaining,
                     'price_unit': pos_line.price_unit,
                 }
                 line_vals.append((0, 0, line_data))
                 _logger.info(
                     f"[WIZARD] Line {idx}: {pos_line.product_id.name} - "
-                    f"Ordered: {pos_line.qty}, Remaining: {remaining}"
+                    f"Ordered: {pos_line.qty}, Remaining: {remaining}, Will dispatch: {remaining}"
                 )
             else:
                 _logger.info(
@@ -232,70 +367,74 @@ class RegisterCourierDispatchWizard(models.TransientModel):
                 )
         
         res['line_ids'] = line_vals
-        _logger.info(f"[WIZARD] Created {len(line_vals)} wizard lines (lines with remaining quantity)")
+        _logger.info(f"[WIZARD] Created {len(line_vals)} wizard lines with remaining quantities")
         _logger.info("=" * 80)
         
         return res
     
+    # ====================
+    # ACTIONS
+    # ====================
+    
     def action_confirm(self):
-        """
-        Create courier dispatch record.
-        
-        Strategy: Instead of relying on saved wizard lines (which don't persist in transient models),
-        we reload the data directly from the POS order lines.
-        """
+        """Create courier dispatch record"""
         self.ensure_one()
         
         _logger.info("=" * 80)
         _logger.info("[WIZARD] === action_confirm called ===")
         _logger.info(f"[WIZARD] POS Order: {self.pos_order_id.name}")
+        _logger.info(f"[WIZARD] Customer: {self.customer_id.name if self.customer_id else 'None'}")
+        _logger.info(f"[WIZARD] Courier: {self.courier_name} ({self.courier_phone})")
+        _logger.info(f"[WIZARD] Payment: {self.courier_payment_responsible}")
+        _logger.info(f"[WIZARD] Fee: {self.courier_fee:.2f} (VAT Inc: {self.courier_fee_vat_inclusive})")
         _logger.info("=" * 80)
         
         # Validation
         if not self.pos_order_id or not self.pos_order_id.lines:
+            _logger.error("[WIZARD] POS order has no lines")
             raise UserError(_('POS order has no lines.'))
         
         if not self.courier_name or not self.courier_phone:
+            _logger.error("[WIZARD] Missing courier details")
             raise UserError(_('Courier name and phone are required.'))
         
         if self.courier_payment_responsible in ['company', 'shared']:
             if not self.payment_journal_id:
+                _logger.error("[WIZARD] Payment journal required but not set")
                 raise UserError(_('Payment journal is required when company pays courier fee.'))
             if self.courier_fee <= 0:
+                _logger.error("[WIZARD] Courier fee must be > 0 when company pays")
                 raise UserError(_('Courier fee must be greater than zero when company pays.'))
         
-        # IMPORTANT: Reload wizard lines to get fresh data with proper field values
-        # This is necessary because transient wizard lines don't persist their data properly
-        _logger.info("[WIZARD] Reloading wizard line data from database...")
-        self.line_ids.invalidate_recordset()  # Clear cache
+        # Reload wizard lines to get fresh data
+        _logger.info("[WIZARD] Reloading wizard line data...")
+        self.line_ids.invalidate_recordset()
         
-        # Build a map of dispatch quantities from wizard lines
+        # Build dispatch quantities map
         dispatch_qty_map = {}
         for wizard_line in self.line_ids:
             if wizard_line.dispatch_qty > 0:
-                # Use index-based matching since IDs aren't reliable in transient models
                 dispatch_qty_map[wizard_line.sequence] = wizard_line.dispatch_qty
-        
-        _logger.info(f"[WIZARD] Dispatch quantities: {dispatch_qty_map}")
+                _logger.info(
+                    f"[WIZARD] Will dispatch: {wizard_line.product_id.name}, "
+                    f"Qty: {wizard_line.dispatch_qty}"
+                )
         
         if not dispatch_qty_map:
+            _logger.error("[WIZARD] No dispatch quantities specified")
             raise UserError(_('Please specify quantities to dispatch.'))
         
-        # Prepare dispatch lines by reading DIRECTLY from POS order lines
+        _logger.info(f"[WIZARD] Total lines to dispatch: {len(dispatch_qty_map)}")
+        
+        # Prepare dispatch lines from POS order lines
         dispatch_lines = []
         for idx, pos_line in enumerate(self.pos_order_id.lines, 1):
             sequence = idx * 10
             dispatch_qty = dispatch_qty_map.get(sequence, 0.0)
             
             if dispatch_qty <= 0:
+                _logger.info(f"[WIZARD] Skipping POS line {idx}: zero dispatch quantity")
                 continue
-            
-            _logger.info(f"[WIZARD] Processing POS line {idx}:")
-            _logger.info(f"[WIZARD]   - Product: {pos_line.product_id.name}")
-            _logger.info(f"[WIZARD]   - POS Line ID: {pos_line.id}")
-            _logger.info(f"[WIZARD]   - Ordered Qty: {pos_line.qty}")
-            _logger.info(f"[WIZARD]   - Dispatch Qty: {dispatch_qty}")
-            _logger.info(f"[WIZARD]   - Price Unit: {pos_line.price_unit}")
             
             line_vals = {
                 'sequence': sequence,
@@ -307,12 +446,16 @@ class RegisterCourierDispatchWizard(models.TransientModel):
                 'weight': pos_line.product_id.weight * dispatch_qty,
             }
             dispatch_lines.append((0, 0, line_vals))
-            _logger.info(f"[WIZARD]   - Added to dispatch successfully")
+            
+            _logger.info(
+                f"[WIZARD] Added dispatch line: {pos_line.product_id.name}, "
+                f"Qty: {dispatch_qty}, Price: {pos_line.price_unit}"
+            )
         
         # Create dispatch record
         dispatch_vals = {
             'pos_order_id': self.pos_order_id.id,
-            'customer_id': self.customer_id.id if self.customer_id else False,  # Use wizard customer
+            'customer_id': self.customer_id.id if self.customer_id else False,
             'courier_company_id': self.courier_company_id.id if self.courier_company_id else False,
             'courier_name': self.courier_name,
             'courier_phone': self.courier_phone,
@@ -320,6 +463,7 @@ class RegisterCourierDispatchWizard(models.TransientModel):
             'vehicle_plate': self.vehicle_plate,
             'courier_payment_responsible': self.courier_payment_responsible,
             'courier_fee': self.courier_fee,
+            'courier_fee_vat_inclusive': self.courier_fee_vat_inclusive,
             'payment_journal_id': self.payment_journal_id.id if self.payment_journal_id else False,
             'delivery_street': self.delivery_street,
             'delivery_street2': self.delivery_street2,
@@ -332,20 +476,23 @@ class RegisterCourierDispatchWizard(models.TransientModel):
             'line_ids': dispatch_lines,
         }
         
+        _logger.info("[WIZARD] Creating courier dispatch record...")
         dispatch = self.env['courier.dispatch'].create(dispatch_vals)
-        _logger.info(f"[WIZARD] Created dispatch: {dispatch.name}")
+        _logger.info(f"[WIZARD] Dispatch created: {dispatch.name}")
         
         # Link attachments
         if self.attachment_ids:
+            _logger.info(f"[WIZARD] Linking {len(self.attachment_ids)} attachments")
             self.attachment_ids.write({
                 'res_model': 'courier.dispatch',
                 'res_id': dispatch.id,
             })
         
-        # Automatically dispatch (create stock moves)
+        # Automatically dispatch (create stock moves and payment entry)
+        _logger.info("[WIZARD] Triggering action_dispatch...")
         dispatch.action_dispatch()
         
-        _logger.info("[WIZARD] === action_confirm completed ===")
+        _logger.info("[WIZARD] === action_confirm completed successfully ===")
         _logger.info("=" * 80)
         
         # Return action to view created dispatch
@@ -376,20 +523,20 @@ class RegisterCourierDispatchWizardLine(models.TransientModel):
     pos_order_line_id = fields.Many2one(
         'pos.order.line',
         string='POS Order Line',
-        required=False,  # Changed from True - allow creation without it, will be set in default_get
-        readonly=False,  # Remove readonly from model - only in view
+        required=False,
+        readonly=False,
     )
     
     product_id = fields.Many2one(
         'product.product',
         string='Product',
-        required=False,  # Changed from True - allow creation, will be set in default_get
-        readonly=False,  # Remove readonly from model - only in view
+        required=False,
+        readonly=False,
     )
     
     ordered_qty = fields.Float(
         string='Ordered Qty',
-        readonly=False,  # Remove readonly - only in view
+        readonly=False,
         digits='Product Unit of Measure',
         help='Original quantity from POS order'
     )
@@ -411,7 +558,7 @@ class RegisterCourierDispatchWizardLine(models.TransientModel):
     
     price_unit = fields.Float(
         string='Unit Price',
-        readonly=False,  # Remove readonly - only in view
+        readonly=False,
         digits='Product Price',
     )
     
@@ -435,23 +582,23 @@ class RegisterCourierDispatchWizardLine(models.TransientModel):
     
     @api.constrains('dispatch_qty', 'remaining_qty')
     def _check_dispatch_qty(self):
-        """
-        Validate dispatch quantity against remaining quantity.
-        
-        Only validates when remaining_qty is set (not 0).
-        This prevents validation errors during form auto-save when fields haven't loaded yet.
-        """
+        """Validate dispatch quantity against remaining quantity"""
         for line in self:
             # Skip validation if remaining_qty not set yet (form still loading)
             if not line.remaining_qty or line.remaining_qty == 0:
                 continue
-                
+            
             # Validate: dispatch cannot exceed remaining
             if line.dispatch_qty > line.remaining_qty:
+                _logger.error(
+                    f"[WIZARD LINE] Validation failed: dispatch_qty ({line.dispatch_qty}) > "
+                    f"remaining_qty ({line.remaining_qty}) for {line.product_id.display_name}"
+                )
                 raise ValidationError(_(
                     'Dispatch quantity (%.2f) cannot exceed remaining quantity (%.2f) for %s'
                 ) % (line.dispatch_qty, line.remaining_qty, line.product_id.display_name or 'product'))
             
             # Validate: dispatch cannot be negative
             if line.dispatch_qty < 0:
+                _logger.error(f"[WIZARD LINE] Validation failed: negative dispatch_qty for {line.product_id.display_name}")
                 raise ValidationError(_('Dispatch quantity cannot be negative'))
