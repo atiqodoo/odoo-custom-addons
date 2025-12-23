@@ -1,31 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- ================================================================ -->
-    <!-- COST COMPARISON WIZARD FORM VIEW                                 -->
+    <!-- COST COMPARISON WIZARD FORM VIEW - WITH VOLUME SCALING           -->
     <!-- ================================================================ -->
     <record id="view_cost_comparison_wizard_form" model="ir.ui.view">
         <field name="name">cost.comparison.wizard.form</field>
         <field name="model">cost.comparison.wizard</field>
         <field name="arch" type="xml">
-            <form string="Cost Comparison - Similar Products">
+            <form string="Cost Comparison &amp; Volume Scaling">
                 <sheet>
                     <!-- ============================================== -->
-                    <!-- HEADER - COMPARISON CRITERIA                   -->
+                    <!-- HEADER - TITLE                                 -->
                     <!-- ============================================== -->
                     <div class="oe_title">
                         <h1>Cost Comparison Across Brands</h1>
+                        <p class="text-muted">Compare costs and translate formulas to different package sizes</p>
                     </div>
                     
-                    <group>
-                        <group string="Comparison Criteria">
+                    <!-- ============================================== -->
+                    <!-- CURRENT FORMULA INFORMATION                    -->
+                    <!-- ============================================== -->
+                    <group string="Current Formula">
+                        <group>
                             <field name="base_category_id" readonly="1"/>
-                            <field name="base_uom_id" readonly="1"/>
                             <field name="base_attribute_name" readonly="1"/>
                         </group>
+                        <group>
+                            <field name="source_uom_id" readonly="1"/>
+                            <field name="source_volume_litres" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <!-- ============================================== -->
+                    <!-- NEW: VOLUME SCALING SECTION                    -->
+                    <!-- ============================================== -->
+                    <group string="Volume Scaling (Optional)">
+                        <field name="show_scaled_products" widget="boolean_toggle"/>
                         
-                        <group string="Statistics">
+                        <div invisible="not show_scaled_products" colspan="2">
+                            <group>
+                                <group>
+                                    <label for="target_volume_litres" string="Target Volume"/>
+                                    <div class="o_row">
+                                        <field name="target_volume_litres" class="oe_inline"/>
+                                        <span class="oe_inline"> Litres</span>
+                                    </div>
+                                    
+                                    <field name="target_uom_id" readonly="1"/>
+                                    <field name="shots_per_litre" readonly="1"/>
+                                </group>
+                                
+                                <group>
+                                    <label for="scale_factor" string="Scale Factor"/>
+                                    <div class="o_row">
+                                        <field name="scale_factor" readonly="1" class="fw-bold"/>
+                                        <span class="text-muted"> ×</span>
+                                    </div>
+                                    
+                                    <button name="action_refresh_comparison"
+                                            string="🔄 Refresh Products"
+                                            type="object"
+                                            class="btn-primary"
+                                            help="Search for products in target volume"/>
+                                </group>
+                            </group>
+                            
+                            <!-- Info alert -->
+                            <div class="alert alert-info" style="margin-top: 15px;">
+                                <strong>💡 Volume Scaling Active:</strong>
+                                <ul class="mb-0">
+                                    <li>Searching for <strong><field name="target_uom_id" readonly="1" nolabel="1"/></strong> products</li>
+                                    <li>Colorant shots scaled <strong><field name="scale_factor" readonly="1" nolabel="1"/>×</strong></li>
+                                    <li>Rate: <strong><field name="shots_per_litre" readonly="1" nolabel="1"/></strong> shots per litre</li>
+                                    <li>Click "Use This" to update parent wizard with scaled formula</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </group>
+
+                    <!-- ============================================== -->
+                    <!-- STATISTICS SUMMARY                             -->
+                    <!-- ============================================== -->
+                    <group string="Statistics">
+                        <group>
                             <field name="total_products" readonly="1"/>
                             <field name="avg_cost" readonly="1"/>
+                        </group>
+                        <group>
                             <field name="lowest_cost" readonly="1"/>
                             <field name="highest_profit" readonly="1"/>
                         </group>
@@ -36,12 +97,13 @@
                     <!-- ============================================== -->
                     <div class="alert alert-info" role="alert">
                         <strong>📊 How to use:</strong>
-                        <ul>
-                            <li><strong>Compare:</strong> All products shown have the same category, UOM, and attribute (e.g., "Deep Base")</li>
+                        <ul class="mb-0">
+                            <li><strong>Compare:</strong> All products have the same category, UOM, and attribute</li>
                             <li><strong>Costs:</strong> Same colorant formula applied to each product's base cost</li>
-                            <li><strong>Edit Price:</strong> Click any selling price to modify - profit/margin will auto-update</li>
-                            <li><strong>Switch Product:</strong> Click "Use This" to replace your current base product with the selected one</li>
-                            <li><strong>Sort:</strong> Click column headers to sort by any field (cost, profit, margin, etc.)</li>
+                            <li><strong>Volume Scaling:</strong> Enable to translate formula to different package sizes</li>
+                            <li><strong>Edit Price:</strong> Click any selling price to modify - profit/margin auto-updates</li>
+                            <li><strong>Switch Product:</strong> Click "Use This" to replace base product in tint wizard</li>
+                            <li><strong>Sort:</strong> Click column headers to sort by any field</li>
                         </ul>
                     </div>
 
