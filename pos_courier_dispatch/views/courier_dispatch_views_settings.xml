@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Standalone Settings View for Courier Dispatch -->
+    <record id="res_config_settings_view_form_courier_dispatch" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.courier.dispatch</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority">1</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Courier Dispatch" name="pos_courier_dispatch" groups="pos_courier_dispatch.group_courier_manager">
+                    <block title="Courier Dispatch Configuration">
+                        <setting id="courier_dispatch_accounting" 
+                                 help="Configure accounting for courier fees paid by company">
+                            <div class="content-group">
+                                <div class="row mt16">
+                                    <label for="courier_cogs_account_id" string="Courier COGS Account" class="col-3 o_light_label"/>
+                                    <field name="courier_cogs_account_id" 
+                                           placeholder="Net expense account..."
+                                           class="oe_inline"/>
+                                </div>
+                                <div class="row mt8">
+                                    <label for="courier_vat_account_id" string="VAT Input Account" class="col-3 o_light_label"/>
+                                    <field name="courier_vat_account_id" 
+                                           placeholder="Claimable VAT account..."
+                                           class="oe_inline"/>
+                                </div>
+                                <div class="row mt8">
+                                    <label for="courier_payment_journal_id" string="Payment Journal" class="col-3 o_light_label"/>
+                                    <field name="courier_payment_journal_id" 
+                                           placeholder="Bank or Cash journal..."
+                                           class="oe_inline"/>
+                                </div>
+                            </div>
+                        </setting>
+                        
+                        <setting id="courier_dispatch_vat" 
+                                 help="Configure VAT calculation for courier fees">
+                            <div class="content-group">
+                                <div class="row mt16">
+                                    <label for="courier_vat_rate" string="VAT Rate (%)" class="col-3 o_light_label"/>
+                                    <field name="courier_vat_rate" 
+                                           widget="percentage"
+                                           class="oe_inline"/>
+                                </div>
+                                <div class="row mt8">
+                                    <label for="courier_fee_vat_inclusive" string="Fees are VAT Inclusive" class="col-3 o_light_label"/>
+                                    <field name="courier_fee_vat_inclusive" class="oe_inline"/>
+                                </div>
+                            </div>
+                        </setting>
+                        
+                        <setting string="Journal Entry Structure" help="How courier payments are recorded">
+                            <div class="text-muted">
+                                <p class="mb-2">When company pays courier fees, the following journal entry is created:</p>
+                                <ul class="mb-0">
+                                    <li><strong>Debit:</strong> Courier COGS Account (net amount excluding VAT)</li>
+                                    <li><strong>Debit:</strong> VAT Input Account (VAT amount - claimable)</li>
+                                    <li><strong>Credit:</strong> Payment Journal (total amount paid)</li>
+                                </ul>
+                            </div>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

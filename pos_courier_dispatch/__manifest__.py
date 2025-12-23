@@ -13,13 +13,14 @@ Features:
 * Register courier dispatches from POS orders
 * Track courier information (name, phone, vehicle, reference)
 * Manage payment responsibility (customer/company/shared)
-* Automatic COGS accounting for company-paid courier fees
+* Automatic COGS accounting for company-paid courier fees with VAT split
 * Stock movement tracking (Shop → Courier Transit)
 * Multi-state workflow (draft → in_transit → delivered → confirmed)
 * Customer delivery confirmation
 * Document and photo attachments
 * Comprehensive reporting and analytics
 * Partial dispatch support
+* VAT calculation and claimable input tax tracking
 
 Workflow:
 ---------
@@ -33,9 +34,11 @@ Workflow:
 
 Accounting:
 -----------
-* Company-paid courier fees posted to COGS
-* Configurable journal and account
-* Proper expense tracking
+* Company-paid courier fees posted to COGS (net amount)
+* VAT Input tracking (claimable)
+* 3-line journal entry: Debit COGS, Debit VAT Input, Credit Payment
+* Configurable journals and accounts
+* Proper expense and VAT tracking
 
     """,
     'author': 'Crown Paints Kenya - ATIQ',
@@ -51,12 +54,13 @@ Accounting:
         'security/courier_dispatch_security.xml',
         'security/ir.model.access.csv',
         
-        # Data
+        # Data - USE YOUR ACTUAL FILE NAMES!
         'data/ir_sequence.xml',
         'data/stock_location_data.xml',
         
-        # Views
-        'views/courier_dispatch_views.xml',
+        # Views - ORDER MATTERS!
+        'views/courier_dispatch_views.xml',              # Main views + actions
+        'views/courier_dispatch_views_settings.xml',     # Settings configuration
         'views/courier_company_views.xml',
         'views/pos_order_views.xml',
         
@@ -64,7 +68,7 @@ Accounting:
         'wizard/register_courier_dispatch_wizard_views.xml',
         'wizard/confirm_delivery_wizard_views.xml',
         
-        # Menu
+        # Menu - MUST BE LAST
         'views/menu.xml',
     ],
     'demo': [],

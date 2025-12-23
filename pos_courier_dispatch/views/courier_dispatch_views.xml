@@ -60,8 +60,24 @@
                     <group>
                         <group name="payment_info" string="Payment Information">
                             <field name="courier_payment_responsible" readonly="state != 'draft'"/>
-                            <field name="courier_fee" readonly="state != 'draft'"/>
-                            <field name="company_fee_portion" invisible="courier_payment_responsible == 'customer'"/>
+                            <field name="courier_fee_vat_inclusive" invisible="courier_payment_responsible == 'customer'" readonly="state != 'draft'"/>
+                            <field name="vat_rate" invisible="courier_payment_responsible == 'customer'" readonly="1" widget="percentage"/>
+                            <field name="courier_fee" readonly="state != 'draft'" widget="monetary"/>
+                            <label for="courier_fee_net" string="Fee Breakdown" invisible="courier_payment_responsible == 'customer'"/>
+                            <div invisible="courier_payment_responsible == 'customer'" class="o_row">
+                                <span class="text-muted">Net: </span>
+                                <field name="courier_fee_net" readonly="1" widget="monetary" class="oe_inline"/>
+                                <span class="text-muted ms-3">VAT: </span>
+                                <field name="courier_fee_vat" readonly="1" widget="monetary" class="oe_inline"/>
+                            </div>
+                            <field name="company_fee_portion" invisible="courier_payment_responsible == 'customer'" widget="monetary"/>
+                            <label for="company_fee_net" string="Company Portion" invisible="courier_payment_responsible == 'customer'"/>
+                            <div invisible="courier_payment_responsible == 'customer'" class="o_row">
+                                <span class="text-muted">Net: </span>
+                                <field name="company_fee_net" readonly="1" widget="monetary" class="oe_inline"/>
+                                <span class="text-muted ms-3">VAT: </span>
+                                <field name="company_fee_vat" readonly="1" widget="monetary" class="oe_inline"/>
+                            </div>
                             <field name="payment_journal_id" 
                                    readonly="state != 'draft'" 
                                    invisible="courier_payment_responsible == 'customer'" 

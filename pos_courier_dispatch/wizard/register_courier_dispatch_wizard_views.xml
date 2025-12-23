@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     
-    <!-- Register Courier Dispatch Wizard Form View -->
+    <!-- Register Courier Dispatch Wizard Form -->
     <record id="view_register_courier_dispatch_wizard_form" model="ir.ui.view">
         <field name="name">register.courier.dispatch.wizard.form</field>
         <field name="model">register.courier.dispatch.wizard</field>
@@ -11,58 +11,62 @@
                     <group>
                         <group string="Order Information">
                             <field name="pos_order_id" readonly="1"/>
-                            <field name="customer_id" 
-                                   options="{'no_open': True, 'no_create_edit': False}"
-                                   placeholder="Select or create customer..."/>
+                            <field name="customer_id"/>
                             <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Courier Details">
+                            <field name="courier_company_id"/>
+                            <field name="courier_name"/>
+                            <field name="courier_phone"/>
+                            <field name="courier_reference"/>
+                            <field name="vehicle_plate"/>
                         </group>
                     </group>
                     
                     <group>
-                        <group string="Courier Information" name="courier_info">
-                            <field name="courier_company_id" placeholder="Select courier company (optional)..."/>
-                            <field name="courier_name" required="1" placeholder="Courier name..."/>
-                            <field name="courier_phone" required="1" placeholder="+254 XXX XXX XXX"/>
-                            <field name="courier_reference" placeholder="Tracking/Reference number..."/>
-                            <field name="vehicle_plate" placeholder="Vehicle registration..."/>
-                        </group>
-                        
-                        <group string="Payment Details" name="payment_info">
-                            <field name="courier_payment_responsible" widget="radio"/>
-                            <field name="courier_fee" 
-                                   invisible="courier_payment_responsible == 'customer'" 
-                                   required="courier_payment_responsible in ('company', 'shared')"/>
+                        <group string="Payment Information">
+                            <field name="courier_payment_responsible"/>
+                            <field name="courier_fee_vat_inclusive" invisible="courier_payment_responsible == 'customer'"/>
+                            <field name="vat_rate" invisible="courier_payment_responsible == 'customer'" readonly="1" widget="percentage"/>
+                            <field name="courier_fee" widget="monetary"/>
+                            
+                            <!-- VAT Breakdown -->
+                            <label for="courier_fee_net" string="Fee Breakdown" invisible="courier_payment_responsible == 'customer'"/>
+                            <div invisible="courier_payment_responsible == 'customer'" class="o_row">
+                                <span class="text-muted">Net: </span>
+                                <field name="courier_fee_net" readonly="1" widget="monetary" class="oe_inline"/>
+                                <span class="text-muted ms-3">VAT: </span>
+                                <field name="courier_fee_vat" readonly="1" widget="monetary" class="oe_inline"/>
+                            </div>
+                            
                             <field name="payment_journal_id" 
-                                   invisible="courier_payment_responsible == 'customer'" 
-                                   required="courier_payment_responsible in ('company', 'shared')" 
-                                   placeholder="Select payment journal..."/>
+                                   invisible="courier_payment_responsible == 'customer'"
+                                   required="courier_payment_responsible in ('company', 'shared')"/>
                         </group>
-                    </group>
-                    
-                    <group string="Delivery Address">
-                        <field name="use_customer_address" widget="boolean_toggle"/>
-                        <field name="delivery_street" placeholder="Street..." readonly="use_customer_address"/>
-                        <field name="delivery_street2" placeholder="Street 2..." readonly="use_customer_address"/>
-                        <field name="delivery_city" placeholder="City..." readonly="use_customer_address"/>
-                        <field name="delivery_state_id" placeholder="State..." readonly="use_customer_address"/>
-                        <field name="delivery_zip" placeholder="ZIP..." readonly="use_customer_address"/>
-                        <field name="delivery_country_id" placeholder="Country..." readonly="use_customer_address"/>
+                        <group string="Delivery Address">
+                            <field name="use_customer_address"/>
+                            <field name="delivery_street"/>
+                            <field name="delivery_street2"/>
+                            <field name="delivery_city"/>
+                            <field name="delivery_state_id"/>
+                            <field name="delivery_zip"/>
+                            <field name="delivery_country_id"/>
+                        </group>
                     </group>
                     
                     <notebook>
                         <page string="Items to Dispatch" name="items">
                             <field name="line_ids">
-                                <list editable="bottom" string="Dispatch Items">
+                                <list editable="bottom" string="Dispatch Lines">
                                     <field name="sequence" widget="handle"/>
                                     <field name="product_id" readonly="1"/>
-                                    <field name="ordered_qty" readonly="1" string="Original Qty"/>
-                                    <field name="remaining_qty" readonly="1" string="Available Qty" 
-                                           decoration-info="remaining_qty &gt; 0"
-                                           decoration-warning="remaining_qty &lt; ordered_qty"/>
-                                    <field name="dispatch_qty" required="1" string="Qty to Dispatch"/>
+                                    <field name="ordered_qty" readonly="1"/>
+                                    <field name="remaining_qty" readonly="1"/>
+                                    <field name="dispatch_qty"/>
                                     <field name="price_unit" readonly="1"/>
                                     <field name="subtotal" readonly="1" sum="Total"/>
                                     <field name="currency_id" column_invisible="1"/>
+                                    <field name="pos_order_line_id" column_invisible="1"/>
                                 </list>
                             </field>
                             <group class="oe_subtotal_footer oe_right">
@@ -70,28 +74,18 @@
                                 <field name="total_value" string="Total Value" widget="monetary"/>
                             </group>
                         </page>
-                        
-                        <page string="Documentation" name="documentation">
+                        <page string="Additional Information" name="additional_info">
                             <group>
-                                <field name="delivery_instructions" placeholder="Special delivery instructions..."/>
-                                <field name="notes" placeholder="Additional notes..."/>
+                                <field name="delivery_instructions"/>
+                                <field name="notes"/>
                             </group>
-                            <separator string="Attachments"/>
-                            <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                            <field name="attachment_ids" widget="many2many_binary"/>
                         </page>
                     </notebook>
                 </sheet>
-                
                 <footer>
-                    <button name="action_confirm" 
-                            string="Register Dispatch" 
-                            type="object" 
-                            class="btn-primary" 
-                            data-hotkey="q"/>
-                    <button string="Cancel" 
-                            class="btn-secondary" 
-                            special="cancel" 
-                            data-hotkey="z"/>
+                    <button string="Create Dispatch" name="action_confirm" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
         </field>
