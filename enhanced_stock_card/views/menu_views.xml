@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menu Item -->
+    <menuitem 
+        id="menu_stock_card_report"
+        name="Stock Card Report"
+        parent="stock.menu_warehouse_report"
+        action="action_stock_card_wizard"
+        sequence="50"/>
+</odoo>

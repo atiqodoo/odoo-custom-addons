@@ -1,0 +1,101 @@
+.pos .product-screen {
+    &.density-compact {
+        font-size: 12px;
+
+        .leftpane,
+        .rightpane {
+            --pos-ui-pane-padding: 0.35rem;
+        }
+    }
+
+    &.density-normal {
+        font-size: 14px;
+
+        .leftpane,
+        .rightpane {
+            --pos-ui-pane-padding: 0.5rem;
+        }
+    }
+
+    &.density-large {
+        font-size: 18px;
+
+        .leftpane,
+        .rightpane {
+            --pos-ui-pane-padding: 0.75rem;
+        }
+    }
+
+    &.font-bold {
+        font-weight: 600;
+    }
+
+    .leftpane,
+    .rightpane {
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    &:not(.ui-layout-default) {
+        .leftpane,
+        .rightpane {
+            width: auto !important;
+            max-width: none !important;
+            padding: var(--pos-ui-pane-padding, 0.5rem) !important;
+        }
+
+        .rightpane > .position-relative {
+            min-width: 0;
+        }
+
+        .product-list {
+            min-width: 0;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        }
+    }
+
+    &.ui-layout-wide {
+        gap: 0.25rem;
+
+        .rightpane {
+            border-left: 1px solid rgba(0, 0, 0, 0.08);
+        }
+    }
+
+    &.ui-layout-split {
+        gap: 0.5rem;
+
+        .leftpane {
+            border-right: 1px solid rgba(0, 0, 0, 0.08);
+        }
+    }
+
+    .control-buttons {
+        flex-wrap: wrap;
+
+        .pos-ui-action-bar-button {
+            min-width: 96px;
+            white-space: nowrap;
+        }
+    }
+
+    &.density-compact .control-buttons .pos-ui-action-bar-button {
+        min-width: 82px;
+        padding-inline: 0.6rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .pos .product-screen {
+        &.ui-layout-wide,
+        &.ui-layout-split {
+            gap: 0;
+
+            .leftpane,
+            .rightpane {
+                border: 0;
+                flex: 1 1 auto !important;
+            }
+        }
+    }
+}

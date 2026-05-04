@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <!--
+        Inject CodBanner before the cashier name in the POS navbar.
+        Hidden on small screens (mobile) to avoid crowding the header.
+    -->
+    <t t-name="pos_cod.NavbarPatch"
+       t-inherit="point_of_sale.Navbar"
+       t-inherit-mode="extension">
+        <xpath expr="//CashierName" position="before">
+            <CodBanner t-if="!ui.isSmall"/>
+        </xpath>
+    </t>
+
+</templates>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Courier Transit Location -->
+        <record id="stock_location_courier_transit" model="stock.location">
+            <field name="name">Courier Transit</field>
+            <field name="usage">transit</field>
+            <field name="location_id" ref="stock.stock_location_locations"/>
+            <field name="company_id" eval="False"/>
+            <field name="comment">Location for items in transit with courier for delivery to customers</field>
+        </record>
+
+    </data>
+</odoo>

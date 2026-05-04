@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- 
+        ULTRA-SAFE MINIMAL IMPLEMENTATION
+        Only modifies the main form view with proven XPath expressions
+        -->
+
+        <!-- 1. ONLY MAIN FORM VIEW - PROVEN TO WORK -->
+        <record id="product_template_pos_form_view_inherit" model="ir.ui.view">
+            <field name="name">product.template.form.inherit.pos</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+            <field name="arch" type="xml">
+                <!-- Make the standard 'Available in POS' field required -->
+                <!-- This XPath is guaranteed to work in standard product form -->
+                <xpath expr="//field[@name='available_in_pos']" position="attributes">
+                    <attribute name="required">1</attribute>
+                </xpath>
+                
+                <!-- Define available_on_pos field as completely invisible -->
+                <!-- Place it safely after available_in_pos -->
+                <xpath expr="//field[@name='available_in_pos']" position="after">
+                    <field name="available_on_pos" invisible="1" string="Available on POS (Indexed)"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

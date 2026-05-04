@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!--
+        Extends the shared Orderline template used in both the cart and the receipt.
+
+        The conditional on line.x_custom_pos_name is what enforces the receipt-only
+        constraint:
+          - Cart path  → line data comes from getDisplayData(), which does NOT include
+                         x_custom_pos_name → condition is falsy → shows productName (unchanged).
+          - Receipt path → line data comes from the patched export_for_printing(), which
+                           injects x_custom_pos_name → condition is truthy → shows custom name.
+
+        XPath targets the single <span class="text-wrap"> that renders the product name.
+    -->
+    <t t-name="pos_custom_receipt_name.Orderline"
+       t-inherit="point_of_sale.Orderline"
+       t-inherit-mode="extension">
+        <xpath expr="//span[hasclass('text-wrap')]" position="replace">
+            <span class="text-wrap">
+                <t t-if="line.x_custom_pos_name" t-esc="line.x_custom_pos_name"/>
+                <t t-else="" t-esc="line.productName"/>
+            </span>
+        </xpath>
+    </t>
+</templates>

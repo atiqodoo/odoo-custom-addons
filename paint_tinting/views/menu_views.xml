@@ -1,59 +1,97 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- ================================================================ -->
+    <!-- MAIN PAINT TINTING MENU STRUCTURE                               -->
+    <!-- ================================================================ -->
+    
     <!-- Main Tinting Menu -->
     <menuitem id="menu_paint_tinting_root"
               name="Paint Tinting"
               sequence="45"
               web_icon="paint_tinting,static/description/icon.png"/>
 
-    <!-- Operations Menu -->
+    <!-- ================================================================ -->
+    <!-- OPERATIONS MENU                                                  -->
+    <!-- ================================================================ -->
     <menuitem id="menu_paint_tinting_operations"
               name="Operations"
               parent="menu_paint_tinting_root"
               sequence="10"/>
 
+    <!-- Tint New Paint -->
     <menuitem id="menu_tint_new_paint"
               name="Tint New Paint"
               parent="menu_paint_tinting_operations"
               action="action_tint_wizard"
               sequence="10"/>
 
-    <!-- Products Menu -->
+    <!-- ✅ NEW: Re-Tint Returned Product -->
+    <menuitem id="menu_retint_wizard"
+              name="Re-Tint Returned Product"
+              parent="menu_paint_tinting_operations"
+              action="action_retint_wizard"
+              sequence="20"/>
+
+    <!-- ================================================================ -->
+    <!-- PRODUCTS MENU                                                    -->
+    <!-- ================================================================ -->
     <menuitem id="menu_paint_tinting_products"
               name="Products"
               parent="menu_paint_tinting_root"
               sequence="20"/>
 
+    <!-- Tinted Products -->
     <menuitem id="menu_tinted_products"
               name="Tinted Products"
               parent="menu_paint_tinting_products"
               action="action_tinted_products"
               sequence="10"/>
 
+    <!-- Colorants -->
     <menuitem id="menu_colorants"
               name="Colorants"
               parent="menu_paint_tinting_products"
               action="action_colorants"
               sequence="20"/>
 
-    <!-- Recipes Menu -->
+    <!-- ================================================================ -->
+    <!-- RECIPES MENU (BOMs)                                              -->
+    <!-- ================================================================ -->
     <menuitem id="menu_paint_tinting_recipes"
               name="Recipes (BOMs)"
               parent="menu_paint_tinting_root"
               sequence="30"/>
 
+    <!-- Tinting BOMs -->
     <menuitem id="menu_tinting_boms"
               name="Tinting BOMs"
               parent="menu_paint_tinting_recipes"
               action="action_tinting_boms"
               sequence="10"/>
 
-    <!-- Configuration Menu -->
+    <!-- ================================================================ -->
+    <!-- ACCOUNTING MENU                                                  -->
+    <!-- ================================================================ -->
+    <menuitem id="menu_paint_tinting_accounting"
+              name="Accounting"
+              parent="menu_paint_tinting_root"
+              sequence="50"/>
+
+    <menuitem id="menu_pt_deferred_valuation"
+              name="Deferred Valuation Layers"
+              parent="menu_paint_tinting_accounting"
+              action="action_pt_deferred_valuation"
+              sequence="10"/>
+
+    <!-- ================================================================ -->
+    <!-- CONFIGURATION MENU                                               -->
+    <!-- ================================================================ -->
     <menuitem id="menu_paint_tinting_config"
               name="Configuration"
               parent="menu_paint_tinting_root"
               sequence="90"/>
 
+    <!-- Map Colorants -->
     <menuitem id="menu_map_colorants"
               name="Map Colorants"
               parent="menu_paint_tinting_config"

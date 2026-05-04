@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Gate 1 blocking dialog.
+         Shown when the selected customer has no property_payment_term_id.
+         Single "OK" button — cashier must dismiss before continuing. -->
+    <t t-name="pos_credit_limit.NoPaymentTermsPopup">
+        <Dialog title="props.title">
+
+            <div class="pcl-no-terms-popup p-3">
+
+                <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                    <i class="fa fa-exclamation-triangle fa-lg me-2"/>
+                    <strong>Payment Terms Required</strong>
+                </div>
+
+                <p class="mb-2" t-esc="props.body"/>
+
+                <p class="text-muted small mb-0">
+                    A Payment Term must be assigned to this customer in the
+                    backend (Contacts ▸ Sales &amp; Purchase tab) before
+                    Customer Account payment can be used.
+                </p>
+
+            </div>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-primary btn-lg" t-on-click="props.close">
+                    OK
+                </button>
+            </t>
+
+        </Dialog>
+    </t>
+
+</templates>

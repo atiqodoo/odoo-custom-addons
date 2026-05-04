@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Inherit main sale order form view - Smart Button -->
+    <record id="view_order_form_inherit_tinting_smart_button" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.tinting.smart.button</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Position the smart button inside the header -->
+            <xpath expr="//header" position="inside">
+
+                <button name="action_create_tinted_product_from_line"
+                        string="Create Tinted Product &amp; MO"
+                        type="object"
+                        class="oe_highlight"
+                        groups="sales_team.group_sale_salesman"
+                        invisible="not has_exactly_one_tinted_line"/>
+
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- Optional: Small info banner below title (visible only when condition met) -->
+    <record id="view_order_form_inherit_tinting_status" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.tinting.status</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//sheet/div[@class='oe_title']" position="after">
+
+                <div class="alert alert-info oe_inline" role="alert"
+                     invisible="not has_exactly_one_tinted_line">
+                    <strong>One tinted product selected.</strong>
+                    Click <strong>"Create Tinted Product &amp; MO"</strong> to manufacture.
+                </div>
+
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

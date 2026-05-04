@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.pos_fixed_discount</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="pos_discount.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <!--
+                pos_discount replaces <div id="warning_text_pos_discount"> with two rows:
+                  - Discount Product (pos_discount_product_id)
+                  - Discount %       (pos_discount_pc)
+                We inherit that result and append our Discount Type row after the % row.
+            -->
+            <xpath expr="//field[@name='pos_discount_pc']/.." position="after">
+                <div class="row" invisible="not pos_module_pos_discount">
+                    <label string="Discount Type" for="pos_discount_type" class="col-lg-3 o_light_label"/>
+                    <field name="pos_discount_type" widget="radio"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

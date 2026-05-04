@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_cod.CodOrdersScreen">
+        <div class="cod-orders-screen screen">
+            <div class="cod-shell">
+                <header class="cod-header">
+                    <button class="btn btn-light cod-icon-button" t-on-click="onBack" title="Back">
+                        <i class="fa fa-arrow-left"/>
+                    </button>
+                    <div>
+                        <h2>Pending COD Orders</h2>
+                        <span><t t-esc="orders.length"/> open order<t t-if="orders.length !== 1">s</t></span>
+                    </div>
+                    <div class="cod-header-tools">
+                        <div class="cod-search">
+                            <i class="fa fa-search"/>
+                            <input placeholder="Search order, customer, driver..."
+                                   t-model="state.query"/>
+                        </div>
+                        <select class="form-select cod-method" t-on-change="onSelectPaymentMethod">
+                            <option value="">Payment method</option>
+                            <t t-foreach="paymentMethods" t-as="pm" t-key="pm.id">
+                                <option t-att-value="pm.id" t-att-selected="state.paymentMethodId === pm.id">
+                                    <t t-esc="pm.name"/>
+                                </option>
+                            </t>
+                        </select>
+                        <button class="btn btn-light cod-icon-button"
+                                t-att-disabled="isLoading"
+                                t-on-click="onRefresh"
+                                title="Refresh">
+                            <i class="fa fa-refresh"/>
+                        </button>
+                    </div>
+                </header>
+
+                <t t-if="state.message">
+                    <div t-attf-class="cod-message cod-message-#{state.messageType}">
+                        <t t-esc="state.message"/>
+                    </div>
+                </t>
+
+                <main class="cod-grid">
+                    <t t-if="!hasOrders and !isLoading">
+                        <div class="cod-empty">
+                            <i class="fa fa-check-circle"/>
+                            <h3>No pending COD orders</h3>
+                        </div>
+                    </t>
+
+                    <t t-foreach="orders" t-as="order" t-key="order.id">
+                        <article t-attf-class="cod-card #{state.selectedOrderId === order.id ? 'is-selected' : ''}"
+                                 t-on-click="() => this.onSelectOrder(order.id)">
+                            <div class="cod-card-main">
+                                <div>
+                                    <div class="cod-ref"><t t-esc="order.name"/></div>
+                                    <div class="cod-customer"><t t-esc="partnerName(order)"/></div>
+                                </div>
+                                <div class="cod-money">
+                                    <span>Total</span>
+                                    <strong><t t-esc="formatCurrency(order.amount_total)"/></strong>
+                                </div>
+                            </div>
+
+                            <div class="cod-meter">
+                                <span t-attf-style="width: #{progress(order)}%;"/>
+                            </div>
+
+                            <div class="cod-amounts">
+                                <div><span>Paid</span><b><t t-esc="formatCurrency(paidAmount(order))"/></b></div>
+                                <div><span>Returned</span><b><t t-esc="formatCurrency(returnedAmount(order))"/></b></div>
+                                <div><span>Open</span><b><t t-esc="formatCurrency(openAmount(order))"/></b></div>
+                            </div>
+
+                            <div class="cod-meta">
+                                <span><i class="fa fa-clock-o"/> <t t-esc="formatDate(order.date_order)"/></span>
+                                <span><i class="fa fa-truck"/> <t t-esc="employeeName(order)"/></span>
+                            </div>
+                            <t t-if="order.delivery_address">
+                                <div class="cod-address"><t t-esc="order.delivery_address"/></div>
+                            </t>
+                            <t t-if="state.selectedOrderId === order.id and order.delivery_notes">
+                                <div class="cod-notes"><t t-esc="order.delivery_notes"/></div>
+                            </t>
+
+                            <t t-if="state.selectedOrderId === order.id">
+                                <div class="cod-actions">
+                                    <button class="btn btn-primary"
+                                            t-att-disabled="!state.paymentMethodId or state.collecting"
+                                            t-on-click.stop="() => this.onReceivePayment(order)">
+                                        Full Pay
+                                    </button>
+                                    <button class="btn btn-light"
+                                            t-att-disabled="!state.paymentMethodId or state.collecting"
+                                            t-on-click.stop="() => this.onReceivePartial(order)">
+                                        Partial Pay
+                                    </button>
+                                    <button class="btn btn-light"
+                                            t-att-disabled="!state.paymentMethodId or state.collecting"
+                                            t-on-click.stop="() => this.onPartialReturn(order)">
+                                        Partial Return
+                                    </button>
+                                    <button class="btn btn-outline-danger"
+                                            t-att-disabled="!state.paymentMethodId or state.collecting"
+                                            t-on-click.stop="() => this.onReturn(order)">
+                                        Return All
+                                    </button>
+                                </div>
+                            </t>
+                        </article>
+                    </t>
+                </main>
+            </div>
+        </div>
+    </t>
+</templates>

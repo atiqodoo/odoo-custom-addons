@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        
+        <!-- Courier Dispatch User Group -->
+        <record id="group_courier_user" model="res.groups">
+            <field name="name">Courier User</field>
+            <field name="category_id" ref="base.module_category_sales_point_of_sale"/>
+            <field name="implied_ids" eval="[(4, ref('point_of_sale.group_pos_user'))]"/>
+            <field name="comment">Can create and view courier dispatches</field>
+        </record>
+
+        <!-- Courier Dispatch Manager Group -->
+        <record id="group_courier_manager" model="res.groups">
+            <field name="name">Courier Manager</field>
+            <field name="category_id" ref="base.module_category_sales_point_of_sale"/>
+            <field name="implied_ids" eval="[(4, ref('group_courier_user'))]"/>
+            <field name="comment">Can manage all courier dispatch operations including confirmation and cancellation</field>
+        </record>
+
+    </data>
+</odoo>

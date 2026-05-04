@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="pos_cod.CodWizard">
+        <Dialog title="'COD Dispatch'">
+            <t t-set-slot="default">
+
+                <t t-if="state.error">
+                    <div class="alert alert-danger mb-3" role="alert">
+                        <t t-esc="state.error"/>
+                    </div>
+                </t>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Customer <span class="text-danger">*</span>
+                    </label>
+                    <button type="button"
+                            class="btn btn-light border w-100 d-flex justify-content-between align-items-center text-start"
+                            t-on-click="selectCustomer">
+                        <span t-att-class="state.partner_id ? 'fw-semibold' : 'text-muted'">
+                            <t t-esc="state.partner_name || 'Search or create customer'"/>
+                        </span>
+                        <i class="fa fa-search"/>
+                    </button>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Delivery Employee <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" t-on-change="onEmployeeChange">
+                        <option value="">-- select employee --</option>
+                        <t t-foreach="employees" t-as="emp" t-key="emp.id">
+                            <option t-att-value="emp.id"
+                                    t-att-selected="state.employee_id === emp.id">
+                                <t t-esc="emp.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Delivery Address</label>
+                    <input type="text"
+                           class="form-control"
+                           placeholder="Street, area, landmark..."
+                           t-att-value="state.delivery_address"
+                           t-on-input="onAddressInput"/>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Delivery Notes</label>
+                    <textarea class="form-control"
+                              rows="2"
+                              placeholder="Instructions for the delivery driver..."
+                              t-on-input="onNotesInput">
+                        <t t-esc="state.delivery_notes"/>
+                    </textarea>
+                </div>
+
+            </t>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-on-click="cancel">Cancel</button>
+                <button class="btn btn-primary ms-2"
+                        t-att-disabled="!isValid"
+                        t-on-click="confirm">
+                    Dispatch COD
+                </button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

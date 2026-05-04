@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!--
+            ir.actions.report for the Negative Stock Reconciliation PDF.
+            Called from the Reporting menu and from the wizard print button.
+        -->
+        <record id="action_report_pos_neg_reconciliation" model="ir.actions.report">
+            <field name="name">Negative Stock Reconciliation Report</field>
+            <field name="model">pos.neg.reconciliation.line</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">pos_neg_stock_anglosaxon.neg_stock_reconciliation_template</field>
+            <field name="report_file">pos_neg_stock_anglosaxon.neg_stock_reconciliation_template</field>
+            <field name="print_report_name">'Negative Stock Reconciliation - %s' % (object.company_id.name if object else '')</field>
+            <field name="binding_model_id" ref="base.model_res_company"/>
+            <field name="paperformat_id" ref="base.paperformat_us"/>
+        </record>
+
+        <!--
+            Window action that opens a date-range filtered view of reconciliation
+            lines and exposes the Print PDF button.
+        -->
+        <!--
+            search_view_id is intentionally omitted: Odoo auto-discovers the
+            default search view for pos.neg.reconciliation.line (defined in
+            neg_stock_reconciliation_view.xml which loads after this file).
+            Specifying it here would cause a forward-reference error.
+        -->
+        <record id="action_pos_neg_reconciliation_report" model="ir.actions.act_window">
+            <field name="name">Reconciliation Report</field>
+            <field name="res_model">pos.neg.reconciliation.line</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{
+                'search_default_filter_this_year': 1,
+                'search_default_group_product': 1
+            }</field>
+        </record>
+
+    </data>
+</odoo>

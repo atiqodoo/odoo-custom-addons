@@ -1,0 +1,88 @@
+/*
+ * loyalty_popup.css
+ *
+ * Styles for the LoyaltySelectionPopup component.
+ *
+ * Design goals:
+ *   • Cashier-friendly: large touch targets, high-contrast text.
+ *   • Minimal overrides — Bootstrap/Odoo defaults do the heavy lifting.
+ *   • Scoped under .o_loyalty_* to avoid collisions with POS core styles.
+ */
+
+/* ── Popup body ──────────────────────────────────────────────────────────── */
+
+.o_loyalty_popup_body {
+    padding: 0.5rem 0 0.25rem;
+}
+
+.o_loyalty_popup_subtitle {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+}
+
+/* ── Phone / loyalty-ID input ────────────────────────────────────────────── */
+
+.o_loyalty_phone_input {
+    font-size:      1.6rem;
+    font-weight:    500;
+    letter-spacing: 0.08em;
+    text-align:     center;
+    padding:        0.75rem 1rem;
+    border-radius:  0.5rem;
+    border:         2px solid #dee2e6;
+    transition:     border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    /* Slightly taller than Bootstrap's form-control-lg for touchscreen use */
+    height: 4rem;
+}
+
+.o_loyalty_phone_input:focus {
+    border-color: #0d6efd;
+    box-shadow:   0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline:      none;
+}
+
+.o_loyalty_phone_input::placeholder {
+    color:       #adb5bd;
+    font-size:   1.2rem;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+}
+
+/* ── Inline error message ────────────────────────────────────────────────── */
+
+.o_loyalty_popup_error {
+    font-size:   0.875rem;
+    margin-top:  0.5rem;
+    min-height:  1.25rem;     /* prevents layout shift when error appears */
+}
+
+/* ── Footer buttons ──────────────────────────────────────────────────────── */
+
+.o_loyalty_skip_btn,
+.o_loyalty_confirm_btn {
+    min-width:  7rem;
+    font-size:  1rem;
+    padding:    0.6rem 1.5rem;
+}
+
+/* Make the Confirm button a solid green for cashier clarity */
+.o_loyalty_confirm_btn {
+    background-color: #198754;
+    border-color:     #198754;
+    color:            #fff;
+}
+
+.o_loyalty_confirm_btn:hover:not(:disabled) {
+    background-color: #157347;
+    border-color:     #146c43;
+}
+
+.o_loyalty_confirm_btn:disabled {
+    opacity: 0.55;
+    cursor:  not-allowed;
+}
+
+.o_loyalty_skip_btn {
+    color: #6c757d;
+}

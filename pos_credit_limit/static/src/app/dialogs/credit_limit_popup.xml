@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Gate 2 blocking dialog.
+         Shows a full True Balance breakdown so the cashier can explain
+         exactly why the payment was blocked.
+
+         Row layout:
+           Backend Balance (live) — raw total_due from Gate 3 RPC
+           Customer Deposit       — shown only when depositBalance prop is set
+           Unsynced POS Orders    — local on-account charges not yet on server (+)
+           True Balance           — net real exposure
+           This Order             — current order being placed on account (+)
+           Total Exposure         — failing value
+           Credit Limit           — the customer's configured ceiling -->
+    <t t-name="pos_credit_limit.CreditLimitPopup">
+        <Dialog title="props.title">
+
+            <div class="pcl-credit-limit-popup p-3">
+
+                <div class="alert alert-danger d-flex align-items-center mb-3" role="alert">
+                    <i class="fa fa-ban fa-lg me-2"/>
+                    <strong>Credit Limit Exceeded</strong>
+                </div>
+
+                <!-- True Balance breakdown table -->
+                <table class="table table-sm table-bordered mb-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-muted">Backend Balance (live)</td>
+                            <td class="text-end fw-bold" t-esc="props.backendBalance"/>
+                        </tr>
+                        <!-- Issue 1: Show deposit row when customer has a deposit -->
+                        <t t-if="props.depositBalance">
+                            <tr class="table-info">
+                                <td class="text-muted">
+                                    Customer Deposit
+                                    <i class="fa fa-info-circle ms-1"
+                                       title="Prepaid balance on customer account"/>
+                                </td>
+                                <td class="text-end fw-bold text-primary" t-esc="props.depositBalance"/>
+                            </tr>
+                        </t>
+                        <tr class="table-warning">
+                            <td class="text-muted">
+                                Unsynced POS Orders
+                                <i class="fa fa-info-circle ms-1"
+                                   title="Customer Account payments in this session not yet pushed to the server — these ADD to the balance"/>
+                            </td>
+                            <td class="text-end fw-bold text-warning">
+                                + <t t-esc="props.unsyncedAmount"/>
+                            </td>
+                        </tr>
+                        <tr class="table-secondary">
+                            <td><strong>True Balance</strong></td>
+                            <td class="text-end fw-bold" t-esc="props.trueBalance"/>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">This Order</td>
+                            <td class="text-end fw-bold text-danger">
+                                + <t t-esc="props.orderTotal"/>
+                            </td>
+                        </tr>
+                        <tr class="table-danger">
+                            <td><strong>Total Exposure</strong></td>
+                            <td class="text-end fw-bold text-danger" t-esc="props.totalExposure"/>
+                        </tr>
+                        <tr class="table-success">
+                            <td><strong>Credit Limit</strong></td>
+                            <td class="text-end fw-bold text-success" t-esc="props.creditLimit"/>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p class="text-muted small mb-0">
+                    Ask the customer to settle their outstanding balance or use
+                    an alternative payment method.
+                </p>
+
+            </div>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-danger btn-lg" t-on-click="props.close">
+                    Close
+                </button>
+            </t>
+
+        </Dialog>
+    </t>
+
+</templates>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>POS Fixed Discount</title>
+    <style>
+        body {
+            font-family: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .badge {
+            display: inline-block;
+            background: #875A7B;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .section {
+            margin-top: 40px;
+        }
+        .img-box {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .img-box img {
+            max-width: 100%;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        .caption {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        ul {
+            margin-left: 20px;
+        }
+        .highlight {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #875A7B;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>POS Fixed Discount</h1>
+    <div class="badge">Odoo 18.0</div>
+    <br/>
+    <p>
+        <strong>POS Fixed Discount</strong> enhances the Point of Sale experience by allowing
+        cashiers to apply a <strong>fixed amount discount</strong> on POS order lines,
+        in addition to the default percentage-based discount.
+    </p>
+    <br/>
+    <div class="section">
+        <h2>✨ Key Features</h2>
+        <ul>
+            <li>Apply <strong>fixed amount</strong> discount per POS order line</li>
+            <li>Switch between <strong>Fixed</strong> and <strong>Percentage</strong> discount modes</li>
+            <li>Percentage discount remains the default behavior</li>
+            <li>Discount details visible directly on POS order lines</li>
+            <li>Discount information shown on POS Order form</li>
+        </ul>
+    </div>
+    <br/>
+    <br/>
+
+    <div class="section">
+        <h2>🛒 POS Discount Flow</h2>
+
+        <h3>1️⃣ Choose Discount Type on POS Order Line</h3>
+        <p>
+            While adding products in POS, the cashier can choose whether the discount
+            should be applied as a <strong>Fixed Amount</strong> or a <strong>Percentage</strong>.
+        </p>
+
+        <div class="img-box" >
+            <img src="sample1.png" width="75%" alt="Select Fixed or Percentage Discount">
+            <img src="sample2.png" width="75%" alt="Select Fixed or Percentage Discount">
+            <img src="sample3.png" width="75%" alt="Select Fixed or Percentage Discount">
+            <div class="caption">Discount type selector on POS order line</div>
+        </div>
+        <br/>
+        <br/>
+
+        <h3>2️⃣ Discount Applied on Order Line</h3>
+        <p>
+            After selecting the discount type and value, the discount is immediately
+            reflected on the POS order line.
+        </p>
+
+        <div class="img-box">
+            <img src="sample4.png" width="75%" alt="Discount Applied on POS Order Line">
+            <div class="caption">Fixed discount applied on POS order line</div>
+        </div>
+
+        <div class="highlight">
+            💡 <strong>Note:</strong> Fixed discount applies only to the current order line,
+            while percentage discount follows the default POS behavior.
+        </div>
+    </div>
+    <br/>
+    <br/>
+
+    <div class="section">
+        <h2>📄 POS Order Form View</h2>
+        <p>
+            Once the order is confirmed, the applied discount (fixed or percentage)
+            is clearly visible on the POS Order form for easy tracking and reporting.
+        </p>
+
+        <div class="img-box">
+            <img src="sample5.png" width="75%" alt="POS Order Form Discount">
+            <div class="caption">Discount details on POS order form</div>
+        </div>
+    </div>
+    <br/>
+    <br/>
+
+    <div class="section">
+        <h2>⚙️ Technical Details</h2>
+        <ul>
+            <li>Compatible with <strong>Odoo 18.0</strong></li>
+            <li>Depends on <code>point_of_sale</code></li>
+            <li>No core modification</li>
+            <li>Clean and modular JS implementation</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>🏷️ Author & Support</h2>
+        <p>
+            <strong>Author:</strong> NexOrioins Techsphere<br>
+            <strong>Maintainer:</strong> Rowan Ember<br>
+            <strong>Website:</strong> nexorionis.odoo.com<br>
+            <strong>Email:</strong> nexorionis.info@gmail.com
+        </p>
+    </div>
+
+</div>
+</body>
+</html>

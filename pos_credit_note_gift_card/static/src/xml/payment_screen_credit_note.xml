@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <!--
+        payment_screen_credit_note.xml
+        ================================
+        Extends the POS PaymentScreen template to inject the Credit Note
+        section below the existing payment buttons.
+
+        Rendered conditionally (showCreditNoteButton getter) so it only
+        appears on refund orders with a configured gift-card program.
+
+        Elements injected:
+          1. Return Reason input (shown when credit_note_require_reason = true)
+          2. Breakdown summary (populated after computeAmount)
+          3. Credit Note button
+          4. Last issued card code display
+    -->
+
+    <!-- ── Extend PaymentScreenButtons ──────────────────────────────────── -->
+    <t t-name="pos_credit_note_gift_card.PaymentScreenCreditNote"
+       t-inherit="point_of_sale.PaymentScreenButtons"
+       t-inherit-mode="extension">
+
+        <xpath expr="//div[hasclass('payment-buttons')]" position="inside">
+
+            <!-- Outer wrapper — hidden when not a refund order -->
+            <div t-if="showCreditNoteButton"
+                 class="credit-note-section d-flex flex-column gap-2 mt-2 border-top pt-2">
+
+                <!-- ── Section Header ──────────────────────────────────── -->
+                <div class="credit-note-header d-flex align-items-center gap-2">
+                    <i class="fa fa-gift text-primary" aria-hidden="true"/>
+                    <span class="fw-bold text-primary">Credit Note (Gift Card)</span>
+                </div>
+
+                <!-- ── Return Reason Input ─────────────────────────────── -->
+                <div t-if="cnState.requireReason" class="credit-note-reason">
+                    <label class="form-label small fw-semibold mb-1" for="cn_return_reason">
+                        Return Reason <span class="text-danger">*</span>
+                    </label>
+                    <input
+                        id="cn_return_reason"
+                        type="text"
+                        class="form-control form-control-sm"
+                        placeholder="Enter reason for return…"
+                        t-att-value="cnState.returnReason"
+                        t-on-input="onReturnReasonInput"
+                        maxlength="200"
+                    />
+                </div>
+
+                <!-- ── Amount Breakdown (after compute) ───────────────── -->
+                <div t-if="cnState.breakdown.length > 0"
+                     class="credit-note-breakdown small text-muted">
+                    <div class="fw-semibold mb-1">Adjustment Breakdown:</div>
+                    <t t-foreach="cnState.breakdown" t-as="row" t-key="row_index">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-truncate me-2" style="max-width:60%;">
+                                <t t-esc="row.product"/>
+                            </span>
+                            <span>
+                                <t t-if="row.discountAdj > 0 or row.commissionAdj > 0">
+                                    <span class="text-muted text-decoration-line-through me-1">
+                                        <t t-esc="row.grossFmt"/>
+                                    </span>
+                                </t>
+                                <span class="fw-bold text-success">
+                                    <t t-esc="row.netFmt"/>
+                                </span>
+                            </span>
+                        </div>
+                    </t>
+                    <div class="d-flex justify-content-between border-top mt-1 pt-1 fw-bold">
+                        <span>Net Credit:</span>
+                        <span class="text-success">
+                            <t t-esc="cnState.computedCurrency"/>&#160;<t t-esc="cnState.computedAmount.toFixed(2)"/>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- ── Credit Note Button ──────────────────────────────── -->
+                <button
+                    class="btn btn-primary btn-lg w-100 credit-note-btn"
+                    t-att-class="{
+                        'btn-secondary': !creditNoteButtonEnabled,
+                        'btn-primary':   creditNoteButtonEnabled,
+                        'opacity-50':    !creditNoteButtonEnabled,
+                    }"
+                    t-att-disabled="!creditNoteButtonEnabled || null"
+                    t-on-click="onClickCreditNote"
+                >
+                    <t t-if="cnState.isProcessing">
+                        <i class="fa fa-spinner fa-spin me-2" aria-hidden="true"/>
+                        Processing…
+                    </t>
+                    <t t-else="">
+                        <i class="fa fa-gift me-2" aria-hidden="true"/>
+                        Issue Credit Note
+                    </t>
+                </button>
+
+                <!-- ── Non-returnable warning ──────────────────────────── -->
+                <div t-if="cnState.requireReason and !cnState.returnReason.trim()"
+                     class="small text-danger">
+                    <i class="fa fa-exclamation-circle me-1" aria-hidden="true"/>
+                    A return reason is required before issuing a credit note.
+                </div>
+
+                <!-- ── Last Issued Card Code (after success) ───────────── -->
+                <div t-if="cnState.lastCardCode"
+                     class="credit-note-last-code alert alert-success p-2 small">
+                    <i class="fa fa-check-circle me-1" aria-hidden="true"/>
+                    Gift card issued:
+                    <strong class="ms-1" style="letter-spacing:2px;">
+                        <t t-esc="cnState.lastCardCode"/>
+                    </strong>
+                </div>
+
+            </div>
+        </xpath>
+    </t>
+</templates>

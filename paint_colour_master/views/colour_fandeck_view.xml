@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- View for Fandecks - Tree View -->
+    <record id="view_colour_fandeck_tree" model="ir.ui.view">
+        <field name="name">colour.fandeck.tree</field>
+        <field name="model">colour.fandeck</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- View for Fandecks - Form View -->
+    <record id="view_colour_fandeck_form" model="ir.ui.view">
+        <field name="name">colour.fandeck.form</field>
+        <field name="model">colour.fandeck</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="description"/>
+                    </group>
+                    <notebook>
+                        <page string="Colours">
+                            <field name="colour_code_ids">
+                                <list editable="bottom">
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="vendor_id"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action for Fandecks -->
+    <record id="action_colour_fandeck" model="ir.actions.act_window">
+        <field name="name">Colour Fandecks</field>
+        <field name="res_model">colour.fandeck</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Colour Fandeck
+            </p>
+        </field>
+    </record>
+</odoo>

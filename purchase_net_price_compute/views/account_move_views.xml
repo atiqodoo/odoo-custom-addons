@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend account move line to show custom pricing fields in bills -->
+    <record id="view_account_move_line_form_custom_pricing" model="ir.ui.view">
+        <field name="name">account.move.line.form.custom.pricing</field>
+        <field name="model">account.move.line</field>
+        <field name="inherit_id" ref="account.view_move_line_form"/>
+        <field name="arch" type="xml">
+            <!-- Add custom pricing information group -->
+            <xpath expr="//field[@name='product_id']" position="after">
+                <field name="use_custom_pricing" invisible="1"/>
+                <group string="Custom Vendor Pricing" invisible="not use_custom_pricing">
+                    <group>
+                        <field name="net_price" readonly="1" force_save="1" string="Net Price (Landed)"/>
+                        <field name="applied_discount" readonly="1" force_save="1" string="Applied Discount %"/>
+                    </group>
+                    <group>
+                        <field name="applied_freight" readonly="1" force_save="1" string="Applied Freight %"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Add custom pricing fields to invoice line list view -->
+    <record id="view_move_form_custom_pricing" model="ir.ui.view">
+        <field name="name">account.move.form.custom.pricing</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <!-- Add fields after price_unit in the invoice_line_ids list -->
+            <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='price_unit']" position="after">
+                <field name="use_custom_pricing" column_invisible="1"/>
+                <field name="net_price" optional="show" readonly="1" force_save="1" string="Net Price"/>
+                <field name="applied_discount" optional="show" readonly="1" force_save="1" string="Discount %"/>
+                <field name="applied_freight" optional="show" readonly="1" force_save="1" string="Freight %"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

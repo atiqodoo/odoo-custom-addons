@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="pos_cod.CodBanner">
+        <div t-if="isVisible"
+             class="cod-banner"
+             t-on-click="onClick"
+             title="Click to view pending COD orders">
+            <span class="cod-banner-text">
+                <t t-esc="label"/>
+            </span>
+        </div>
+    </t>
+
+</templates>

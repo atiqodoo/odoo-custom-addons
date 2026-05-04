@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!--
+            QWeb PDF Template — Negative Stock Reconciliation Report
+
+            Data source: pos.neg.reconciliation.line records passed as `docs`.
+            Grouped first by product, then by reconcile_type within each product.
+
+            Sections:
+            1. Open Exposures  — negative SVLs not yet fully reconciled
+            2. Reconciliation History — all events in the selected period
+            3. Summary totals
+
+            The template uses standard Odoo report layout (external_layout_standard).
+        -->
+        <template id="neg_stock_reconciliation_template">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-call="web.external_layout">
+                        <div class="page">
+
+                            <!-- ── Report Header ──────────────────────────── -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <h2>POS Negative Stock Reconciliation Report</h2>
+                                    <p class="text-muted">
+                                        Generated: <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d %H:%M')"/>
+                                        &amp;nbsp;|&amp;nbsp;
+                                        Company: <strong><t t-esc="o.company_id.name"/></strong>
+                                        &amp;nbsp;|&amp;nbsp;
+                                        Costing: AVCO / Anglo-Saxon
+                                    </p>
+                                </div>
+                            </div>
+
+                            <hr/>
+
+                            <!-- ── Open Exposures Section ─────────────────── -->
+                            <t t-set="open_layers" t-value="o.neg_layer_id.filtered(lambda l: not l.is_fully_reconciled and l.pos_negative_origin)"/>
+                            <div t-if="open_layers">
+                                <h3 class="text-danger">Open Negative Exposures</h3>
+                                <p class="text-muted small">
+                                    Negative stock positions not yet fully covered by a vendor receipt or inventory adjustment.
+                                    These represent unresolved valuation debt on the Balance Sheet.
+                                </p>
+                                <table class="table table-sm table-bordered">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>POS Order</th>
+                                            <th>Sale Date</th>
+                                            <th class="text-right">Neg Qty</th>
+                                            <th class="text-right">AVCO at Sale</th>
+                                            <th class="text-right">Reconciled</th>
+                                            <th class="text-right">Open Qty</th>
+                                            <th class="text-right">Exposure Value</th>
+                                            <th class="text-right">Age (days)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="open_layers" t-as="layer">
+                                            <tr>
+                                                <td><t t-esc="layer.product_id.display_name"/></td>
+                                                <td><t t-esc="layer.pos_order_id.name or '—'"/></td>
+                                                <td><t t-esc="layer.create_date.strftime('%Y-%m-%d') if layer.create_date else '—'"/></td>
+                                                <td class="text-right text-danger">
+                                                    <t t-esc="'%.4f' % abs(layer.quantity)"/>
+                                                </td>
+                                                <td class="text-right">
+                                                    <t t-esc="'%.4f' % layer.unit_cost"/>
+                                                </td>
+                                                <td class="text-right">
+                                                    <t t-esc="'%.4f' % layer.reconciled_qty"/>
+                                                </td>
+                                                <td class="text-right text-danger">
+                                                    <strong><t t-esc="'%.4f' % layer.open_reconcile_qty"/></strong>
+                                                </td>
+                                                <td class="text-right text-danger">
+                                                    <t t-esc="'%.2f' % (layer.open_reconcile_qty * layer.unit_cost)"/>
+                                                </td>
+                                                <td class="text-right">
+                                                    <t t-if="layer.create_date">
+                                                        <t t-esc="(datetime.date.today() - layer.create_date.date()).days"/>
+                                                    </t>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div t-if="not open_layers" class="alert alert-success">
+                                <strong>No open negative exposures.</strong>
+                                All POS oversell positions have been fully reconciled.
+                            </div>
+
+                            <hr/>
+
+                            <!-- ── Reconciliation History ─────────────────── -->
+                            <h3>Reconciliation History</h3>
+                            <table class="table table-sm table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Product</th>
+                                        <th>POS Order</th>
+                                        <th>Receipt / Adjustment</th>
+                                        <th class="text-right">Qty</th>
+                                        <th class="text-right">AVCO at Sale</th>
+                                        <th class="text-right">Purchase Cost</th>
+                                        <th class="text-right">Diff/Unit</th>
+                                        <th class="text-right">Total Diff</th>
+                                        <th>JE Reference</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="docs" t-as="rec">
+                                        <tr t-att-class="'table-warning' if rec.price_diff_amount > 0 and not rec.price_diff_move_id else ''">
+                                            <td><t t-esc="rec.reconcile_date.strftime('%Y-%m-%d') if rec.reconcile_date else '—'"/></td>
+                                            <td>
+                                                <span t-att-class="'badge badge-info' if rec.reconcile_type == 'receipt' else 'badge badge-warning'">
+                                                    <t t-esc="rec.reconcile_type.capitalize()"/>
+                                                </span>
+                                            </td>
+                                            <td><t t-esc="rec.product_id.display_name"/></td>
+                                            <td><t t-esc="rec.pos_order_id.name or '—'"/></td>
+                                            <td><t t-esc="rec.source_picking_id.name or '—'"/></td>
+                                            <td class="text-right"><t t-esc="'%.4f' % rec.reconcile_qty"/></td>
+                                            <td class="text-right"><t t-esc="'%.4f' % rec.original_cost"/></td>
+                                            <td class="text-right"><t t-esc="'%.4f' % rec.incoming_cost"/></td>
+                                            <td t-att-class="'text-right text-danger' if rec.price_diff_per_unit > 0 else 'text-right text-success' if rec.price_diff_per_unit &lt; 0 else 'text-right'">
+                                                <t t-esc="'%+.4f' % rec.price_diff_per_unit"/>
+                                            </td>
+                                            <td t-att-class="'text-right text-danger' if rec.price_diff_amount > 0 else 'text-right text-success' if rec.price_diff_amount &lt; 0 else 'text-right'">
+                                                <t t-esc="'%+.2f' % rec.price_diff_amount"/>
+                                            </td>
+                                            <td>
+                                                <t t-if="rec.price_diff_move_id">
+                                                    <t t-esc="rec.price_diff_move_id.name"/>
+                                                </t>
+                                                <t t-if="not rec.price_diff_move_id and rec.price_diff_amount != 0">
+                                                    <span class="text-danger">⚠ JE Missing</span>
+                                                </t>
+                                                <t t-if="not rec.price_diff_move_id and rec.price_diff_amount == 0">
+                                                    <span class="text-muted">—</span>
+                                                </t>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <!-- Summary totals row -->
+                                <tfoot>
+                                    <tr class="font-weight-bold">
+                                        <td colspan="9" class="text-right">Total Price Difference Recorded:</td>
+                                        <td class="text-right">
+                                            <t t-esc="'%+.2f' % sum(r.price_diff_amount for r in docs)"/>
+                                        </td>
+                                        <td/>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="9" class="text-right text-muted">
+                                            Events with missing JE (needs accountant attention):
+                                        </td>
+                                        <td class="text-right text-danger">
+                                            <t t-esc="sum(1 for r in docs if r.price_diff_amount != 0 and not r.price_diff_move_id)"/>
+                                        </td>
+                                        <td/>
+                                    </tr>
+                                </tfoot>
+                            </table>
+
+                            <!-- ── Footer Note ────────────────────────────── -->
+                            <div class="row mt-4">
+                                <div class="col-12 small text-muted">
+                                    <strong>Notes:</strong><br/>
+                                    — Case A (positive diff): goods purchased at higher price than AVCO at time of POS sale.
+                                    Additional COGS expense recognised via Dr Price Difference / Cr Stock Valuation.<br/>
+                                    — Case B (negative diff): goods purchased cheaper than AVCO. Cost recovery via
+                                    Dr Stock Valuation / Cr Price Difference.<br/>
+                                    — Adjustment rows use Standard Inventory Gain JE. No separate price diff JE is created.
+                                </div>
+                            </div>
+
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!--
+        Extends the POS OrderSummary template to append a "Points to Earn"
+        banner below the order widget when a loyalty-eligible order is active.
+
+        The `netLoyaltyPoints` and `hasEarnablePoints` getters are injected onto
+        OrderSummary.prototype by loyalty_points_widget.js.
+
+        OWL re-renders this automatically because both getters read from the
+        reactive POS store (via this.currentOrder → this.pos.get_order()).
+    -->
+    <t t-inherit="point_of_sale.OrderSummary" t-inherit-mode="extension">
+        <xpath expr="//OrderWidget" position="after">
+            <!-- Use t-attf-class (CSS toggle) instead of t-if to avoid creating
+                 a VToggler.  A VToggler that transitions during the same Owl render
+                 batch as a VList (order lines) update triggers a VToggler.mount crash
+                 ("this.child.mount is not a function") in Odoo 18's Owl build.
+                 The element is always present in the DOM — just hidden by d-none
+                 when there are no earnable points. -->
+            <div t-attf-class="d-flex justify-content-between align-items-center
+                        px-3 py-2 border-top {{ hasEarnablePoints ? '' : 'd-none' }}">
+                <span class="text-muted small fw-semibold">
+                    <i class="fa fa-star me-1 text-warning"/>
+                    Points to Earn
+                </span>
+                <span class="fw-bold text-success">
+                    <t t-esc="netLoyaltyPoints"/> pts
+                </span>
+            </div>
+        </xpath>
+    </t>
+</templates>

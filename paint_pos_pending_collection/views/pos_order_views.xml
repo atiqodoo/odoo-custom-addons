@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- POS Order Form View - Add Smart Button and Action Button -->
+    <record id="view_pos_order_form_pending_collection" model="ir.ui.view">
+        <field name="name">pos.order.form.pending.collection</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- Add Smart Button -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_pending_collections" 
+                        type="object" 
+                        class="oe_stat_button" 
+                        icon="fa-clock-o"
+                        invisible="pending_collection_count == 0">
+                    <field name="pending_collection_count" widget="statinfo" 
+                           string="Pending"/>
+                </button>
+            </xpath>
+            
+            <!-- Add Register Deferred Collection Button in Header -->
+            <xpath expr="//header" position="inside">
+                <button name="action_register_deferred_collection" 
+                        string="Register Deferred Collection" 
+                        type="object" 
+                        class="btn-primary"
+                        invisible="state not in ['paid', 'done', 'invoiced']"/>
+            </xpath>
+            
+            <!-- Add Hidden Fields for debugging and functionality -->
+            <xpath expr="//field[@name='company_id']" position="after">
+                <field name="state" invisible="1"/>
+                <field name="pending_collection_ok" invisible="1"/>
+                <field name="pending_collection_ids" invisible="1"/>
+                <field name="pending_collection_count" invisible="1"/>
+            </xpath>
+            
+        </field>
+    </record>
+    
+    <!-- POS Order Line Form View - Add Taken Qty Field -->
+    <record id="view_pos_order_line_form_pending_collection" model="ir.ui.view">
+        <field name="name">pos.order.line.form.pending.collection</field>
+        <field name="model">pos.order.line</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_line"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//field[@name='qty']" position="after">
+                <field name="taken_qty" readonly="1"/>
+                <field name="deferred_qty" readonly="1"/>
+            </xpath>
+            
+        </field>
+    </record>
+    
+</odoo>

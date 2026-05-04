@@ -1,0 +1,172 @@
+/* =============================================================================
+   pos_block_price_cost — styles
+   Scope:  point_of_sale.assets bundle
+   ============================================================================= */
+
+
+/* ── Below-cost badge on order lines ──────────────────────────────────────── */
+
+.pos-below-cost-badge {
+    display: inline-block;
+    background-color: #dc3545;      /* Bootstrap danger red */
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+    line-height: 1.4;
+    white-space: nowrap;
+    pointer-events: none;           /* badge is decorative — don't capture clicks */
+}
+
+
+/* ── Manager PIN Dialog ───────────────────────────────────────────────────── */
+
+.mpc-dialog-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 4px 8px 8px;
+}
+
+
+/* Offending lines list */
+
+.mpc-offenders {
+    width: 100%;
+    border-radius: 6px;
+}
+
+.mpc-offenders-title {
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.mpc-offenders-list {
+    margin: 0 0 8px;
+    padding-left: 18px;
+    font-size: 12px;
+    font-family: monospace;
+    line-height: 1.7;
+}
+
+.mpc-offenders-hint {
+    font-size: 11px;
+    color: #842029;
+    margin-top: 4px;
+}
+
+
+/* PIN dot display */
+
+.mpc-pin-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.mpc-pin-dots {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    padding: 8px 0;
+}
+
+.mpc-dot {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #6c757d;
+    background: transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.mpc-dot-filled {
+    background: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.mpc-msg {
+    font-size: 12px;
+    margin: 4px 0 0;
+    text-align: center;
+}
+
+.mpc-msg-error {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.mpc-msg-loading {
+    color: #6c757d;
+    font-style: italic;
+}
+
+
+/* Numeric PIN pad */
+
+.mpc-numpad {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mpc-numpad-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.mpc-key {
+    width: 66px;
+    height: 66px;
+    font-size: 22px;
+    font-weight: 500;
+    border-radius: 50%;
+    border: 1px solid #dee2e6;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: background 0.1s ease, transform 0.08s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    user-select: none;
+}
+
+.mpc-key:hover:not(:disabled) {
+    background: #e2e6ea;
+}
+
+.mpc-key:active:not(:disabled) {
+    background: #d1d9e0;
+    transform: scale(0.94);
+}
+
+.mpc-key:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.mpc-key-clear {
+    background: #fff3cd;
+    border-color: #ffc107;
+    font-size: 18px;
+}
+
+.mpc-key-clear:hover:not(:disabled) {
+    background: #ffe69c;
+}
+
+.mpc-key-empty {
+    width: 66px;
+    height: 66px;
+    display: inline-block;
+    visibility: hidden;     /* keeps grid spacing without showing anything */
+}

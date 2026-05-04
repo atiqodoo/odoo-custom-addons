@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_vendor_price_discrepancy_user,vendor.price.discrepancy.user,model_vendor_price_discrepancy,purchase.group_purchase_user,1,0,0,0
+access_vendor_price_discrepancy_manager,vendor.price.discrepancy.manager,model_vendor_price_discrepancy,purchase.group_purchase_manager,1,1,1,1
+access_vendor_price_wizard_user,vendor.price.wizard.user,model_vendor_price_wizard,purchase.group_purchase_user,1,1,1,1
+access_vendor_price_wizard_line_user,vendor.price.wizard.line.user,model_vendor_price_wizard_line,purchase.group_purchase_user,1,1,1,1

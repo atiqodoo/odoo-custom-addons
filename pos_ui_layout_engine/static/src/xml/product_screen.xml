@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_ui_layout_engine.ProductScreen" t-inherit="point_of_sale.ProductScreen" t-inherit-mode="extension">
+        <xpath expr="//div[contains(@class, 'product-screen')]" position="attributes">
+            <attribute name="t-attf-class">product-screen d-flex h-100 {{this.uiLayoutEngineClasses}}</attribute>
+        </xpath>
+
+        <xpath expr="//div[contains(@class, 'leftpane')]" position="attributes">
+            <attribute name="t-att-style">this.uiLayoutEngineOrderFlexStyle</attribute>
+        </xpath>
+
+        <xpath expr="//div[contains(@class, 'rightpane')]" position="attributes">
+            <attribute name="t-att-style">this.uiLayoutEngineProductFlexStyle</attribute>
+        </xpath>
+    </t>
+
+    <t t-name="pos_ui_layout_engine.ControlButtons" t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('more-btn')]" position="before">
+            <t t-if="!props.showRemainingButtons and !ui.isSmall and this.uiActionButtonsPromoted">
+                <OrderlineNoteButton
+                    label="internalNoteLabel(this.pos.get_order())"
+                    class="uiActionButtonClass" />
+                <OrderlineNoteButton
+                    class="uiActionButtonClass"
+                    icon="'fa fa-sticky-note'" />
+                <button class="pos-ui-pricelist-button" t-att-class="uiActionButtonClass" t-on-click="() => { this.uiLogPromotedAction('pricelist'); this.clickPricelist(); }">
+                    <i class="fa fa-th-list me-1" role="img" aria-label="Price list" title="Price list" />
+                    <t t-if="currentOrder?.pricelist_id" t-esc="currentOrder.pricelist_id.display_name" />
+                    <t t-else="">Pricelist</t>
+                </button>
+                <button t-att-class="uiActionButtonClass" t-on-click="() => { this.uiLogPromotedAction('refund'); this.clickRefund(); }">
+                    <i class="fa fa-undo me-1" role="img" aria-label="Refund" title="Refund" />
+                    Refund
+                </button>
+                <button t-if="pos.models['account.fiscal.position'].length"
+                    class="control-button o_fiscal_position_button"
+                    t-att-class="uiActionButtonClass"
+                    t-on-click="() => { this.uiLogPromotedAction('tax'); this.clickFiscalPosition(); }">
+                    <i class="fa fa-book me-1" role="img" aria-label="Set fiscal position" title="Set fiscal position" />
+                    <t t-if="currentOrder?.fiscal_position_id" t-esc="currentOrder.fiscal_position_id.display_name" />
+                    <t t-else="">Tax</t>
+                </button>
+                <button t-att-class="uiActionButtonClass" t-on-click="() => { this.uiLogPromotedAction('cancel_order'); this.pos.onDeleteOrder(this.pos.get_order()); }">
+                    <i class="fa fa-trash me-1" role="img" />
+                    Cancel
+                </button>
+            </t>
+
+            <t t-if="!props.showRemainingButtons and !ui.isSmall and this.uiAllKnownActionButtonsPromoted">
+                <button t-if="this.uiCanUseMethod('onClickQuotation')" t-att-class="uiActionButtonClass" t-on-click="() => { this.uiLogPromotedAction('quotation'); this.onClickQuotation(); }">
+                    <i class="fa fa-link me-1" role="img" aria-label="Set Sale Order" title="Set Sale Order" />
+                    Quotation
+                </button>
+                <button t-if="this.uiCanUseMethod('clickDiscount') and pos.config.module_pos_discount and pos.config.discount_product_id"
+                    class="js_discount"
+                    t-att-class="uiActionButtonClass"
+                    t-on-click="() => { this.uiLogPromotedAction('discount'); this.clickDiscount(); }">
+                    <i class="fa fa-tag me-1"/>
+                    Discount
+                </button>
+                <button t-if="this.uiCanUseMethod('clickPromoCode') and pos.models['loyalty.program'] and pos.models['loyalty.program'].some((p) => ['coupons', 'promotion', 'gift_card', 'promo_code', 'next_order_coupons'].includes(p.program_type))"
+                    t-att-class="uiActionButtonClass"
+                    t-on-click="() => { this.uiLogPromotedAction('enter_code'); this.clickPromoCode(); }">
+                    <i class="fa fa-barcode me-1"/>
+                    Code
+                </button>
+                <button t-if="this.uiCanUseMethod('clickRewards') and pos.models['loyalty.program'] and pos.models['loyalty.program'].length"
+                    class="control-button"
+                    t-att-class="uiActionButtonClass"
+                    t-attf-class="{{this.uiCanUseMethod('getPotentialRewards') and getPotentialRewards().length ? 'highlight text-action' : 'disabled'}}"
+                    t-on-click="() => { this.uiLogPromotedAction('reward'); this.clickRewards(); }">
+                    <i class="fa fa-star me-1"/>
+                    Reward
+                </button>
+                <button t-if="this.uiCanUseMethod('onClickWallet') and pos.models['loyalty.program'] and pos.models['loyalty.program'].some((p) => p.program_type == 'ewallet')"
+                    t-att-class="uiActionButtonClass"
+                    t-on-click="() => { this.uiLogPromotedAction('ewallet'); this.onClickWallet(); }">
+                    <i class="fa fa-credit-card me-1" />
+                    eWallet
+                </button>
+            </t>
+        </xpath>
+
+        <xpath expr="//button[hasclass('more-btn')]" position="attributes">
+            <attribute name="t-if">!props.showRemainingButtons and !ui.isSmall and props.onClickMore and !this.uiAllKnownActionButtonsPromoted</attribute>
+        </xpath>
+
+        <xpath expr="//t[@t-if='props.showRemainingButtons']/div/OrderlineNoteButton[1]" position="attributes">
+            <attribute name="t-if">!this.uiActionButtonsPromoted</attribute>
+        </xpath>
+        <xpath expr="//t[@t-if='props.showRemainingButtons']/div/OrderlineNoteButton[2]" position="attributes">
+            <attribute name="t-if">!this.uiActionButtonsPromoted</attribute>
+        </xpath>
+        <xpath expr="//t[@t-if='props.showRemainingButtons']/div/button[hasclass('o_pricelist_button')]" position="attributes">
+            <attribute name="t-if">!this.uiActionButtonsPromoted</attribute>
+        </xpath>
+        <xpath expr="//t[@t-if='props.showRemainingButtons']/div/button[./i[contains(@class, 'fa-undo')]]" position="attributes">
+            <attribute name="t-if">!this.uiActionButtonsPromoted</attribute>
+        </xpath>
+        <xpath expr="//t[@t-if='props.showRemainingButtons']/div/button[hasclass('o_fiscal_position_button')]" position="attributes">
+            <attribute name="t-if">!this.uiActionButtonsPromoted and pos.models['account.fiscal.position'].length</attribute>
+        </xpath>
+        <xpath expr="//t[@t-if='props.showRemainingButtons']/div/button[./i[contains(@class, 'fa-trash')]]" position="attributes">
+            <attribute name="t-if">!this.uiActionButtonsPromoted</attribute>
+        </xpath>
+    </t>
+</templates>

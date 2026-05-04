@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_price_wizard_form" model="ir.ui.view">
+        <field name="name">vendor.price.wizard.form</field>
+        <field name="model">vendor.price.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Enter Vendor Prices">
+                <sheet>
+                    <group>
+                        <field name="purchase_id" readonly="1"/>
+                        <field name="bill_id" readonly="1" invisible="1"/>
+                    </group>
+                    <group string="Bill Lines">
+                        <field name="line_ids" nolabel="1">
+                            <list editable="bottom">
+                                <field name="product_id" readonly="1"/>
+                                <field name="product_qty" readonly="1"/>
+                                <field name="price_unit" readonly="1" widget="monetary"/>
+                                <field name="vendor_price" required="1" widget="monetary"/>
+                                <field name="use_custom_pricing" readonly="1"/>
+                                <field name="applied_discount"/>
+                                <field name="applied_freight"/>
+                                <field name="calculated_subtotal" readonly="1" widget="monetary"/>
+                                <field name="discrepancy_note" readonly="1"/>
+                                <field name="purchase_line_id" invisible="1"/>
+                                <field name="currency_id" invisible="1"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+                <div class="oe_chatter"/>
+                <footer>
+                    <button string="Create/Update Bill &amp; Validate Prices" name="action_create_bill" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

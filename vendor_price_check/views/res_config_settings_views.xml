@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_vendor_price" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.vendor.price</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Add to the main form structure -->
+            <xpath expr="//form" position="inside">
+                <app string="Vendor Price Check" name="vendor_price_check">
+                    <block title="Vendor Bill Price Validation">
+                        <setting help="Configure how vendor bill prices are validated against historical data">
+                            <field name="price_check_bill_count" class="oe_inline"/>
+                            <div class="text-muted mt8">
+                                Number of previous vendor bills to check for product price comparison
+                            </div>
+                        </setting>
+                        <setting help="User who must approve bills when price discrepancies are detected">
+                            <field name="price_check_approver_id" 
+                                   domain="[('share', '=', False)]" 
+                                   placeholder="Select a user..."/>
+                            <div class="text-muted mt8">
+                                This user will receive activities when price discrepancies are detected
+                            </div>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

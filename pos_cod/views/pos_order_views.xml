@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Extend pos.order LIST view (view_pos_order_tree uses <list>) with COD columns -->
+    <record id="view_pos_order_tree_inherit_cod" model="ir.ui.view">
+        <field name="name">pos.order.tree.inherit.cod</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_tree"/>
+        <field name="arch" type="xml">
+            <!-- Append after the state badge column -->
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="is_cod" optional="show" string="COD"/>
+                <field name="cod_state" optional="show" string="COD State"
+                       invisible="not is_cod"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend pos.order FORM view (view_pos_pos_form) with COD section.
+         Anchors to partner_id which is in the sheet body (line 58 of pos_order_view.xml). -->
+    <record id="view_pos_order_form_inherit_cod" model="ir.ui.view">
+        <field name="name">pos.order.form.inherit.cod</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id'][1]" position="after">
+                <field name="is_cod" string="Cash on Delivery"/>
+                <field name="cod_state" string="COD State" invisible="not is_cod"/>
+                <field name="delivery_employee_id" invisible="not is_cod"/>
+                <field name="delivery_address" invisible="not is_cod"/>
+                <field name="delivery_notes" invisible="not is_cod"/>
+                <field name="cod_ar_move_id" invisible="not is_cod" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Backend action: list of pending COD orders -->
+    <record id="action_pos_cod_pending_orders" model="ir.actions.act_window">
+        <field name="name">Pending COD Orders</field>
+        <field name="res_model">pos.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_cod', '=', True), ('cod_state', 'not in', ['paid', 'returned'])]</field>
+    </record>
+
+    <!-- Menu item under Point of Sale → Orders -->
+    <menuitem
+        id="menu_pos_cod_pending_orders"
+        name="Pending COD Orders"
+        parent="point_of_sale.menu_point_root"
+        action="action_pos_cod_pending_orders"
+        sequence="25"/>
+
+</odoo>

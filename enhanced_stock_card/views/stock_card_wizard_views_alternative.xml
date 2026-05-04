@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ALTERNATIVE VIEW 1: Standard Many2many Widget (No Tags) -->
+    <record id="view_stock_card_wizard_form_standard" model="ir.ui.view">
+        <field name="name">stock.card.wizard.form.standard</field>
+        <field name="model">stock.card.wizard</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <form string="Stock Card Report - Standard View">
+                <div class="alert alert-warning" role="alert">
+                    <strong>Alternative View Active:</strong> Using standard many2many widget.
+                    Click "Select" button next to Products field to open product selector.
+                </div>
+                
+                <group>
+                    <group string="Product Selection">
+                        <!-- Standard many2many widget with selector dialog -->
+                        <field name="product_ids" 
+                               widget="many2many"
+                               options="{'no_create': True}"
+                               domain="[('type', '=', 'product')]"
+                               context="{'search_default_filter_to_sell': False}">
+                            <!-- Inline list view -->
+                            <list string="Products">
+                                <field name="default_code"/>
+                                <field name="name"/>
+                                <field name="categ_id"/>
+                                <field name="list_price"/>
+                                <field name="qty_available"/>
+                            </list>
+                        </field>
+                        <field name="product_count_available" readonly="1"/>
+                    </group>
+                    <group string="Location Selection">
+                        <field name="warehouse_id" options="{'no_create': True}"/>
+                        <field name="location_ids" widget="many2many_tags" 
+                               options="{'no_create': True}"/>
+                    </group>
+                </group>
+                <group>
+                    <group string="Date Range">
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                    <group string="Options">
+                        <field name="show_internal_transfers"/>
+                        <field name="group_by_product"/>
+                    </group>
+                </group>
+                <group string="Debug Info">
+                    <field name="debug_info" colspan="2" nolabel="1"/>
+                </group>
+                <footer>
+                    <button name="action_print_pdf" string="Print PDF" 
+                            type="object" class="btn-primary"/>
+                    <button name="action_export_excel" string="Export Excel" 
+                            type="object" class="btn-secondary"/>
+                    <button name="action_debug_test" string="🔍 Debug Test" 
+                            type="object" class="btn-warning"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ALTERNATIVE VIEW 2: Selection Widget with Checkbox Tree -->
+    <record id="view_stock_card_wizard_form_checkbox" model="ir.ui.view">
+        <field name="name">stock.card.wizard.form.checkbox</field>
+        <field name="model">stock.card.wizard</field>
+        <field name="priority">101</field>
+        <field name="arch" type="xml">
+            <form string="Stock Card Report - Checkbox View">
+                <div class="alert alert-success" role="alert">
+                    <strong>Checkbox View:</strong> Select products using checkboxes.
+                </div>
+                
+                <group>
+                    <group string="Product Selection" colspan="4">
+                        <field name="product_ids" 
+                               widget="many2many_checkboxes"
+                               options="{'no_create': True}"
+                               domain="[('type', '=', 'product')]"/>
+                    </group>
+                </group>
+                <group>
+                    <group string="Location Selection">
+                        <field name="warehouse_id"/>
+                        <field name="location_ids" widget="many2many_tags"/>
+                    </group>
+                    <group string="Date Range">
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                </group>
+                <group>
+                    <group string="Options">
+                        <field name="show_internal_transfers"/>
+                        <field name="group_by_product"/>
+                    </group>
+                    <group>
+                        <field name="product_count_available" readonly="1"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_print_pdf" string="Print PDF" type="object" class="btn-primary"/>
+                    <button name="action_debug_test" string="Debug Test" type="object" class="btn-warning"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- To activate alternative views, add one of these actions in menu_views.xml:
+    
+    For Standard View:
+    <record id="action_stock_card_wizard_standard" model="ir.actions.act_window">
+        <field name="name">Stock Card Report (Standard)</field>
+        <field name="res_model">stock.card.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_stock_card_wizard_form_standard"/>
+        <field name="target">new</field>
+    </record>
+    
+    For Checkbox View:
+    <record id="action_stock_card_wizard_checkbox" model="ir.actions.act_window">
+        <field name="name">Stock Card Report (Checkbox)</field>
+        <field name="res_model">stock.card.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_stock_card_wizard_form_checkbox"/>
+        <field name="target">new</field>
+    </record>
+    -->
+</odoo>

@@ -1,0 +1,109 @@
+/* ==========================================================================
+   credit_note_button.css
+   ======================
+   Styles for the Credit Note section injected into the POS payment screen
+   and the thermal credit-note receipt component.
+   ========================================================================== */
+
+/* ── Payment Screen: Credit Note section ───────────────────────────────── */
+
+.credit-note-section {
+    border-top: 1px solid var(--o-gray-300, #dee2e6);
+    padding-top: 0.5rem;
+    margin-top:  0.25rem;
+}
+
+.credit-note-header {
+    font-size: 0.875rem;
+    color: var(--bs-primary, #0d6efd);
+}
+
+.credit-note-reason .form-control {
+    font-size: 0.85rem;
+}
+
+/* Credit Note issue button — highlighted state */
+.credit-note-btn.btn-primary {
+    background-color: #198754;    /* Bootstrap success green */
+    border-color:     #157347;
+}
+.credit-note-btn.btn-primary:hover:not(:disabled) {
+    background-color: #146c43;
+    border-color:     #13653f;
+}
+
+/* Breakdown table */
+.credit-note-breakdown {
+    background-color: var(--o-gray-100, #f8f9fa);
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+/* Issued card badge */
+.credit-note-last-code {
+    font-size: 0.82rem;
+    border-radius: 4px;
+}
+
+/* ── Thermal Receipt component ─────────────────────────────────────────── */
+
+.pos-credit-note-receipt {
+    width: 72mm;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 11px;
+    padding: 4px;
+}
+
+.pos-credit-note-stamp {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 4px 0;
+}
+
+.pos-credit-note-giftcard-section {
+    margin: 6px 0;
+    padding: 4px 0;
+    border-top: 1px dashed #000;
+    border-bottom: 1px dashed #000;
+}
+
+.pos-credit-note-giftcard-title {
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+}
+
+.pos-credit-note-code-label {
+    font-size: 10px;
+    margin-bottom: 2px;
+}
+
+.pos-credit-note-code {
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    border: 1px solid #000;
+    display: inline-block;
+    padding: 3px 8px;
+    margin: 2px auto;
+}
+
+.pos-credit-note-instructions {
+    font-size: 10px;
+    color: #555;
+    padding: 4px 0;
+}
+
+/* Keep right-aligned spans in receipt consistent */
+.pos-credit-note-receipt .pos-receipt-right-align {
+    float: right;
+}
+
+.pos-credit-note-receipt .pos-receipt-amount::after {
+    content: "";
+    display: table;
+    clear: both;
+}

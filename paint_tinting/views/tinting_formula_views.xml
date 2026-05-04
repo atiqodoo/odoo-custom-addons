@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================ -->
+    <!-- TINTING FORMULA VIEWS                                        -->
+    <!-- ============================================================ -->
+
+    <!-- Formula List View (was tree, now list in Odoo 18) -->
+    <record id="view_tinting_formula_tree" model="ir.ui.view">
+        <field name="name">tinting.formula.tree</field>
+        <field name="model">tinting.formula</field>
+        <field name="arch" type="xml">
+            <list string="Tinting Formulas" 
+                  decoration-success="state == 'approved'"
+                  decoration-info="state == 'validated'"
+                  decoration-muted="state == 'draft'">
+                <field name="colour_code_id"/>
+                <field name="colour_name"/>
+                <field name="base_category_id"/>
+                <field name="base_uom_id"/>
+                <field name="total_shots"/>
+                <field name="total_ml"/>
+                <field name="times_used"/>
+                <field name="last_used_date"/>
+                <field name="state" widget="badge"/>
+                <field name="fandeck_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Formula Form View -->
+    <record id="view_tinting_formula_form" model="ir.ui.view">
+        <field name="name">tinting.formula.form</field>
+        <field name="model">tinting.formula</field>
+        <field name="arch" type="xml">
+            <form string="Tinting Formula">
+                <header>
+                    <field name="state" widget="statusbar"/>
+                    <button name="action_approve" 
+                            string="Approve" 
+                            type="object" 
+                            class="oe_highlight"
+                            invisible="state == 'approved'"/>
+                    <button name="action_reset_to_draft" 
+                            string="Reset to Draft" 
+                            type="object"
+                            invisible="state == 'draft'"/>
+                </header>
+                
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Colour Information">
+                            <field name="colour_code_id" 
+                                   options="{'no_create': True}"/>
+                            <field name="colour_name" readonly="1"/>
+                            <field name="fandeck_id" readonly="1"/>
+                        </group>
+                        
+                       <group string="Base Product Specification">
+                            <field name="base_category_id" 
+                                   options="{'no_create': True}"/>
+                            <field name="base_uom_id" 
+                                   options="{'no_create': True}"/>
+                            <field name="base_attribute_id" 
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Totals">
+                            <field name="total_shots" readonly="1"/>
+                            <field name="total_ml" readonly="1"/>
+                            <field name="total_litres" readonly="1"/>
+                        </group>
+                        
+                        <group string="Usage Statistics">
+                            <field name="times_used" readonly="1"/>
+                            <field name="last_used_date" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Colorant Shots" name="formula_lines">
+                            <field name="formula_line_ids" nolabel="1">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="colorant_id" 
+                                           domain="[('product_tmpl_id.is_colorant', '=', True)]"
+                                           options="{'no_create': True}"/>
+                                    <field name="colorant_code" readonly="1"/>
+                                    <field name="shots"/>
+                                    <field name="ml_volume" readonly="1"/>
+                                    <field name="qty_litres" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Source Information" name="source_info">
+                            <group>
+                                <group string="Created From">
+                                    <field name="source_mo_id" readonly="1"/>
+                                    <field name="source_bom_id" readonly="1"/>
+                                    <field name="created_date" readonly="1"/>
+                                    <field name="created_by_id" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Notes" name="notes">
+                            <field name="notes" placeholder="Add any special instructions or notes about this formula..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Formula Search View -->
+    <record id="view_tinting_formula_search" model="ir.ui.view">
+        <field name="name">tinting.formula.search</field>
+        <field name="model">tinting.formula</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="colour_code_id"/>
+                <field name="base_category_id"/>
+                <field name="base_uom_id"/>
+                <field name="fandeck_id"/>
+                
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Validated" name="validated" domain="[('state', '=', 'validated')]"/>
+                <filter string="Approved" name="approved" domain="[('state', '=', 'approved')]"/>
+                
+                <separator/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="archived" domain="[('active', '=', False)]"/>
+                
+                <separator/>
+                <filter string="Recently Used" name="recent" domain="[('last_used_date', '!=', False)]" 
+                        context="{'order': 'last_used_date desc'}"/>
+                <filter string="Most Used" name="popular" 
+                        context="{'order': 'times_used desc'}"/>
+                
+                <group expand="0" string="Group By">
+                    <filter string="Colour Code" name="group_colour" context="{'group_by': 'colour_code_id'}"/>
+                    <filter string="Fandeck" name="group_fandeck" context="{'group_by': 'fandeck_id'}"/>
+                    <filter string="Base Category" name="group_category" context="{'group_by': 'base_category_id'}"/>
+                    <filter string="Base UOM" name="group_uom" context="{'group_by': 'base_uom_id'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Formula Action -->
+    <record id="action_tinting_formula" model="ir.actions.act_window">
+        <field name="name">Tinting Formulas</field>
+        <field name="res_model">tinting.formula</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No formulas saved yet
+            </p>
+            <p>
+                Formulas are automatically created when tinting Manufacturing Orders are completed.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_tinting_formula"
+              name="Tinting Formulas"
+              parent="mrp.menu_mrp_manufacturing"
+              action="action_tinting_formula"
+              sequence="50"/>
+</odoo>

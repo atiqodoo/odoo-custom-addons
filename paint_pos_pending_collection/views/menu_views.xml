@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Main Menu Item -->
+    <menuitem id="menu_paint_retail_root"
+              name="Paint Retail"
+              sequence="50"
+              web_icon="paint_pos_pending_collection,static/description/icon.png"/>
+    
+    <!-- Pending Collections Menu -->
+    <menuitem id="menu_paint_pending_collection"
+              name="Pending Collections"
+              parent="menu_paint_retail_root"
+              action="action_paint_pending_collection"
+              sequence="10"/>
+    
+    <!-- Also add to Point of Sale menu -->
+    <menuitem id="menu_pos_pending_collection"
+              name="Pending Collections"
+              parent="point_of_sale.menu_point_root"
+              action="action_paint_pending_collection"
+              sequence="99"
+              groups="group_pending_collection_user"/>
+    
+</odoo>

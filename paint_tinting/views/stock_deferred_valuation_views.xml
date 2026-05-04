@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!-- paint.tinting.deferred.valuation — TREE VIEW                 -->
+    <!-- ============================================================ -->
+    <record id="view_pt_deferred_valuation_tree" model="ir.ui.view">
+        <field name="name">paint.tinting.deferred.valuation.tree</field>
+        <field name="model">paint.tinting.deferred.valuation</field>
+        <field name="arch" type="xml">
+            <list string="Deferred Valuation Layers"
+                  decoration-danger="state == 'pending'"
+                  decoration-warning="state == 'partial'"
+                  decoration-success="state == 'reconciled'">
+                <field name="name"/>
+                <field name="date_consumed"/>
+                <field name="product_id"/>
+                <field name="product_categ_id"/>
+                <field name="mo_id"/>
+                <field name="qty_consumed" string="Qty Negative" sum="Total"/>
+                <field name="qty_reconciled" sum="Total"/>
+                <field name="qty_remaining" sum="Total"/>
+                <field name="unit_cost_frozen" string="Frozen Cost"/>
+                <field name="total_provisional_value" string="Provisional Value" sum="Total"/>
+                <field name="total_price_diff_posted" string="Diff Posted" sum="Total"/>
+                <field name="price_diff_account_id" optional="hide"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="state" widget="badge"
+                       decoration-danger="state == 'pending'"
+                       decoration-warning="state == 'partial'"
+                       decoration-success="state == 'reconciled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!-- paint.tinting.deferred.valuation — FORM VIEW                 -->
+    <!-- ============================================================ -->
+    <record id="view_pt_deferred_valuation_form" model="ir.ui.view">
+        <field name="name">paint.tinting.deferred.valuation.form</field>
+        <field name="model">paint.tinting.deferred.valuation</field>
+        <field name="arch" type="xml">
+            <form string="Deferred Valuation Layer">
+                <header>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="pending,partial,reconciled"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <group>
+                        <group string="Component">
+                            <field name="product_id"/>
+                            <field name="product_categ_id"/>
+                            <field name="mo_id"/>
+                            <field name="consumption_move_id"/>
+                            <field name="date_consumed"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Valuation">
+                            <field name="unit_cost_frozen" string="Frozen Std Price"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="qty_consumed" string="Qty into Negative"/>
+                            <field name="qty_reconciled"/>
+                            <field name="qty_remaining"/>
+                            <field name="total_provisional_value"/>
+                            <field name="total_price_diff_posted"/>
+                            <field name="price_diff_account_id"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Reconciliation Lines" name="reconciliation">
+                            <field name="reconciliation_ids" readonly="1">
+                                <list string="Reconciliations"
+                                      decoration-success="price_difference == 0"
+                                      decoration-warning="price_difference != 0">
+                                    <field name="date_reconciled"/>
+                                    <field name="picking_id"/>
+                                    <field name="receipt_move_id" optional="hide"/>
+                                    <field name="qty_reconciled"/>
+                                    <field name="cost_at_consumption" string="Frozen Cost"/>
+                                    <field name="cost_at_receipt" string="Receipt Cost"/>
+                                    <field name="price_difference" string="Diff Posted"
+                                           decoration-danger="price_difference &gt; 0"
+                                           decoration-success="price_difference &lt; 0"
+                                           decoration-muted="price_difference == 0"/>
+                                    <field name="journal_entry_id"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="notes" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!-- paint.tinting.deferred.valuation — SEARCH VIEW               -->
+    <!-- ============================================================ -->
+    <record id="view_pt_deferred_valuation_search" model="ir.ui.view">
+        <field name="name">paint.tinting.deferred.valuation.search</field>
+        <field name="model">paint.tinting.deferred.valuation</field>
+        <field name="arch" type="xml">
+            <search string="Search Deferred Valuations">
+                <field name="name"/>
+                <field name="product_id"/>
+                <field name="mo_id"/>
+                <separator/>
+                <filter string="Pending" name="pending"
+                        domain="[('state','=','pending')]"/>
+                <filter string="Partially Reconciled" name="partial"
+                        domain="[('state','=','partial')]"/>
+                <filter string="Fully Reconciled" name="reconciled"
+                        domain="[('state','=','reconciled')]"/>
+                <separator/>
+                <filter string="Has Pending Qty" name="has_qty"
+                        domain="[('qty_remaining','&gt;',0)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Product" name="group_product"
+                            context="{'group_by':'product_id'}"/>
+                    <filter string="Category" name="group_categ"
+                            context="{'group_by':'product_categ_id'}"/>
+                    <filter string="State" name="group_state"
+                            context="{'group_by':'state'}"/>
+                    <filter string="Month" name="group_month"
+                            context="{'group_by':'date_consumed:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!-- ACTION                                                        -->
+    <!-- ============================================================ -->
+    <record id="action_pt_deferred_valuation" model="ir.actions.act_window">
+        <field name="name">Deferred Valuation Layers</field>
+        <field name="res_model">paint.tinting.deferred.valuation</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_pt_deferred_valuation_search"/>
+        <field name="context">{'search_default_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No deferred valuation records yet.
+            </p>
+            <p>
+                Records appear here automatically when a manufacturing order
+                completes with one or more components that had zero or negative
+                stock. The frozen provisional cost (standard price at that moment)
+                is recorded. When the missing component is later received,
+                the price difference is posted automatically to the
+                Price Difference Account on the product category.
+            </p>
+        </field>
+    </record>
+
+
+</odoo>

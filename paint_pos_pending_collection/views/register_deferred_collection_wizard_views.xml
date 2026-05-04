@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        This file is intentionally empty.
+
+        The register.deferred.collection.wizard views are defined in:
+            wizard/register_deferred_collection_wizard_views.xml
+
+        This file previously contained an auto-generated scaffold with a list
+        view referencing <field name="name"/> which does not exist on the wizard
+        model. That caused a ParseError on every module upgrade:
+            "Field 'name' does not exist in model register.deferred.collection.wizard"
+
+        The scaffold records (list view, form view, search view, act_window) have
+        been removed. The wizard is launched programmatically via action_collect_items()
+        and does not require an act_window or list/search views.
+    -->
+</odoo>

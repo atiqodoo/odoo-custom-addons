@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_config_ui_layout_engine" model="ir.ui.view">
+        <field name="name">pos.config.ui.layout.engine</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@groups='base.group_system']" position="before">
+                <div class="row mt16 o_settings_container" invisible="context.get('pos_config_create_mode', False)">
+                    <setting string="POS UI Layout" help="Controls the product screen layout mode for this POS terminal.">
+                        <field name="ui_layout_mode" widget="radio"/>
+                    </setting>
+
+                    <setting string="POS UI Density" help="Controls compact, normal, or large POS screen sizing.">
+                        <field name="ui_density" widget="radio"/>
+                    </setting>
+
+                    <setting string="POS Font Weight" help="Controls normal or bold text in the POS screen.">
+                        <field name="ui_font_weight" widget="radio"/>
+                    </setting>
+
+                    <setting string="Panel Flex Ratios" help="Desktop layout ratios. Product panel maps to the right pane; order panel maps to the left pane.">
+                        <div class="content-group">
+                            <div class="row mt8">
+                                <label for="product_flex" class="col-lg-5 o_light_label" string="Product Panel"/>
+                                <div class="col-lg-7">
+                                    <field name="product_flex"/>
+                                </div>
+                            </div>
+                            <div class="row mt8">
+                                <label for="order_flex" class="col-lg-5 o_light_label" string="Order Panel"/>
+                                <div class="col-lg-7">
+                                    <field name="order_flex"/>
+                                </div>
+                            </div>
+                        </div>
+                    </setting>
+
+                    <setting string="Action Button Placement" help="Move buttons from the Actions popup into the bottom POS control bar next to Customer, Internal Note, and Clear All.">
+                        <field name="ui_action_button_placement" widget="radio"/>
+                    </setting>
+
+                    <setting string="Best-Seller Product Sorting" help="Show the most sold products first in the product pane, both during normal browsing and search.">
+                        <field name="ui_sort_products_by_sales"/>
+                        <div class="content-group mt8" invisible="not ui_sort_products_by_sales">
+                            <div class="row">
+                                <label for="ui_sales_ranking_scope" class="col-lg-5 o_light_label" string="Ranking Scope"/>
+                                <div class="col-lg-7">
+                                    <field name="ui_sales_ranking_scope"/>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label for="ui_sales_ranking_days" class="col-lg-5 o_light_label" string="Ranking Window Days"/>
+                                <div class="col-lg-7">
+                                    <field name="ui_sales_ranking_days"/>
+                                </div>
+                            </div>
+                        </div>
+                    </setting>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_res_config_settings_ui_layout_engine" model="ir.ui.view">
+        <field name="name">res.config.settings.ui.layout.engine</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@id='pos_interface_section']" position="inside">
+                <setting string="POS UI Layout" help="Controls the product screen layout mode for the selected POS terminal.">
+                    <field name="ui_layout_mode" widget="radio"/>
+                </setting>
+
+                <setting string="POS UI Density" help="Controls compact, normal, or large POS screen sizing.">
+                    <field name="ui_density" widget="radio"/>
+                </setting>
+
+                <setting string="POS Font Weight" help="Controls normal or bold text in the POS screen.">
+                    <field name="ui_font_weight" widget="radio"/>
+                </setting>
+
+                <setting string="Panel Flex Ratios" help="Desktop layout ratios. Product panel maps to the right pane; order panel maps to the left pane.">
+                    <div class="content-group">
+                        <div class="row mt8">
+                            <label for="product_flex" class="col-lg-5 o_light_label" string="Product Panel"/>
+                            <div class="col-lg-7">
+                                <field name="product_flex"/>
+                            </div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="order_flex" class="col-lg-5 o_light_label" string="Order Panel"/>
+                            <div class="col-lg-7">
+                                <field name="order_flex"/>
+                            </div>
+                        </div>
+                    </div>
+                </setting>
+
+                <setting string="Action Button Placement" help="Move buttons from the Actions popup into the bottom POS control bar next to Customer, Internal Note, and Clear All.">
+                    <field name="ui_action_button_placement" widget="radio"/>
+                </setting>
+
+                <setting string="Best-Seller Product Sorting" help="Show the most sold products first in the product pane, both during normal browsing and search.">
+                    <field name="ui_sort_products_by_sales"/>
+                    <div class="content-group mt8" invisible="not ui_sort_products_by_sales">
+                        <div class="row">
+                            <label for="ui_sales_ranking_scope" class="col-lg-5 o_light_label" string="Ranking Scope"/>
+                            <div class="col-lg-7">
+                                <field name="ui_sales_ranking_scope"/>
+                            </div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="ui_sales_ranking_days" class="col-lg-5 o_light_label" string="Ranking Window Days"/>
+                            <div class="col-lg-7">
+                                <field name="ui_sales_ranking_days"/>
+                            </div>
+                        </div>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

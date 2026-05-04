@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================ -->
+    <!-- QUOTATION GENERATOR WIZARD FORM VIEW                             -->
+    <!-- ================================================================ -->
+    <record id="view_quotation_generator_wizard_form" model="ir.ui.view">
+        <field name="name">quotation.generator.wizard.form</field>
+        <field name="model">quotation.generator.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generate Quotation">
+                <header>
+                    <!-- ============================================ -->
+                    <!-- GENERATE BUTTON - CONDITIONAL VISIBILITY     -->
+                    <!-- ============================================ -->
+                    <button name="action_generate_quotation"
+                            string="✅ Generate Quotation"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="not can_generate_quotation"/>
+                    
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </header>
+                
+                <sheet>
+                    <!-- ============================================ -->
+                    <!-- TITLE -->
+                    <!-- ============================================ -->
+                    <div class="oe_title">
+                        <h1>Generate Quotation</h1>
+                        <p class="text-muted">Select products and manually set selling prices</p>
+                    </div>
+                    
+                    <!-- ============================================ -->
+                    <!-- INSTRUCTIONS BANNER -->
+                    <!-- ============================================ -->
+                    <div class="alert alert-info" role="alert">
+                        <strong>📝 Instructions:</strong>
+                        <ol class="mb-0">
+                            <li>Select a <strong>Customer</strong> below</li>
+                            <li><strong>Check</strong> the products you want to include in quotation</li>
+                            <li><strong>Manually enter</strong> selling price for each selected product</li>
+                            <li>Review profit margins</li>
+                            <li>Click <strong>"Generate Quotation"</strong> when ready</li>
+                        </ol>
+                        <div class="mt-2 text-danger">
+                            <strong>⚠️ Important:</strong> You MUST manually enter selling price for each selected product. 
+                            Auto-calculated prices are NOT accepted.
+                        </div>
+                    </div>
+                    
+                    <!-- ============================================ -->
+                    <!-- METADATA -->
+                    <!-- ============================================ -->
+                    <group string="Tinting Information">
+                        <group>
+                            <field name="colour_code_id" readonly="1"/>
+                            <field name="fandeck_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="base_category_id" readonly="1"/>
+                            <field name="source_wizard_id" readonly="1" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <!-- ============================================ -->
+                    <!-- CUSTOMER SELECTION -->
+                    <!-- ============================================ -->
+                    <group string="Customer">
+                        <field name="partner_id"
+                               placeholder="Select customer..."
+                               options="{'no_create': True}"/>
+                    </group>
+                    
+                    <!-- ============================================ -->
+                    <!-- STATISTICS -->
+                    <!-- ============================================ -->
+                    <group string="Selection Summary">
+                        <group>
+                            <label for="total_selected" string="Selected Products"/>
+                            <div class="o_row">
+                                <field name="total_selected" readonly="1" class="oe_inline"/>
+                                <span class="oe_inline"> / </span>
+                                <field name="total_selected_with_price" readonly="1" class="oe_inline text-success"/>
+                                <span class="oe_inline text-muted"> with manual price</span>
+                            </div>
+                        </group>
+                        <group>
+                            <field name="can_generate_quotation" readonly="1" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    
+                    <!-- ============================================ -->
+                    <!-- VALIDATION WARNING -->
+                    <!-- ============================================ -->
+                    <div class="alert alert-warning"
+                         invisible="can_generate_quotation">
+                        <strong>⚠️ Cannot Generate Quotation Yet</strong>
+                        <p class="mb-0">
+                            <span invisible="not partner_id">✓ Customer selected</span>
+                            <span invisible="partner_id">✗ Please select a customer</span>
+                            <br/>
+                            <span invisible="total_selected == 0">✓ Products selected</span>
+                            <span invisible="total_selected &gt; 0">✗ Please select at least one product</span>
+                            <br/>
+                            <!-- ✅ FIXED: Escaped comparison operators -->
+                            <span invisible="total_selected != total_selected_with_price">✓ All selected products have manual prices</span>
+                            <span invisible="total_selected == total_selected_with_price">
+                                ✗ Some products still need manual price
+                            </span>
+                        </p>
+                    </div>
+                    
+                    <!-- ============================================ -->
+                    <!-- PRODUCT LINES - EDITABLE LIST -->
+                    <!-- ============================================ -->
+                    <field name="line_ids" nolabel="1">
+                        <list editable="bottom" create="0" delete="0">
+                            <!-- ======================================== -->
+                            <!-- SELECTION CHECKBOX -->
+                            <!-- ======================================== -->
+                            <field name="selected"
+                                   string="Select"
+                                   widget="boolean_toggle"/>
+                            
+                            <!-- ======================================== -->
+                            <!-- PRODUCT INFO -->
+                            <!-- ======================================== -->
+                            <field name="product_id"
+                                   string="Product"
+                                   readonly="1"
+                                   decoration-bf="selected"
+                                   options="{'no_open': True}"/>
+                            
+                            <field name="brand_name"
+                                   string="Brand"
+                                   readonly="1"
+                                   optional="show"/>
+                            
+                            <!-- ======================================== -->
+                            <!-- COSTS (READ-ONLY) -->
+                            <!-- ======================================== -->
+                            <field name="total_cost_incl_vat"
+                                   string="Total Cost"
+                                   readonly="1"
+                                   optional="show"
+                                   decoration-muted="not selected"/>
+                            
+                            <!-- ======================================== -->
+                            <!-- MANUAL SELLING PRICE (EDITABLE) -->
+                            <!-- ======================================== -->
+                            <field name="selling_price_manual"
+                                   string="Selling Price (Enter Manually)"
+                                   decoration-danger="selected and not price_manually_set"
+                                   decoration-success="selected and price_manually_set"
+                                   placeholder="Enter price..."
+                                   required="selected"/>
+                            
+                            <field name="price_manually_set"
+                                   column_invisible="1"/>
+                            
+                            <!-- ======================================== -->
+                            <!-- PROFIT ANALYSIS -->
+                            <!-- ======================================== -->
+                            <field name="profit_amount"
+                                   string="Profit"
+                                   readonly="1"
+                                   optional="show"
+                                   decoration-success="profit_amount &gt; 500"
+                                   decoration-warning="profit_amount &gt;= 200 and profit_amount &lt;= 500"
+                                   decoration-danger="profit_amount &lt; 200"/>
+                            
+                            <field name="profit_margin_percent"
+                                   string="Margin %"
+                                   readonly="1"
+                                   optional="show"
+                                   decoration-success="profit_margin_percent &gt; 25"
+                                   decoration-warning="profit_margin_percent &gt;= 15 and profit_margin_percent &lt;= 25"
+                                   decoration-danger="profit_margin_percent &lt; 15"/>
+                            
+                            <!-- Hidden cost fields -->
+                            <field name="base_cost_incl_vat" column_invisible="1"/>
+                            <field name="colorant_cost_incl_vat" column_invisible="1"/>
+                        </list>
+                    </field>
+                    
+                    <!-- Hidden fields -->
+                    
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pos_neg_rec_line_stock_user,pos.neg.reconciliation.line stock user,model_pos_neg_reconciliation_line,stock.group_stock_user,1,0,0,0
+access_pos_neg_rec_line_stock_manager,pos.neg.reconciliation.line stock manager,model_pos_neg_reconciliation_line,stock.group_stock_manager,1,1,1,1
+access_pos_neg_rec_line_account_user,pos.neg.reconciliation.line account user,model_pos_neg_reconciliation_line,account.group_account_user,1,0,0,0
+access_pos_neg_rec_line_account_manager,pos.neg.reconciliation.line account manager,model_pos_neg_reconciliation_line,account.group_account_manager,1,1,1,0
+access_pos_neg_rec_line_pos_manager,pos.neg.reconciliation.line pos manager,model_pos_neg_reconciliation_line,point_of_sale.group_pos_manager,1,0,0,0

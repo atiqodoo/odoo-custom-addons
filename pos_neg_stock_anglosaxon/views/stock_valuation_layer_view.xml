@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!--
+            List View Inheritance — stock.valuation.layer
+            Adds POS reconciliation columns to the standard Inventory Valuation
+            list view.  Inherits from stock_account.stock_valuation_layer_tree
+            which uses <list> (Odoo 18 renamed <tree> → <list> for list views).
+
+            Columns added (all optional=show so accountants can hide them):
+              - pos_negative_origin : Boolean toggle  — was this from POS oversell?
+              - reconciled_qty      : How much has been covered by receipts/adjustments
+              - open_reconcile_qty  : Remaining unreconciled exposure (red when > 0)
+              - is_fully_reconciled : Green/red toggle
+              - pos_order_id        : Link back to the source POS order
+        -->
+        <record id="stock_valuation_layer_list_inherit_neg_stock" model="ir.ui.view">
+            <field name="name">stock.valuation.layer.list.neg.stock</field>
+            <field name="model">stock.valuation.layer</field>
+            <field name="inherit_id" ref="stock_account.stock_valuation_layer_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='value']" position="after">
+                    <field name="pos_negative_origin"
+                           string="POS Neg"
+                           optional="show"
+                           widget="boolean_toggle"
+                           column_invisible="True"/>
+                    <field name="reconciled_qty"
+                           string="Reconciled Qty"
+                           optional="show"
+                           column_invisible="True"/>
+                    <field name="open_reconcile_qty"
+                           string="Open Neg Qty"
+                           optional="show"
+                           column_invisible="True"
+                           decoration-danger="open_reconcile_qty &gt; 0"
+                           decoration-success="open_reconcile_qty == 0 and pos_negative_origin"/>
+                    <field name="is_fully_reconciled"
+                           string="Closed"
+                           optional="show"
+                           column_invisible="True"
+                           widget="boolean_toggle"/>
+                    <field name="pos_order_id"
+                           string="POS Order"
+                           optional="show"
+                           column_invisible="True"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!--
+            Form View Inheritance — stock.valuation.layer
+            Adds a "POS Reconciliation" tab to the existing standard form view
+            (stock_account.stock_valuation_layer_form).
+
+            One2many fields are declared WITHOUT inline tree definitions.
+            Odoo resolves them to the default list views registered in
+            neg_stock_reconciliation_view.xml, avoiding the Odoo 18 validation
+            issue where inline sub-view field names are validated against the
+            parent model instead of the related model.
+        -->
+        <record id="stock_valuation_layer_form_inherit_neg_stock" model="ir.ui.view">
+            <field name="name">stock.valuation.layer.form.neg.stock</field>
+            <field name="model">stock.valuation.layer</field>
+            <field name="inherit_id" ref="stock_account.stock_valuation_layer_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="POS Reconciliation"
+                          name="pos_reconciliation"
+                          invisible="not pos_negative_origin">
+                        <group>
+                            <group string="Origin">
+                                <field name="pos_negative_origin" readonly="1"/>
+                                <field name="pos_order_id" readonly="1"/>
+                            </group>
+                            <group string="Reconciliation State">
+                                <field name="reconciled_qty" readonly="1"/>
+                                <field name="open_reconcile_qty" readonly="1"/>
+                                <field name="is_fully_reconciled" readonly="1"/>
+                            </group>
+                        </group>
+                        <separator string="Reconciliation Events"/>
+                        <field name="reconciliation_line_ids"
+                               readonly="1"
+                               nolabel="1"/>
+                        <separator string="Price Difference Journal Entries"/>
+                        <field name="price_diff_move_ids"
+                               readonly="1"
+                               nolabel="1"/>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

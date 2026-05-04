@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        
+        <!-- Security Groups -->
+        <record id="group_pending_collection_user" model="res.groups">
+            <field name="name">Pending Collection User</field>
+            <field name="category_id" ref="base.module_category_sales_point_of_sale"/>
+            <field name="implied_ids" eval="[(4, ref('point_of_sale.group_pos_user'))]"/>
+        </record>
+        
+        <record id="group_pending_collection_manager" model="res.groups">
+            <field name="name">Pending Collection Manager</field>
+            <field name="category_id" ref="base.module_category_sales_point_of_sale"/>
+            <field name="implied_ids" eval="[(4, ref('group_pending_collection_user'))]"/>
+        </record>
+        
+    </data>
+</odoo>

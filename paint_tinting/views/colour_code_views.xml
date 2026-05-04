@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================ -->
+    <!-- EXTEND COLOUR CODE VIEW FROM paint_colour_master             -->
+    <!-- Adds formula management tab to existing colour code views    -->
+    <!-- ============================================================ -->
+
+    <!-- 
+    Extend Colour Code Form View - Add Formulas Tab 
+    Shows all formula variants for this colour code
+    -->
+    <record id="view_colour_code_form_formula_tab" model="ir.ui.view">
+        <field name="name">colour.code.form.formula.tab</field>
+        <field name="model">colour.code</field>
+        <field name="inherit_id" ref="paint_colour_master.view_colour_code_form"/>
+        <field name="arch" type="xml">
+            <!-- Add formulas tab to existing notebook -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Formulas" name="formulas">
+                    <!-- Formula count summary -->
+                    <group>
+                        <group>
+                            <field name="formula_count" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <!-- Formula list -->
+                    <field name="formula_ids" nolabel="1">
+                        <list>
+                            <field name="base_category_id"/>
+                            <field name="base_uom_id"/>
+                            <field name="total_shots"/>
+                            <field name="times_used"/>
+                            <field name="state" widget="badge"/>
+                            <field name="last_used_date"/>
+                        </list>
+                    </field>
+                    
+                    <!-- Help text when no formulas exist -->
+                    <div class="alert alert-info" 
+                         invisible="formula_count &gt; 0"
+                         style="margin-top: 15px;">
+                        <p><strong>📋 No formulas saved yet</strong></p>
+                        <p>Formulas are automatically created when tinting Manufacturing Orders are marked as "Done".</p>
+                        <p><strong>How it works:</strong></p>
+                        <ul>
+                            <li>Create a tinted product using the Tinting Wizard</li>
+                            <li>Complete the Manufacturing Order</li>
+                            <li>Formula will be auto-saved here</li>
+                            <li>Next time you select this colour + base, shots will auto-fill!</li>
+                        </ul>
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

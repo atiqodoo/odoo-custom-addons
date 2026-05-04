@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <!-- Override ProductCard to hide product info button -->
+    <t t-name="sensible_pos_access_rights_employee.ProductCard"
+       t-inherit="point_of_sale.ProductCard" t-inherit-mode="extension">
+        <!-- Set cashier variable before the product-information-tag div -->
+        <xpath expr="//div[hasclass('product-information-tag')]" position="before">
+            <t t-set="sblCashier" t-value="this.pos.get_cashier()"/>
+        </xpath>
+
+        <!-- Modify the t-if condition to include the cashier's field check -->
+        <xpath expr="//div[hasclass('product-information-tag')]" position="attributes">
+            <attribute name="t-if">props.productInfo and !sblCashier?.sbl_hide_pos_action_product_info</attribute>
+        </xpath>
+    </t>
+</templates>

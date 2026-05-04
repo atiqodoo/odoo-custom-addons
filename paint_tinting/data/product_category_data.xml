@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="0">
+    <data noupdate="1">
         <!-- Tinted Paint Category -->
         <record id="product_category_tinted_paint" model="product.category">
             <field name="name">Tinted Paint</field>

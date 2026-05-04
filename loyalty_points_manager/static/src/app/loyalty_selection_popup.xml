@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!--
+        loyalty_points_manager.LoyaltySelectionPopup
+        ============================================
+        Rendered by payment_screen_loyalty_patch.js via makeAwaitable().
+
+        Layout:
+          • Dialog wrapper  ─ provides modal backdrop, header + X button
+          • Body            ─ instruction text + large phone input + error
+          • Footer slot     ─ "Skip" (secondary) + "Confirm" (primary) buttons
+
+        The Dialog's `close` prop is wired to onSkip() so that clicking the
+        header X button resolves the makeAwaitable promise with null (skip).
+    -->
+    <t t-name="loyalty_points_manager.LoyaltySelectionPopup">
+        <Dialog title="titleText">
+
+            <!-- ── Custom footer ─────────────────────────────────────────── -->
+            <t t-set-slot="footer">
+                <button
+                    class="btn btn-secondary btn-lg o_loyalty_skip_btn me-2"
+                    t-on-click="onSkip"
+                >
+                    Skip
+                </button>
+                <button
+                    class="btn btn-primary btn-lg o_loyalty_confirm_btn"
+                    t-att-disabled="!canConfirm"
+                    t-on-click="onConfirm"
+                >
+                    Confirm
+                </button>
+            </t>
+
+            <!-- ── Body ─────────────────────────────────────────────────── -->
+            <div class="o_loyalty_popup_body">
+
+                <p class="o_loyalty_popup_subtitle text-muted mb-3">
+                    Scan loyalty card barcode or enter customer phone number
+                    to earn loyalty points on this order.
+                </p>
+
+                <input
+                    t-ref="phoneInput"
+                    type="text"
+                    inputmode="tel"
+                    autocomplete="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    placeholder="e.g. 0712 345 678"
+                    class="form-control form-control-lg o_loyalty_phone_input text-center"
+                    t-att-value="state.phone"
+                    t-on-input="onPhoneInput"
+                    t-on-keydown="onKeydown"
+                />
+
+                <!-- Inline validation error (client-side only) -->
+                <div
+                    t-if="state.errorMsg"
+                    class="o_loyalty_popup_error text-danger mt-2 text-center small"
+                >
+                    <i class="fa fa-exclamation-circle me-1"/>
+                    <t t-esc="state.errorMsg"/>
+                </div>
+
+            </div><!-- /.o_loyalty_popup_body -->
+
+        </Dialog>
+    </t>
+
+</templates>

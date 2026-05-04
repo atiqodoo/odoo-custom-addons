@@ -213,7 +213,10 @@ class ProductTemplate(models.Model):
                 continue
                 
             # Skip UoM validation for tinting products
-            if self._is_tinting_product({'name': product_name, 'is_tinted_product': record.is_tinted_product}):
+            # Use hasattr guard: is_tinted_product belongs to paint_colour_master
+            # which may not be loaded during module upgrades or in other environments
+            is_tinted = record.is_tinted_product if 'is_tinted_product' in record._fields else False
+            if self._is_tinting_product({'name': product_name, 'is_tinted_product': is_tinted}):
                 _logger.debug("🎯 UoM: Skipping UoM validation for tinting product during write: %s", product_name)
                 continue
                 

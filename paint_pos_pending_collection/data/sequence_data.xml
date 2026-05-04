@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Sequence for Pending Collection -->
+        <record id="seq_paint_pending_collection" model="ir.sequence">
+            <field name="name">Pending Collection</field>
+            <field name="code">paint.pending.collection</field>
+            <field name="prefix">PEND/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        
+    </data>
+</odoo>

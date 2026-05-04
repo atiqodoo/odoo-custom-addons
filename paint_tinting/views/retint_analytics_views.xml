@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================ -->
+    <!-- RE-TINTING ANALYTICS TREE VIEW                                   -->
+    <!-- ================================================================ -->
+    <record id="view_retint_analytics_tree" model="ir.ui.view">
+        <field name="name">retint.analytics.tree</field>
+        <field name="model">retint.analytics</field>
+        <field name="arch" type="xml">
+            <tree string="Re-Tinting Analytics">
+                <field name="create_date" string="Date"/>
+                <field name="original_product_id"/>
+                <field name="new_product_id"/>
+                <field name="colour_code_id"/>
+                <field name="fandeck_id"/>
+                <field name="adjustment_number"/>
+                <field name="liability_type"/>
+                <field name="liability_reason"/>
+                <field name="customer_liability_percent"/>
+                <field name="total_retint_cost" sum="Total"/>
+                <field name="customer_charged" sum="Total"/>
+                <field name="company_absorbed" sum="Total"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- RE-TINTING ANALYTICS FORM VIEW                                   -->
+    <!-- ================================================================ -->
+    <record id="view_retint_analytics_form" model="ir.ui.view">
+        <field name="name">retint.analytics.form</field>
+        <field name="model">retint.analytics</field>
+        <field name="arch" type="xml">
+            <form string="Re-Tinting Analytics">
+                <sheet>
+                    <group>
+                        <group string="Products">
+                            <field name="original_product_id"/>
+                            <field name="new_product_id"/>
+                            <field name="colour_code_id"/>
+                            <field name="fandeck_id"/>
+                            <field name="adjustment_number"/>
+                        </group>
+                        <group string="Liability">
+                            <field name="liability_type"/>
+                            <field name="liability_reason"/>
+                            <field name="customer_liability_percent"/>
+                            <field name="company_liability_percent"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <group string="Costs">
+                            <field name="original_cost"/>
+                            <field name="additional_colorant_cost"/>
+                            <field name="service_cost"/>
+                            <field name="total_retint_cost"/>
+                        </group>
+                        <group string="Split">
+                            <field name="customer_charged"/>
+                            <field name="company_absorbed"/>
+                        </group>
+                    </group>
+                    
+                    <group>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- RE-TINTING ANALYTICS ACTION                                      -->
+    <!-- ================================================================ -->
+    <record id="action_retint_analytics" model="ir.actions.act_window">
+        <field name="name">Re-Tinting Analytics</field>
+        <field name="res_model">retint.analytics</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

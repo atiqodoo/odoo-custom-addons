@@ -60,6 +60,67 @@ class MrpBom(models.Model):
         string='Tinting Notes',
         help='Additional notes about this tinting recipe'
     )
+    is_retint_bom = fields.Boolean(
+        string='Is Re-Tint BOM',
+        default=False,
+        help='True if this BOM is for re-tinting an existing tinted product'
+    )
+    
+    retint_liability_type = fields.Selection([
+        ('customer', 'Customer'),
+        ('company', 'Company'),
+        ('shared', 'Shared')
+    ], string='Re-Tint Liability Type', copy=False)
+    
+    retint_customer_percent = fields.Float(
+        string='Customer Liability %',
+        digits=(5, 2),
+        copy=False
+    )
+    
+    retint_company_percent = fields.Float(
+        string='Company Liability %',
+        digits=(5, 2),
+        copy=False
+    )
+    
+    retint_liability_reason = fields.Selection([
+        ('customer_preference', 'Customer Preference'),
+        ('wrong_color_ordered', 'Wrong Color Ordered'),
+        ('company_error_formula', 'Company Error: Formula'),
+        ('company_error_mixing', 'Company Error: Mixing'),
+        ('company_error_machine', 'Company Error: Machine'),
+        ('quality_issue', 'Quality Issue'),
+        ('mutual_agreement', 'Mutual Agreement'),
+        ('other', 'Other')
+    ], string='Re-Tint Reason', copy=False)
+    
+    retint_total_cost = fields.Float(
+        string='Re-Tint Total Cost',
+        digits='Product Price',
+        copy=False,
+        help='Total cost of re-tinting (colorants + service)'
+    )
+    
+    retint_customer_charge = fields.Float(
+        string='Customer Charged',
+        digits='Product Price',
+        copy=False,
+        help='Amount charged to customer'
+    )
+    
+    retint_company_absorption = fields.Float(
+        string='Company Absorbed',
+        digits='Product Price',
+        copy=False,
+        help='Cost absorbed by company'
+    )
+    
+    retint_adjustment_number = fields.Integer(
+        string='Adjustment #',
+        copy=False,
+        help='Which adjustment is this (1, 2, 3, etc.)'
+    )
     
     @api.depends('bom_line_ids.cost_excl_vat', 'bom_line_ids.cost_incl_vat')
     def _compute_total_costs(self):

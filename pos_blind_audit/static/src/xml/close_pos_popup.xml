@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    pos_blind_audit – ClosePosPopup template extension
+    ====================================================
+    Six XPath patches applied when isBlindAudit is true.
+    Patch 5 targets the pos_hr replacement CASH section (requires pos_hr).
+    Patch 6 injects the Cash Out input and Cash Balance display.
+
+    Template layout (closing_popup.xml) — what we hide vs keep:
+
+        <div class="payment-methods-overview">
+            ┌─ [A] CASH overview div ───────────────────────────────┐
+            │  t-if="pos.config.cash_control"  class="w-100 mb-3"  │
+            │   • CASH header + expected amount                     │
+            │   • Opening balance row                               │
+            │   • Payments in Cash row                              │
+            │   • Cash In / Out breakdown                           │
+            │   • Counted row                                       │
+            │   • Difference row                                    │
+            └───────────────────────── PATCH 1: hide entirely ─────┘
+            ┌─ [B] Non-cash loop ───────────────────────────────────┐
+            │  t-foreach="props.non_cash_payment_methods"           │
+            │   • Method name               [keep – cashier needs]  │
+            │   • Expected amount span      PATCH 2: hide           │
+            │   • Counted row               (hidden via _showDiff)  │
+            │   • Difference row            PATCH 3: hide           │
+            └──────────────────────────────────────────────────────-┘
+        </div>
+        <hr/>
+        ┌─ [D] Cash Count input ────────────────────────────────────┐
+        │  t-if="pos.config.cash_control"  class="mb-3"            │
+        │  INTENTIONALLY KEPT – cashier must enter their count      │
+        │   • Input field          [keep]                           │
+        │   • fa-money button      [keep – denomination entry only] │
+        │   • fa-clone button      PATCH 4: hide (auto-fills with   │
+        │                          expected amount, breaking audit)  │
+        └──────────────────────────────────────────────────────────-┘
+        ┌─ [E] Cash Out + Cash Balance  ────────────────────────────┐
+        │  PATCH 6: inserted after [D] when isBlindAudit            │
+        │   • Cash Out input  (mandatory, bound to blindAuditState) │
+        │   • Cash Balance display  (counted − cash out, read-only) │
+        └──────────────────────────────────────────────────────────-┘
+
+    Why [D] is not affected by Patch 1
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Patch 1 XPath scopes to a DIRECT CHILD of .payment-methods-overview.
+    [D] lives outside that container, so it is never matched.
+
+    t-if replacement note
+    ~~~~~~~~~~~~~~~~~~~~~~
+    position="attributes" + <attribute name="t-if"> REPLACES an existing
+    t-if.  Patch 1 merges the original condition with our gate so the
+    element still respects cash_control on non-blind sessions.
+    Patches 2 and 3 ADD t-if to elements that had none.
+
+    Patch 6 XPath note
+    ~~~~~~~~~~~~~~~~~~~~
+    //button[@t-on-click='autoFillCashCount']/ancestor::div[@t-if='pos.config.cash_control']
+    navigates from the auto-fill button up to its nearest ancestor div
+    that has t-if="pos.config.cash_control".  This uniquely identifies
+    the Cash Count container [D].  position="after" appends [E] below it.
+-->
+<templates>
+
+    <t t-name="pos_blind_audit.ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension">
+
+        <!-- ─── Patch 1: Hide entire CASH overview block ──────────────
+             Target: direct child of .payment-methods-overview whose
+             t-if is "pos.config.cash_control" — exclusively div [A].
+             Div [D] (Cash Count input) is NOT a child of the overview
+             container and is never reached by this XPath.
+
+             Result:
+               blind audit OFF → visible when cash_control=true (unchanged)
+               blind audit ON  → hidden even when cash_control=true
+        -->
+        <xpath
+            expr="//div[contains(@class,'payment-methods-overview')]/div[@t-if='pos.config.cash_control']"
+            position="attributes">
+            <attribute name="t-if">pos.config.cash_control and !isBlindAudit</attribute>
+        </xpath>
+
+        <!-- ─── Patch 2: Hide expected-amount span for non-cash methods ─
+             Target: the <span t-esc="env.utils.formatCurrency(pm.amount)"/>
+             inside the non-cash payment methods loop.
+
+             pm.name remains visible so the cashier knows which non-cash
+             methods are in the session; only the expected amount is hidden.
+        -->
+        <xpath
+            expr="//span[@t-esc='env.utils.formatCurrency(pm.amount)']"
+            position="attributes">
+            <attribute name="t-if">!isBlindAudit</attribute>
+        </xpath>
+
+        <!-- ─── Patch 3: Hide Difference row for non-cash methods ───────
+             Target: the <div t-att-class="{'text-danger fw-bold': diff}">
+             inside the non-cash loop (the Difference row).
+
+             Note: the CASH section's equivalent div is already hidden
+             by Patch 1 (it's inside the hidden CASH overview block),
+             so this XPath targets only the non-cash occurrence(s).
+        -->
+        <xpath
+            expr="//div[@t-foreach='props.non_cash_payment_methods']//div[@t-att-class]"
+            position="attributes">
+            <attribute name="t-if">!isBlindAudit</attribute>
+        </xpath>
+
+        <!-- ─── Patch 5: Hide pos_hr CASH overview section ─────────────────
+             pos_hr (module_pos_hr) replaces the standard .payment-methods-
+             overview div with its own per-employee version.  The original
+             block (patched by Patch 1) is hidden by pos_hr's t-if; the
+             pos_hr replacement is what the cashier actually sees.
+
+             pos_hr adds this div (pos_hr/closing_popup.xml):
+                 <div t-if="pos.config.cash_control
+                             and pos.config.module_pos_hr"
+                      class="w-100 mb-3">
+                     … Opening / Payments / Counted / Difference …
+                 </div>
+
+             We extend the condition to also require !isBlindAudit so the
+             entire pos_hr CASH block is hidden during blind audit.
+
+             This module declares pos_hr as a dependency, so this XPath
+             is always valid when the module is installed.
+        -->
+        <xpath
+            expr="//div[@t-if='pos.config.cash_control and pos.config.module_pos_hr']"
+            position="attributes">
+            <attribute name="t-if">pos.config.cash_control and pos.config.module_pos_hr and !isBlindAudit</attribute>
+        </xpath>
+
+        <!-- ─── Patch 4: Hide auto-fill button in Cash Count section ──────
+             Target: the <button t-on-click="autoFillCashCount"/> (clone icon).
+             When clicked this button pre-fills the cash count input with the
+             expected balance, directly revealing the expected amount to the
+             cashier and breaking the blind-audit premise.
+
+             The fa-money (denomination entry) button is intentionally KEPT —
+             it opens a coin/note breakdown popup where the cashier enters their
+             own physical count; it never exposes the expected amount.
+        -->
+        <xpath
+            expr="//button[@t-on-click='autoFillCashCount']"
+            position="attributes">
+            <attribute name="t-if">!isBlindAudit</attribute>
+        </xpath>
+
+        <!-- ─── Patch 6: Cash Out input + Cash Balance display ──────────────
+             Target: the outer Cash Count div [D] identified via the
+             autoFillCashCount button's ancestor with t-if="pos.config.cash_control".
+             position="after" appends the new [E] block below [D].
+
+             Only rendered when:
+               - pos.config.cash_control is true   (there is a cash register)
+               - isBlindAudit is true              (blind audit mode active)
+
+             Cash Out field
+             ~~~~~~~~~~~~~~
+             Bound two-way to blindAuditState.blindCashOut via t-model.
+             Validated by isCashOutValid() — inline error shown when:
+               - value has been entered (non-empty) AND
+               - value is invalid (negative or exceeds counted)
+             The Confirm button guard in confirm() (JS) prevents session
+             close until isCashOutValid() returns true.
+
+             Cash Balance display
+             ~~~~~~~~~~~~~~~~~~~~~
+             Read-only.  Computed in real-time by the cashBalance getter (JS):
+               cashBalance = counted_cash − cash_out
+             Formatted with env.utils.formatCurrency (company currency).
+             This value is sent to the server via save_blind_cash_out() and
+             ultimately written to pos.config.blind_audit_next_opening_cash.
+        -->
+        <xpath
+            expr="//button[@t-on-click='autoFillCashCount']/ancestor::div[@t-if='pos.config.cash_control']"
+            position="after">
+
+            <!-- Cash Out input -->
+            <div t-if="pos.config.cash_control and isBlindAudit" class="mb-3">
+                <label class="form-label fw-semibold">
+                    Cash Out
+                    <span class="text-danger ms-1" title="Required">*</span>
+                </label>
+                <input
+                    type="text"
+                    class="form-control"
+                    t-model="blindAuditState.blindCashOut"
+                    placeholder="0.00"
+                    inputmode="decimal"
+                    autocomplete="off"
+                />
+                <div
+                    t-if="!blindAuditState.blindCashOut.trim()"
+                    class="text-danger small mt-1">
+                    Cash Out is required. Enter 0 if no cash is removed from the till.
+                </div>
+                <div
+                    t-if="blindAuditState.blindCashOut.trim() and !isCashOutValid()"
+                    class="text-danger small mt-1">
+                    Cash Out cannot exceed the counted cash amount.
+                </div>
+            </div>
+
+            <!-- Cash Balance display -->
+            <div
+                t-if="pos.config.cash_control and isBlindAudit"
+                class="mb-3 d-flex justify-content-between align-items-center p-2 bg-light rounded border">
+                <span class="fw-semibold">Cash Balance (Next Opening)</span>
+                <span
+                    class="fw-bold fs-5"
+                    t-esc="env.utils.formatCurrency(cashBalance)"/>
+            </div>
+
+        </xpath>
+
+    </t>
+
+</templates>

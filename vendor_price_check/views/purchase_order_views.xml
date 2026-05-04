@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_purchase_order_form_inherit_price_check" model="ir.ui.view">
+        <field name="name">purchase.order.form.inherit.price.check</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- HIDE the original "Create Bill" button -->
+            <xpath expr="//button[@name='action_create_invoice']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            
+            <!-- ADD our wizard button in the SAME position -->
+            <xpath expr="//button[@name='action_create_invoice']" position="after">
+                <button name="action_create_invoice_wizard" 
+                        string="Create Bill" 
+                        type="object"
+                        class="btn-primary"
+                        invisible="state not in ('purchase', 'done') or invoice_status != 'to invoice'"
+                        help="Create vendor bill with automatic price validation"/>
+            </xpath>
+            
+        </field>
+    </record>
+</odoo>

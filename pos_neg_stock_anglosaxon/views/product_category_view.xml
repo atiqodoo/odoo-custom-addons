@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!--
+            View 1 — Warning Banner
+            Inherits from the root product.category form view.
+            Injects an alert <div> before the main <sheet> when the price
+            difference or stock valuation account is missing on an AVCO +
+            automated valuation category.
+
+            Odoo 18 syntax: visibility controlled via inline `invisible=` Python
+            expressions on elements (attrs= and states= removed since v17).
+
+            Logic:
+              Show when:
+                pos_neg_is_avco_auto == True
+                AND (pos_neg_missing_price_diff_acc OR pos_neg_missing_stock_val_acc)
+
+              → invisible when:
+                NOT pos_neg_is_avco_auto
+                OR (NOT pos_neg_missing_price_diff_acc AND NOT pos_neg_missing_stock_val_acc)
+        -->
+        <record id="product_category_form_neg_stock_banner" model="ir.ui.view">
+            <field name="name">product.category.form.neg.stock.banner</field>
+            <field name="model">product.category</field>
+            <field name="inherit_id" ref="product.product_category_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="before">
+                    <div class="alert alert-warning mb0"
+                         invisible="not pos_neg_is_avco_auto or (not pos_neg_missing_price_diff_acc and not pos_neg_missing_stock_val_acc)">
+                        <strong>POS Negative Stock — Configuration Warning</strong><br/>
+                        This category uses <strong>AVCO + Automated Valuation</strong>.
+                        One or more accounts required for POS negative stock price difference
+                        journal entries are not set:
+                        <ul class="mb0">
+                            <li invisible="not pos_neg_missing_price_diff_acc">
+                                <strong>Price Difference Account</strong>
+                                (property_account_creditor_price_difference_categ) is missing.
+                                Price difference JEs will be SKIPPED at vendor receipt validation.
+                            </li>
+                            <li invisible="not pos_neg_missing_stock_val_acc">
+                                <strong>Stock Valuation Account</strong>
+                                (property_stock_valuation_account_id) is missing.
+                            </li>
+                        </ul>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+        <!--
+            View 2 — Field Hint
+            Inherits from purchase_stock.view_category_property_form which
+            renders property_account_creditor_price_difference_categ on the
+            product.category form.  Appends a small contextual note below the
+            field so accountants understand how the module uses the account.
+        -->
+        <record id="product_category_form_neg_stock_hint" model="ir.ui.view">
+            <field name="name">product.category.form.neg.stock.hint</field>
+            <field name="model">product.category</field>
+            <field name="inherit_id" ref="purchase_stock.view_category_property_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='property_account_creditor_price_difference_categ']"
+                       position="after">
+                    <div class="text-muted small"
+                         invisible="not pos_neg_is_avco_auto">
+                        Used by POS Negative Stock module: Dr when purchase cost &gt; AVCO at sale
+                        (Case A), Cr when purchase cost &lt; AVCO at sale (Case B).
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

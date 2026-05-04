@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ── List view ─────────────────────────────────────────────────────── -->
+    <record id="view_pos_blind_audit_attempt_list" model="ir.ui.view">
+        <field name="name">pos.blind.audit.attempt.list</field>
+        <field name="model">pos.blind.audit.attempt</field>
+        <field name="arch" type="xml">
+            <list string="Blind Audit Attempts"
+                  default_order="timestamp desc"
+                  decoration-danger="outcome == 'override'"
+                  decoration-warning="outcome == 'blocked'">
+                <field name="timestamp"/>
+                <field name="session_id"/>
+                <field name="config_id"/>
+                <field name="cashier_id"/>
+                <field name="attempt_number" string="Attempt #"/>
+                <field name="counted_amount" string="Counted" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="expected_amount" string="Expected" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="cash_out" string="Cash Out" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="discrepancy" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="variance_limit" string="Allowed Variance" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="outcome" widget="badge"
+                       decoration-danger="outcome == 'override'"
+                       decoration-warning="outcome == 'blocked'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Form view ─────────────────────────────────────────────────────── -->
+    <record id="view_pos_blind_audit_attempt_form" model="ir.ui.view">
+        <field name="name">pos.blind.audit.attempt.form</field>
+        <field name="model">pos.blind.audit.attempt</field>
+        <field name="arch" type="xml">
+            <form string="Blind Audit Attempt" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group string="Session">
+                            <field name="timestamp"/>
+                            <field name="session_id"/>
+                            <field name="config_id"/>
+                            <field name="cashier_id"/>
+                        </group>
+                        <group string="Attempt Details">
+                            <field name="attempt_number"/>
+                            <field name="outcome"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Cash Amounts">
+                            <field name="counted_amount"/>
+                            <field name="expected_amount"/>
+                            <field name="cash_out"/>
+                            <field name="discrepancy"/>
+                            <field name="variance_limit"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Search view ───────────────────────────────────────────────────── -->
+    <record id="view_pos_blind_audit_attempt_search" model="ir.ui.view">
+        <field name="name">pos.blind.audit.attempt.search</field>
+        <field name="model">pos.blind.audit.attempt</field>
+        <field name="arch" type="xml">
+            <search string="Search Blind Audit Attempts">
+                <field name="session_id"/>
+                <field name="cashier_id"/>
+                <field name="config_id"/>
+                <separator/>
+                <filter name="blocked" string="Blocked" domain="[('outcome','=','blocked')]"/>
+                <filter name="override" string="Auto-Allowed (Override)" domain="[('outcome','=','override')]"/>
+                <separator/>
+                <filter name="today" string="Today"
+                        domain="[('timestamp','&gt;=',datetime.datetime.combine(context_today(), datetime.time(0,0,0)).strftime('%Y-%m-%d %H:%M:%S'))]"/>
+                <group expand="1" string="Group By">
+                    <filter name="group_session" string="Session" context="{'group_by': 'session_id'}"/>
+                    <filter name="group_cashier" string="Cashier" context="{'group_by': 'cashier_id'}"/>
+                    <filter name="group_config" string="POS Register" context="{'group_by': 'config_id'}"/>
+                    <filter name="group_outcome" string="Outcome" context="{'group_by': 'outcome'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ── Action ────────────────────────────────────────────────────────── -->
+    <record id="action_pos_blind_audit_attempt" model="ir.actions.act_window">
+        <field name="name">Blind Audit Attempt Log</field>
+        <field name="res_model">pos.blind.audit.attempt</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_pos_blind_audit_attempt_search"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No blind audit attempts recorded yet.
+            </p>
+            <p>
+                Failed cash-count attempts during POS session closing are
+                logged here.  Cashiers have 3 attempts before the system
+                automatically allows the close.
+            </p>
+        </field>
+    </record>
+
+    <!-- ── Menu item under POS Reporting ─────────────────────────────────── -->
+    <menuitem
+        id="menu_pos_blind_audit_attempt"
+        name="Blind Audit Log"
+        parent="point_of_sale.menu_point_rep"
+        action="action_pos_blind_audit_attempt"
+        sequence="99"
+        groups="point_of_sale.group_pos_manager"/>
+
+</odoo>

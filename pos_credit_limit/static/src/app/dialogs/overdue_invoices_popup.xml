@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Gate 1.5: Overdue invoices block dialog.
+         Shown when the customer's payment terms have elapsed on unpaid invoices.
+         Blocks Customer Account payment regardless of available credit headroom. -->
+    <t t-name="pos_credit_limit.OverdueInvoicesPopup">
+        <Dialog title="props.title">
+
+            <div class="pcl-overdue-popup p-3">
+
+                <div class="alert alert-danger d-flex align-items-center mb-3" role="alert">
+                    <i class="fa fa-ban fa-lg me-2"/>
+                    <strong>Customer Account payment blocked — overdue balance</strong>
+                </div>
+
+                <p class="mb-3">
+                    <strong t-esc="props.partnerName"/> has unpaid invoice(s) whose
+                    payment due date has passed. Customer Account credit cannot be
+                    extended until the overdue balance is settled.
+                </p>
+
+                <table class="table table-sm table-bordered mb-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-end">Detail</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="table-danger">
+                            <td><strong>Overdue Invoices</strong></td>
+                            <td class="text-end fw-bold text-danger" t-esc="props.overdueCount"/>
+                        </tr>
+                        <tr class="table-danger">
+                            <td><strong>Total Overdue Amount</strong></td>
+                            <td class="text-end fw-bold text-danger" t-esc="props.overdueAmount"/>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Oldest Due Date</td>
+                            <td class="text-end fw-bold" t-esc="props.oldestOverdueDate"/>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p class="text-muted small mb-0">
+                    Ask the customer to settle their outstanding invoices first,
+                    or use cash / card for this transaction.
+                </p>
+
+            </div>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-danger btn-lg" t-on-click="props.close">
+                    OK — Cannot Proceed on Account
+                </button>
+            </t>
+
+        </Dialog>
+    </t>
+
+</templates>

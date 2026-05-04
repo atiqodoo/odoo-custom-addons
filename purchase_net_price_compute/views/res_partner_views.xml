@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_partner_form_inherit_discount_freight" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.discount.freight</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='sales_purchases']" position="inside">
+                <group string="Default Purchase Costs" invisible="supplier_rank == 0">
+                    <group>
+                        <field name="discount_percentage" widget="percentage"/>
+                    </group>
+                    <group>
+                        <field name="freight_percentage" widget="percentage"/>
+                    </group>
+                    <div class="text-muted" colspan="2">
+                        These values are used as defaults when products don't have specific vendor pricing rules.
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
