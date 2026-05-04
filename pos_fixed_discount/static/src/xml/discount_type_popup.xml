@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_fixed_discount.DiscountTypePopup">
+        <Dialog title="props.title" bodyClass="'d-flex flex-column justify-content-center'" size="'sm'">
+
+            <!-- Mode toggle: cashier can switch between % and Fixed on the fly -->
+            <div class="d-flex justify-content-center mb-3">
+                <div class="btn-group w-100">
+                    <button
+                        t-att-class="'btn btn-lg ' + (state.discountType === 'percentage' ? 'btn-primary' : 'btn-outline-secondary')"
+                        t-on-click="() => this.setType('percentage')">
+                        % Percentage
+                    </button>
+                    <button
+                        t-att-class="'btn btn-lg ' + (state.discountType === 'fixed' ? 'btn-primary' : 'btn-outline-secondary')"
+                        t-on-click="() => this.setType('fixed')">
+                        Fixed Amount
+                    </button>
+                </div>
+            </div>
+
+            <!-- Amount display -->
+            <div class="input-symbol mb-3">
+                <div class="popup-input value active form-control form-control-lg text-center">
+                    <span class="input-value" t-esc="state.buffer || ''"/>
+                </div>
+            </div>
+
+            <Numpad class="'p-1 rounded-3 bg-200'"/>
+
+            <t t-set-slot="footer">
+                <div class="d-flex flex-grow-1 justify-content-center">
+                    <button class="btn btn-primary btn-lg lh-lg o-default-button me-2"
+                            tabindex="1" t-on-click="confirm">Ok</button>
+                    <button class="btn btn-secondary btn-lg lh-lg o-default-button"
+                            tabindex="1" t-on-click="cancel">Discard</button>
+                </div>
+            </t>
+        </Dialog>
+    </t>
+</templates>

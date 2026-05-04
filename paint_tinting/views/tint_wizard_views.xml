@@ -13,27 +13,30 @@
                             string="Create Tinted Product &amp; MO"
                             type="object"
                             class="oe_highlight"/>
-                    
-                    <!-- ============================================== -->
-                    <!-- NEW: COMPARE COSTS BUTTON                      -->
-                    <!-- ============================================== -->
+
                     <button name="action_open_cost_comparison"
                             string="Compare Costs Across Brands"
                             type="object"
                             class="btn-info"
                             help="Compare costs with other brands using same formula"
                             invisible="not base_variant_id"/>
-                    
+
+                    <button name="%(paint_tinting.action_retint_wizard)d"
+                            string="Re-Tint Returned Product"
+                            type="action"
+                            class="btn-warning"
+                            help="Open re-tinting wizard to adjust a returned tinted product"/>
+
                     <button string="Cancel" special="cancel" class="btn-secondary"/>
                 </header>
 
                 <sheet>
                     <!-- ============================================== -->
-                    <!-- BASE PRODUCT SECTION - UPDATED WITH DOMAIN     -->
+                    <!-- BASE PRODUCT SECTION                           -->
                     <!-- ============================================== -->
                     <group string="Base Product">
                         <field name="base_variant_id"
-                               domain="[('product_tmpl_id.is_colorant', '=', False), 
+                               domain="[('product_tmpl_id.is_colorant', '=', False),
                                         ('product_tmpl_id.is_tinted_product', '=', False)]"
                                placeholder="Select base paint product (colorants and tinted products excluded)..."
                                options="{'no_create': True}"/>
@@ -47,12 +50,12 @@
                             <field name="fandeck_id"
                                    placeholder="Select existing or create new fandeck..."
                                    help="Type to search existing fandecks or create a new one"/>
-                            
+
                             <field name="colour_code_id"
                                    placeholder="Select existing or create new colour code..."
                                    context="{'default_fandeck_id': fandeck_id}"
                                    help="Will be filtered by fandeck. Create new if needed."/>
-                            
+
                             <field name="colour_name"
                                    placeholder="Auto-filled from colour code"
                                    readonly="1"/>
@@ -69,13 +72,13 @@
                             <field name="formula_id" readonly="1" invisible="not formula_applied"/>
                         </group>
                         <group>
-                            <button name="action_view_available_formulas" 
-                                    string="View Available Formulas" 
+                            <button name="action_view_available_formulas"
+                                    string="View Available Formulas"
                                     type="object"
                                     class="btn-link"
                                     invisible="available_formulas == 0"/>
-                            <button name="action_clear_formula" 
-                                    string="Clear Formula &amp; Enter Manually" 
+                            <button name="action_clear_formula"
+                                    string="Clear Formula &amp; Enter Manually"
                                     type="object"
                                     class="btn-warning"
                                     confirm="This will clear all colorant shots. Are you sure?"
@@ -114,8 +117,11 @@
                         <!-- TAB 1: COLORANT INPUT -->
                         <page string="Colorants" name="colorants">
                             <div class="alert alert-info" role="alert">
-                                <strong>📝 Instructions:</strong>
-                                Enter the number of shots from your LargoTint machine.
+                                <strong>📝 How to enter shots:</strong>
+                                Type a value in <strong>Add Shots</strong>, then press
+                                <strong>Tab</strong> — it accumulates into <strong>Total Shots</strong> automatically.
+                                Repeat as needed (e.g. 30 Tab, then 15 Tab = 45 total).
+                                To reset, edit <strong>Total Shots</strong> directly and type <strong>0</strong>.
                                 <br/>
                                 <em>1 shot = 0.616 ml | Costs update automatically</em>
                                 <br/>
@@ -123,47 +129,54 @@
                             </div>
 
                             <!-- ============================================== -->
-                            <!-- COLORANT LINES - WITH OPTIONAL COLUMNS         -->
+                            <!-- COLORANT LINES                                 -->
                             <!-- ============================================== -->
                             <field name="colorant_line_ids" nolabel="1">
                                 <list editable="bottom" create="0" delete="0">
+
                                     <!-- ========================================== -->
                                     <!-- ALWAYS HIDDEN (System fields)              -->
                                     <!-- ========================================== -->
                                     <field name="colorant_id" column_invisible="1"/>
                                     <field name="stock_warning" column_invisible="1"/>
-                                    
+
                                     <!-- ========================================== -->
-                                    <!-- VISIBLE BY DEFAULT (optional="show")       -->
+                                    <!-- VISIBLE BY DEFAULT                         -->
                                     <!-- ========================================== -->
                                     <field name="colorant_name"
                                            string="Colorant"
                                            readonly="1"
                                            optional="show"/>
-                                    
+
                                     <field name="colorant_code"
                                            string="Code"
                                            readonly="1"
                                            optional="show"/>
-                                    
+
+                                    <!-- Total Shots: editable — user can reset to 0 by typing directly -->
                                     <field name="shots"
-                                           string="Shots"
+                                           string="Total Shots"
                                            sum="Total Shots"
                                            optional="show"/>
-                                    
+
+                                    <!-- Add Shots: type value then Tab to auto-accumulate -->
+                                    <field name="shots_to_add"
+                                           string="Add Shots (+Tab)"
+                                           optional="show"/>
+
                                     <field name="available_stock"
                                            string="Stock (L)"
                                            readonly="1"
                                            decoration-danger="stock_warning"
                                            decoration-success="not stock_warning and shots > 0"
                                            optional="show"/>
-                                    
+
                                     <field name="line_cost_incl_vat"
                                            string="Line Cost (Incl. VAT)"
                                            sum="Total Cost (Incl. VAT)"
                                            readonly="1"
                                            optional="show"/>
-                                    
+
                                     <!-- ========================================== -->
                                     <!-- HIDDEN BY DEFAULT (optional="hide")        -->
                                     <!-- User can unhide via column menu            -->
@@ -173,17 +186,18 @@
                                            sum="Total ML"
                                            readonly="1"
                                            optional="hide"/>
-                                    
+
                                     <field name="qty_litres"
                                            string="Litres"
                                            sum="Total Litres"
                                            readonly="1"
                                            optional="hide"/>
-                                    
+
                                     <field name="unit_cost_excl_vat"
                                            string="Unit Cost (Excl. VAT)"
                                            readonly="1"
                                            optional="hide"/>
+
                                 </list>
                             </field>
 
@@ -210,7 +224,7 @@
                                     <field name="base_cost_excl_vat" readonly="1"/>
                                     <field name="base_cost_incl_vat" readonly="1"/>
                                 </group>
-                                
+
                                 <group string="Colorants">
                                     <label for="total_colorant_ml" string="Total Volume"/>
                                     <div class="o_row">
@@ -219,7 +233,7 @@
                                                readonly="1"/>
                                         <span class="oe_inline"> ml</span>
                                     </div>
-                                    
+
                                     <field name="colorant_cost_excl_vat"
                                            string="Cost (Excl. VAT)"
                                            readonly="1"/>
@@ -230,7 +244,7 @@
                             </group>
 
                             <separator string="Total Cost"/>
-                            
+
                             <group>
                                 <group>
                                     <label for="total_cost_excl_vat"
@@ -243,7 +257,7 @@
                                         <span class="oe_inline fw-bold"> KES</span>
                                     </div>
                                 </group>
-                                
+
                                 <group>
                                     <label for="total_cost_incl_vat"
                                            string="TOTAL (Incl. VAT 16%)"
@@ -261,11 +275,11 @@
                             <!-- SELLING PRICE & PROFIT SECTION                 -->
                             <!-- ============================================== -->
                             <separator string="Pricing &amp; Profit"/>
-                            
+
                             <group>
                                 <group string="Selling Price">
-                                    <label for="selling_price_incl_vat" 
-                                           string="Selling Price (Incl. VAT)" 
+                                    <label for="selling_price_incl_vat"
+                                           string="Selling Price (Incl. VAT)"
                                            class="fw-bold"/>
                                     <div class="o_row">
                                         <field name="selling_price_incl_vat"
@@ -276,10 +290,10 @@
                                         <i>Auto-calculated with 30% markup when empty</i>
                                     </div>
                                 </group>
-                                
+
                                 <group string="Profit Analysis">
-                                    <label for="profit_amount_incl_vat" 
-                                           string="Profit Amount (Incl. VAT)" 
+                                    <label for="profit_amount_incl_vat"
+                                           string="Profit Amount (Incl. VAT)"
                                            class="fw-bold"/>
                                     <div class="o_row">
                                         <field name="profit_amount_incl_vat"
@@ -287,9 +301,9 @@
                                                readonly="1"/>
                                         <span class="oe_inline fw-bold"> KES</span>
                                     </div>
-                                    
-                                    <label for="profit_margin_percent" 
-                                           string="Profit Margin" 
+
+                                    <label for="profit_margin_percent"
+                                           string="Profit Margin"
                                            class="fw-bold"/>
                                     <div class="o_row">
                                         <field name="profit_margin_percent"

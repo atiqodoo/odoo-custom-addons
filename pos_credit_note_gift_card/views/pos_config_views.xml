@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- POS Configuration: Credit Note Settings -->
+
+    <!-- 1. pos.config quick-config form
+         Inject before the "More settings" system-group footer div. -->
+    <record id="view_pos_config_credit_note_section" model="ir.ui.view">
+        <field name="name">pos.config.credit.note.section</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@groups='base.group_system']" position="before">
+                <div class="row mt16 o_settings_container" invisible="context.get('pos_config_create_mode', False)">
+
+                    <setting string="Credit Note Program" help="Gift-card program used to issue credit notes from the POS payment screen.">
+                        <field name="credit_note_gift_card_program_id"
+                               options="{'no_create': True}"
+                               string="Gift Card Program"/>
+                    </setting>
+
+                    <setting string="Credit Note Payment Method"
+                             help="Payment method used to balance the return order (create a 'Miscellaneous' journal + payment method for credit note issuances).">
+                        <field name="credit_note_payment_method_id"
+                               options="{'no_create': True}"
+                               string="Payment Method"/>
+                    </setting>
+
+                    <setting string="Return Discount Distribution" help="How line-level discounts on the original order are applied when computing the credit note amount.">
+                        <field name="credit_note_discount_distribution" widget="radio"/>
+                    </setting>
+
+                    <setting string="Commission Deduction Mode" help="Which commission tiers (pos_extra_amount_manager_extended) are netted from the credit note amount.">
+                        <field name="credit_note_commission_mode" widget="radio"/>
+                        <div class="content-group mt8" invisible="credit_note_commission_mode in ['none','base_profit']">
+                            <div class="row">
+                                <label for="credit_note_extra_weight" class="col-lg-5 o_light_label" string="Extra-Amount Weight (%)"/>
+                                <div class="col-lg-7">
+                                    <field name="credit_note_extra_weight"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="content-group mt8" invisible="credit_note_commission_mode in ['none','extra_amount']">
+                            <div class="row">
+                                <label for="credit_note_base_weight" class="col-lg-5 o_light_label" string="Base-Profit Weight (%)"/>
+                                <div class="col-lg-7">
+                                    <field name="credit_note_base_weight"/>
+                                </div>
+                            </div>
+                        </div>
+                    </setting>
+
+                    <setting string="Require Return Reason" help="Cashier must enter a reason before the Credit Note button activates.">
+                        <field name="credit_note_require_reason"/>
+                    </setting>
+
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- 2. Settings: Point of Sale
+         Inject a new block after the Inventory block. -->
+    <record id="view_res_config_settings_credit_note" model="ir.ui.view">
+        <field name="name">res.config.settings.credit.note</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@id='pos_inventory_section']" position="after">
+                <block title="Credit Note (Gift Card)" id="pos_credit_note_section">
+
+                    <setting string="Credit Note Gift Card Program"
+                             help="Gift-card loyalty program used to issue credit notes when a cashier processes a POS return.">
+                        <field name="pos_credit_note_gift_card_program_id"
+                               options="{'no_create': True}"/>
+                    </setting>
+
+                    <setting string="Credit Note Payment Method"
+                             help="Payment method that balances the return order on validation (create a Miscellaneous journal + payment method for credit note issuances).">
+                        <field name="pos_credit_note_payment_method_id"
+                               options="{'no_create': True}"/>
+                    </setting>
+
+                    <setting string="Return Discount Distribution"
+                             help="How original-order line discounts are reflected in the credit note amount.">
+                        <field name="pos_credit_note_discount_distribution" widget="radio"/>
+                    </setting>
+
+                    <setting string="Commission Deduction Mode"
+                             help="Commission netting when pos_extra_amount_manager_extended is installed.">
+                        <field name="pos_credit_note_commission_mode" widget="radio"/>
+                        <div class="content-group mt8" invisible="pos_credit_note_commission_mode in ['none','base_profit']">
+                            <div class="row">
+                                <label for="pos_credit_note_extra_weight" class="col-lg-5 o_light_label" string="Extra-Amount Weight (%)"/>
+                                <div class="col-lg-7">
+                                    <field name="pos_credit_note_extra_weight"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="content-group mt8" invisible="pos_credit_note_commission_mode in ['none','extra_amount']">
+                            <div class="row">
+                                <label for="pos_credit_note_base_weight" class="col-lg-5 o_light_label" string="Base-Profit Weight (%)"/>
+                                <div class="col-lg-7">
+                                    <field name="pos_credit_note_base_weight"/>
+                                </div>
+                            </div>
+                        </div>
+                    </setting>
+
+                    <setting string="Require Return Reason"
+                             help="Cashier must enter a return reason before the Credit Note button becomes active in the payment screen.">
+                        <field name="pos_credit_note_require_reason"/>
+                    </setting>
+
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

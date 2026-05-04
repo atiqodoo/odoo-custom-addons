@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_price_discrepancy_list_embedded" model="ir.ui.view">
+        <field name="name">vendor.price.discrepancy.list.embedded</field>
+        <field name="model">vendor.price.discrepancy</field>
+        <field name="arch" type="xml">
+            <list string="Vendor Price Discrepancies" create="false" edit="false" decoration-danger="percentage_diff_lowest > 10 or percentage_diff_average > 10">
+                <field name="discrepancy_date"/>
+                <field name="product_id"/>
+                <field name="vendor_id"/>
+                <field name="vendor_price" widget="monetary"/>
+                <field name="lowest_price" widget="monetary"/>
+                <field name="average_price" widget="monetary"/>
+                <field name="price_difference_lowest" widget="monetary"/>
+                <field name="percentage_diff_lowest" widget="percentage"/>
+                <field name="price_difference_average" widget="monetary"/>
+                <field name="percentage_diff_average" widget="percentage"/>
+                <field name="bill_count"/>
+            </list>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!--
+        Inherits the standard POS Orderline template to inject a
+        "⚠ Below Cost" badge when the line's effective price is below cost.
+
+        In Odoo 18, props.line is a plain display object (from getDisplayData()).
+        We patch getDisplayData() in orderline_patch.js to add a `pcBelowCost`
+        boolean flag, which is the only safe way to pass this information here.
+    -->
+
+    <t t-name="point_of_sale.Orderline"
+       t-inherit="point_of_sale.Orderline"
+       t-inherit-mode="extension">
+
+        <xpath expr="//li[hasclass('orderline')]" position="inside">
+            <t t-if="props.line.pcBelowCost">
+                <span class="pos-below-cost-badge">⚠ Below Cost</span>
+            </t>
+        </xpath>
+
+    </t>
+
+</templates>

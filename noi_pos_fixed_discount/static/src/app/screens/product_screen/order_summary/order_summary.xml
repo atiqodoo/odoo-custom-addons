@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-inherit="point_of_sale.OrderSummary" t-inherit-mode="extension">
+        <xpath expr="//Orderline" position="inside">
+            <t t-set-slot="default">
+                <li t-if="pos.config.manual_discount" 
+                    class="discount-btn text-primary cursor-pointer"
+                    t-on-click.stop="() => this.onClickDiscount(line)">
+                    <i class="fa fa-percent me-1"/>Discount
+                </li>
+            </t>
+        </xpath>
+    </t>
+</templates>

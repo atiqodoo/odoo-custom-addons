@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Issue 2: Partial credit informational/confirm dialog.
+         Shown when full order would exceed limit but some credit remains.
+         Cashier can confirm a partial charge and pay the rest by another method.
+         "Cancel" → do NOT add payment line.
+         "Charge on Account" → add line, amount preset to availableCredit. -->
+    <t t-name="pos_credit_limit.PartialCreditPopup">
+        <Dialog title="props.title">
+
+            <div class="pcl-partial-credit-popup p-3">
+
+                <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                    <i class="fa fa-exclamation-circle fa-lg me-2"/>
+                    <strong>Order total exceeds available credit</strong>
+                </div>
+
+                <p class="mb-3">
+                    This customer still has available credit. You can charge up to the
+                    available amount on Customer Account and collect the remainder by
+                    another payment method.
+                </p>
+
+                <table class="table table-sm table-bordered mb-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-muted">Current Balance (True)</td>
+                            <td class="text-end fw-bold" t-esc="props.trueBalance"/>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Credit Limit</td>
+                            <td class="text-end fw-bold" t-esc="props.creditLimit"/>
+                        </tr>
+                        <tr class="table-success">
+                            <td><strong>Available Credit</strong></td>
+                            <td class="text-end fw-bold text-success" t-esc="props.availableCredit"/>
+                        </tr>
+                        <tr class="table-danger">
+                            <td><strong>This Order Total</strong></td>
+                            <td class="text-end fw-bold text-danger" t-esc="props.orderTotal"/>
+                        </tr>
+                        <tr class="table-warning">
+                            <td><strong>Pay by Other Method</strong></td>
+                            <td class="text-end fw-bold text-warning" t-esc="props.remainingAmount"/>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p class="text-muted small mb-0">
+                    The Customer Account line will be preset to
+                    <strong t-esc="props.availableCredit"/>.
+                    Collect <strong t-esc="props.remainingAmount"/> by cash, card, or
+                    another method.
+                </p>
+
+            </div>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary btn-lg me-2" t-on-click="props.close">
+                    Cancel
+                </button>
+                <button class="btn btn-warning btn-lg"
+                        t-on-click="() => { props.onConfirm(); props.close(); }">
+                    Charge <t t-esc="props.availableCredit"/> on Account
+                </button>
+            </t>
+
+        </Dialog>
+    </t>
+
+</templates>

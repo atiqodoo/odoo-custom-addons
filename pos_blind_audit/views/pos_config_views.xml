@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    pos_blind_audit – POS Configuration view extension
+    ====================================================
+    Inherits the pos.config direct form view
+    (point_of_sale.pos_config_view_form) and injects a "Blind Audit"
+    settings block into the o_settings_container div.
+
+    Placement: immediately before the "More settings" system-admin note
+    so the block is visible to all POS managers without reaching into
+    the global Settings menu.
+
+    Fields exposed
+    ~~~~~~~~~~~~~~
+    limit_variance  – Boolean master switch (checkbox)
+    variance_amount – Float threshold, shown only when limit_variance = True
+-->
+<odoo>
+
+    <record id="pos_config_view_form_inherit_blind_audit" model="ir.ui.view">
+        <field name="name">pos.config.form.view.inherit.blind_audit</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <!--
+                Insert just before the system-only "More settings" div.
+                XPath targets the div with groups="base.group_system" which
+                holds the "Configurations > Settings" link — a stable anchor
+                that will not break when other settings blocks are reordered.
+            -->
+            <xpath expr="//div[@groups='base.group_system']" position="before">
+
+                <setting
+                    id="blind_audit_setting"
+                    string="Blind Audit"
+                    help="Hide expected cash and difference from cashiers during closing.
+The server enforces the variance limit and blocks non-managers if the
+discrepancy exceeds the configured maximum.">
+
+                    <!-- Master switch -->
+                    <field name="limit_variance"/>
+
+                    <!--
+                        Variance threshold – only relevant when blind audit
+                        is active.  Uses invisible= (Odoo 17+ attribute-style
+                        visibility) rather than attrs= for forward compatibility.
+                    -->
+                    <div class="content-group mt16" invisible="not limit_variance">
+                        <div class="row mb8">
+                            <label
+                                for="variance_amount"
+                                string="Maximum Variance Amount"
+                                class="col-lg-4 o_light_label"/>
+                            <div class="col-lg-8">
+                                <field name="variance_amount"/>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <label
+                                for="default_next_opening_cash"
+                                string="Default Cash Balance (Next Opening)"
+                                class="col-lg-4 o_light_label"/>
+                            <div class="col-lg-8">
+                                <field name="default_next_opening_cash"/>
+                                <div class="text-muted small mt4">
+                                    When set, the POS closing popup auto-computes
+                                    Cash Out = Cash Count − this amount.
+                                    Cashier can still edit Cash Out manually.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </setting>
+
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

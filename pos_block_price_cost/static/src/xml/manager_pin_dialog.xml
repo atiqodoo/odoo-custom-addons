@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="pos_block_price_cost.ManagerPinDialog">
+        <Dialog title="'Manager Override Required'">
+
+            <div class="mpc-dialog-body">
+
+                <!-- ── Offending lines list ──────────────────────────────── -->
+                <div class="alert alert-danger mpc-offenders">
+                    <div class="mpc-offenders-title">
+                        ⚠ The following items are priced <strong>below cost</strong>:
+                    </div>
+                    <ul class="mpc-offenders-list">
+                        <t t-foreach="props.invalidLines" t-as="line" t-key="line_index">
+                            <li><t t-esc="line"/></li>
+                        </t>
+                    </ul>
+                    <div class="mpc-offenders-hint">
+                        A POS Manager must enter their PIN to proceed.
+                    </div>
+                </div>
+
+                <!-- ── PIN dot display ──────────────────────────────────── -->
+                <div class="mpc-pin-display">
+                    <div class="mpc-pin-dots">
+                        <t t-foreach="[0,1,2,3,4,5]" t-as="i" t-key="i">
+                            <span t-att-class="i &lt; state.pin.length ? 'mpc-dot mpc-dot-filled' : 'mpc-dot'"/>
+                        </t>
+                    </div>
+                    <p t-if="state.error"   class="mpc-msg mpc-msg-error"   t-esc="state.error"/>
+                    <p t-if="state.loading" class="mpc-msg mpc-msg-loading">Verifying PIN…</p>
+                </div>
+
+                <!-- ── Numeric PIN pad ──────────────────────────────────── -->
+                <div class="mpc-numpad">
+
+                    <!-- Row 1 → 1 2 3 -->
+                    <div class="mpc-numpad-row">
+                        <button class="mpc-key" t-on-click="() => this.addDigit('1')" t-att-disabled="state.loading">1</button>
+                        <button class="mpc-key" t-on-click="() => this.addDigit('2')" t-att-disabled="state.loading">2</button>
+                        <button class="mpc-key" t-on-click="() => this.addDigit('3')" t-att-disabled="state.loading">3</button>
+                    </div>
+
+                    <!-- Row 2 → 4 5 6 -->
+                    <div class="mpc-numpad-row">
+                        <button class="mpc-key" t-on-click="() => this.addDigit('4')" t-att-disabled="state.loading">4</button>
+                        <button class="mpc-key" t-on-click="() => this.addDigit('5')" t-att-disabled="state.loading">5</button>
+                        <button class="mpc-key" t-on-click="() => this.addDigit('6')" t-att-disabled="state.loading">6</button>
+                    </div>
+
+                    <!-- Row 3 → 7 8 9 -->
+                    <div class="mpc-numpad-row">
+                        <button class="mpc-key" t-on-click="() => this.addDigit('7')" t-att-disabled="state.loading">7</button>
+                        <button class="mpc-key" t-on-click="() => this.addDigit('8')" t-att-disabled="state.loading">8</button>
+                        <button class="mpc-key" t-on-click="() => this.addDigit('9')" t-att-disabled="state.loading">9</button>
+                    </div>
+
+                    <!-- Row 4 → [blank] 0 [clear] -->
+                    <div class="mpc-numpad-row">
+                        <span class="mpc-key mpc-key-empty"/>
+                        <button class="mpc-key" t-on-click="() => this.addDigit('0')" t-att-disabled="state.loading">0</button>
+                        <button class="mpc-key mpc-key-clear" t-on-click="() => this.clearPin()" t-att-disabled="state.loading">⌫</button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── Footer buttons ─────────────────────────────────────────── -->
+            <t t-set-slot="footer">
+                <button
+                    class="btn btn-secondary me-2"
+                    t-on-click="onCancel"
+                    t-att-disabled="state.loading">
+                    Cancel
+                </button>
+                <button
+                    class="btn btn-danger"
+                    t-on-click="onValidate"
+                    t-att-disabled="state.loading or !state.pin">
+                    <t t-if="state.loading">Verifying…</t>
+                    <t t-else="">Confirm Manager Override</t>
+                </button>
+            </t>
+
+        </Dialog>
+    </t>
+
+</templates>

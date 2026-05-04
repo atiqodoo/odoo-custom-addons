@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Adds the "Is Credit Payment Method" checkbox to the POS Payment Method
+         configuration form. The admin checks this on whichever payment method
+         represents the Customer Account (credit / pay-later) option.
+
+         No accounting fields are modified. pos.payment.method is a POS
+         configuration model, not a transactional accounting model. -->
+    <record id="view_pos_payment_method_form_pcl" model="ir.ui.view">
+        <field name="name">pos.payment.method.form.pcl</field>
+        <field name="model">pos.payment.method</field>
+        <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='journal_id']" position="after">
+                <field name="pcl_is_credit_method"
+                       widget="boolean_toggle"
+                       string="Is Credit Payment Method (POS Credit Gate)"
+                       help="Enable the credit limit and payment terms gates for this method."/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

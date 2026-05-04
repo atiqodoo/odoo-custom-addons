@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_product_template_form_inherit" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.colour</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Position the colour fields below the product name on a new row -->
+            <xpath expr="//field[@name='name']" position="after">
+                <newline/>
+            </xpath>
+            <xpath expr="//field[@name='name']/.." position="after">
+                <group string="Paint Colour Information">
+                    <group>
+                        <field name="fandeck_id" 
+                               widget="many2one" 
+                               options="{'no_create': False, 'no_open': False}"/>
+                    </group>
+                    <group>
+                        <field name="colour_code_id" 
+                               widget="many2one" 
+                               options="{'no_create': False, 'no_open': False}"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

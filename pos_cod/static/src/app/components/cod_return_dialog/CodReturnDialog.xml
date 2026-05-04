@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_cod.CodReturnDialog">
+        <Dialog size="'lg'">
+            <t t-set-slot="header">
+                <div class="modal-header">
+                    <h4 class="modal-title">
+                        Return Items — <t t-esc="props.order.name"/>
+                    </h4>
+                    <button type="button" class="btn-close" t-on-click="onDiscard"/>
+                </div>
+            </t>
+
+            <t t-if="state.loading">
+                <div class="d-flex align-items-center justify-content-center p-4 gap-2">
+                    <span class="spinner-border spinner-border-sm text-primary"/>
+                    <span>Loading order lines…</span>
+                </div>
+            </t>
+            <t t-elif="state.error">
+                <div class="alert alert-danger m-3">
+                    <i class="fa fa-exclamation-triangle me-2"/>
+                    <t t-esc="state.error"/>
+                </div>
+            </t>
+            <t t-elif="state.lines.length === 0">
+                <div class="alert alert-warning m-3">No order lines found.</div>
+            </t>
+            <t t-else="">
+                <table class="table table-sm table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-end" style="width:100px">Remaining</th>
+                            <th class="text-center" style="width:120px">Return Qty</th>
+                            <th class="text-end" style="width:140px">Return Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="state.lines" t-as="line" t-key="line.id">
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold"><t t-esc="productName(line)"/></div>
+                                    <t t-if="line.discount">
+                                        <small class="text-muted"><t t-esc="line.discount"/>% disc</small>
+                                    </t>
+                                </td>
+                                <td class="text-end">
+                                    <t t-esc="line.remaining_qty"/>
+                                    <div class="text-muted small"><t t-esc="formatCurrency(line.price_subtotal_incl)"/></div>
+                                </td>
+                                <td class="text-center p-1">
+                                    <input
+                                        type="number"
+                                        class="form-control form-control-sm text-center"
+                                        t-att-value="line.return_qty"
+                                        min="0"
+                                            t-att-max="line.remaining_qty"
+                                        step="1"
+                                        t-on-change="(ev) => this.setReturnQty(line, ev.target.value)"
+                                        t-on-click="(ev) => ev.target.select()"
+                                    />
+                                </td>
+                                <td class="text-end fw-semibold">
+                                    <t t-esc="formatCurrency(lineReturnAmount(line))"/>
+                                </td>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-secondary fw-bold fs-6">
+                            <td colspan="3" class="text-end">Total Return</td>
+                            <td class="text-end text-danger">
+                                <t t-esc="formatCurrency(returnTotal)"/>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </t>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-on-click="onDiscard">Cancel</button>
+                <button
+                    class="btn btn-danger"
+                    t-att-disabled="!canConfirm"
+                    t-on-click="onConfirm"
+                >
+                    <i class="fa fa-undo me-1"/>
+                    Confirm Return
+                </button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

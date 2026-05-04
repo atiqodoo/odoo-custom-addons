@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        View 1: product_variant_easy_edit_view
+        This is the full variant form opened from POS > Products > Product Variants (list → form).
+        It has a "pricing" group containing lst_price at line 357 of product/views/product_views.xml.
+        We add our field right after the lst_price row inside that group.
+    -->
+    <record id="product_variant_easy_edit_view_custom_pos_name" model="ir.ui.view">
+        <field name="name">product.product.variant.easy.edit.custom.pos.name</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_variant_easy_edit_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='pricing']/div[field[@name='lst_price']]" position="after">
+                <label for="x_custom_pos_name" string="Custom POS Receipt Name"/>
+                <div class="o_row">
+                    <field name="x_custom_pos_name" class="oe_inline"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!--
+        View 2: product_normal_form_view  (XML ID: product.product_normal_form_view)
+        This is the ACTUAL form rendered when opening a product.product record from
+        POS > Products > Product Variants (action-554). It inherits from the template
+        common form (product.template.common.form) and injects lst_price via xpath.
+        We add our field right after that injected lst_price field.
+    -->
+    <record id="product_normal_form_view_custom_pos_name" model="ir.ui.view">
+        <field name="name">product.product.normal.form.custom.pos.name</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='lst_price']" position="after">
+                <field name="x_custom_pos_name" string="Custom POS Receipt Name"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!--
+        View 3: product_product_view_form_normalized
+        This is the lightweight popup used when editing a product from inside the POS UI
+        (POS backend > click product card > edit icon).
+        It uses list_price (not lst_price) in its arch.
+    -->
+    <record id="product_product_view_form_normalized_custom_pos_name" model="ir.ui.view">
+        <field name="name">product.product.view.form.normalized.custom.pos.name</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_product_view_form_normalized"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='list_price']" position="after">
+                <field name="x_custom_pos_name" string="Custom POS Receipt Name"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

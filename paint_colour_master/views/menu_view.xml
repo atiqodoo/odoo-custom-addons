@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Parent Menu for Paint Colour Master -->
+    <menuitem id="menu_paint_colour_master" 
+              name="Paint Colour Master" 
+              parent="stock.menu_stock_root" 
+              sequence="5"/>
+
+    <!-- Menu for Fandecks -->
+    <menuitem id="menu_colour_fandeck" 
+              name="Colour Fandecks" 
+              parent="menu_paint_colour_master" 
+              action="action_colour_fandeck" 
+              sequence="1"/>
+
+    <!-- Menu for Colours -->
+    <menuitem id="menu_colour_code" 
+              name="Colour Codes" 
+              parent="menu_paint_colour_master" 
+              action="action_colour_code" 
+              sequence="2"/>
+</odoo>

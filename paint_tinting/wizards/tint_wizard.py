@@ -449,6 +449,25 @@ class TintWizard(models.TransientModel):
             
             # Trigger margin recompute
             self._compute_profit_margin()
+             # ── NEW: live below-cost warning ──────────────────────────────
+        if self.selling_price_incl_vat and self.total_cost_incl_vat:
+            if self.selling_price_incl_vat < self.total_cost_incl_vat:
+                _logger.warning(
+                    f"  ⚠ Price {self.selling_price_incl_vat} < Cost {self.total_cost_incl_vat}"
+                )
+                return {
+                    'warning': {
+                        'title': '⚠ Price Below Cost!',
+                        'message': (
+                            f"Selling price ({self.selling_price_incl_vat:.2f} KES) is BELOW "
+                            f"total cost ({self.total_cost_incl_vat:.2f} KES).\n\n"
+                            f"You will make a LOSS of "
+                            f"{self.total_cost_incl_vat - self.selling_price_incl_vat:.2f} KES.\n\n"
+                            f"Minimum selling price: {self.total_cost_incl_vat:.2f} KES"
+                        )
+                    }
+                }
+        # ── END NEW ───────────────────────────────────────────────────
 
     @api.onchange('profit_amount_incl_vat')
     def _onchange_profit_amount(self):
@@ -468,6 +487,7 @@ class TintWizard(models.TransientModel):
             
             # Trigger margin recompute
             self._compute_profit_margin()
+        
 
     @api.depends('profit_amount_incl_vat', 'selling_price_incl_vat')
     def _compute_profit_margin(self):
@@ -874,6 +894,26 @@ class TintWizard(models.TransientModel):
         if not self.selling_price_incl_vat or self.selling_price_incl_vat <= 0:
             _logger.error("❌ Validation failed: Selling price not set or invalid")
             raise ValidationError(_("Selling price must be greater than zero.\nPlease check the Cost Summary tab."))
+        
+         # ── NEW: enforce price >= cost ────────────────────────────
+        if self.selling_price_incl_vat < self.total_cost_incl_vat:
+            shortage = self.total_cost_incl_vat - self.selling_price_incl_vat
+            _logger.error(
+                f"❌ Selling price {self.selling_price_incl_vat} < "
+                f"Total cost {self.total_cost_incl_vat}"
+            )
+            raise ValidationError(_(
+                "Cannot create tinted product — selling price is below cost!\n\n"
+                "Selling Price:  %(price)s KES\n"
+                "Total Cost:     %(cost)s KES\n"
+                "Shortfall:      %(short)s KES\n\n"
+                "Please increase the selling price in the Cost Summary tab "
+                "to at least %(cost)s KES before proceeding.",
+                price=f"{self.selling_price_incl_vat:.2f}",
+                cost=f"{self.total_cost_incl_vat:.2f}",
+                short=f"{shortage:.2f}",
+            ))
+        # ── END NEW ───────────────────────────────────────────────
         
         _logger.info(f"  ✅ Selling price validated: {self.selling_price_incl_vat} KES")
         _logger.info(f"  Cost price: {self.total_cost_incl_vat} KES")

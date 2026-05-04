@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    
-    <!-- Register Deferred Collection Wizard Form -->
+
+    <!-- ================================================================== -->
+    <!-- Register Deferred Collection Wizard — Form View                     -->
+    <!-- ================================================================== -->
     <record id="view_register_deferred_collection_wizard_form" model="ir.ui.view">
         <field name="name">register.deferred.collection.wizard.form</field>
         <field name="model">register.deferred.collection.wizard</field>
@@ -15,41 +17,40 @@
                         <field name="holding_location_id"/>
                     </group>
                 </group>
-                
+
                 <group string="Adjust Quantities Taken Today">
                     <p class="text-muted">
-                        Specify how much of each item the customer took today. 
+                        Specify how much of each item the customer took today.
                         The remaining quantity will be registered as pending collection.
                     </p>
                 </group>
-                
+
                 <field name="line_ids">
                     <list editable="bottom">
                         <field name="pos_order_line_id" column_invisible="1"/>
                         <field name="sequence" widget="handle"/>
                         <field name="product_id" readonly="1"/>
-                        <field name="ordered_qty" readonly="1" 
-                               string="Ordered"/>
+                        <field name="ordered_qty" readonly="1" string="Ordered"/>
                         <field name="taken_qty" string="Taken Today"/>
-                        <field name="left_qty" readonly="1" 
+                        <field name="left_qty" readonly="1"
                                string="Left in Store"
                                decoration-warning="left_qty &gt; 0"/>
                         <field name="product_uom_id" readonly="1"/>
                         <field name="price_unit" readonly="1" optional="hide"/>
                     </list>
                 </field>
-                
+
                 <group>
                     <field name="notes" placeholder="Additional notes about this deferred collection..."/>
                 </group>
-                
+
                 <footer>
-                    <button string="Confirm" name="action_confirm" 
+                    <button string="Confirm" name="action_confirm"
                             type="object" class="btn-primary"/>
                     <button string="Cancel" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
         </field>
     </record>
-    
+
 </odoo>

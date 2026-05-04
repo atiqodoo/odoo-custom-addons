@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Inject COD Settings into the POS Configuration form.
+         The form uses flat <setting> widgets inside <sheet> — no <notebook>.
+         We append a new o_settings_container div at the end of <sheet>. -->
+    <record id="view_pos_config_form_inherit_cod" model="ir.ui.view">
+        <field name="name">pos.config.form.inherit.cod</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <div class="row mt16 o_settings_container">
+                    <setting string="Cash on Delivery (COD)"
+                             help="Allow cashiers to dispatch orders as COD: stock is deducted immediately and payment is collected at delivery.">
+                        <field name="cod_enabled"/>
+                        <div class="content-group mt16" invisible="not cod_enabled">
+                            <div class="row">
+                                <div class="col-lg-5 o_light_label">
+                                    <label for="cod_ar_account_id"
+                                           string="COD Receivable Account"/>
+                                </div>
+                                <div class="col-lg-7">
+                                    <field name="cod_ar_account_id"
+                                           options="{'no_create': True}"
+                                           placeholder="e.g. 1150 - COD Receivables"/>
+                                </div>
+                            </div>
+                            <div class="text-muted mt4">
+                                Account must be type <strong>Receivable</strong> with
+                                <strong>Allow Reconciliation</strong> enabled.
+                                It is excluded from the credit-limit check so COD
+                                exposure does not consume the customer's credit line.
+                            </div>
+                        </div>
+                    </setting>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

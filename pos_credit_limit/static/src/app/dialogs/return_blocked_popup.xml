@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Issue 5: Return on account blocked dialog.
+         Shown when original order had no customer OR had a different customer.
+         Single "OK" button — cashier must dismiss before continuing. -->
+    <t t-name="pos_credit_limit.ReturnBlockedPopup">
+        <Dialog title="props.title">
+
+            <div class="pcl-return-blocked-popup p-3">
+
+                <div class="alert alert-danger d-flex align-items-center mb-3" role="alert">
+                    <i class="fa fa-ban fa-lg me-2"/>
+                    <strong>Return on Customer Account Blocked</strong>
+                </div>
+
+                <p class="mb-2" t-esc="props.body"/>
+
+                <p class="text-muted small mb-0">
+                    To process this return on Customer Account, the original sale must
+                    have been assigned to the same customer.
+                    Use cash or another payment method for this return instead.
+                </p>
+
+            </div>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-danger btn-lg" t-on-click="props.close">
+                    OK
+                </button>
+            </t>
+
+        </Dialog>
+    </t>
+
+</templates>

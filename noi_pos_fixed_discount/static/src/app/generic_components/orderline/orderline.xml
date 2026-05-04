@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
+        <xpath expr="//li[contains(@t-if, 'line.discount')]" position="after">
+            <li t-if="line.discount_fixed and line.discount_fixed > 0 and !props.basic_receipt">
+                Fixed Discount: <em><t t-esc="line.fixed_discount_str" /></em>
+            </li>
+        </xpath>
+    </t>
+</templates>

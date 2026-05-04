@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Product Template Form View - Add new page for vendor pricing -->
+    <record id="product_template_form_inherit_custom_pricing" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.custom.pricing</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Add a new page after Purchase page -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Vendor Pricing" name="vendor_pricing">
+                    <group>
+                        <group>
+                            <field name="use_custom_vendor_pricing" string="Enable Custom Vendor Pricing"/>
+                        </group>
+                        <group>
+                            <field name="vendor_pricing_count" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <div class="alert alert-info" role="alert" invisible="use_custom_vendor_pricing == True">
+                        <strong>Standard Mode:</strong> This product uses Odoo's standard vendor pricelist.
+                    </div>
+                    
+                    <div class="alert alert-warning" role="alert" invisible="use_custom_vendor_pricing == False">
+                        <strong>Custom Pricing Mode:</strong> Custom discount/freight rules will be applied for this product.
+                    </div>
+                    
+                    <group invisible="use_custom_vendor_pricing == False">
+                        <field name="vendor_pricing_ids" nolabel="1" context="{'default_product_tmpl_id': id}"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

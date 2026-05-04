@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================ -->
+    <!-- RE-TINTING WIZARD FORM VIEW                                      -->
+    <!-- ================================================================ -->
+    <record id="view_retint_wizard_form" model="ir.ui.view">
+        <field name="name">retint.wizard.form</field>
+        <field name="model">retint.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Re-Tint Returned Product">
+                <header>
+                    <button name="action_create_adjusted_product"
+                            string="Create Adjusted Product &amp; MO"
+                            type="object"
+                            class="oe_highlight"
+                            help="Create new adjusted product and manufacturing order"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </header>
+
+                <sheet>
+                    <!-- ============================================ -->
+                    <!-- SECTION 1: RETURNED PRODUCT INFORMATION      -->
+                    <!-- ============================================ -->
+                    <group string="🔄 Returned Product Information">
+                        <group>
+                            <field name="original_product_id"
+                                   placeholder="Select the tinted product that was returned..."
+                                   options="{'no_create': True}"/>
+                            <field name="original_base_product" readonly="1"/>
+                            <field name="original_colour_code" readonly="1"/>
+                            <field name="original_colour_name" readonly="1"/>
+                            <field name="original_fandeck" readonly="1"/>
+                        </group>
+                        <group>
+                            <label for="original_cost_incl_vat" string="Original Cost (Incl. VAT)"/>
+                            <div class="o_row">
+                                <field name="original_cost_incl_vat" readonly="1"/>
+                                <span> KES</span>
+                            </div>
+                            
+                            <label for="original_selling_price" string="Original Selling Price"/>
+                            <div class="o_row">
+                                <field name="original_selling_price" readonly="1"/>
+                                <span> KES</span>
+                            </div>
+                            
+                            <field name="adjustment_number" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ============================================ -->
+                    <!-- ORIGINAL FORMULA (READ-ONLY)                 -->
+                    <!-- ============================================ -->
+                    <separator string="📋 Original Formula (Reference Only)"/>
+                    <field name="original_formula_line_ids" nolabel="1">
+                        <!-- ✅ CORRECTED: Changed <tree> to <list> -->
+                        <list create="0" delete="0" edit="0">
+                            <field name="colorant_code" string="Code"/>
+                            <field name="colorant_name" string="Colorant"/>
+                            <field name="original_shots" string="Shots" sum="Total"/>
+                            <field name="original_ml" string="ml" sum="Total"/>
+                        </list>
+                    </field>
+
+                    <!-- ============================================ -->
+                    <!-- SECTION 2: LIABILITY CONFIGURATION           -->
+                    <!-- ============================================ -->
+                    <group string="💰 Cost Liability Configuration" class="border-warning">
+                        <div class="alert alert-warning" role="alert">
+                            <strong>⚠️ Important:</strong> Configure who pays for the re-tinting costs.
+                            This affects the final selling price and company expense tracking.
+                        </div>
+                        
+                        <group>
+                            <field name="liability_type" widget="radio"
+                                   options="{'horizontal': true}"/>
+                            <field name="liability_reason"/>
+                            <field name="liability_notes"
+                                   placeholder="Additional notes about cost responsibility..."/>
+                        </group>
+                        
+                        <group>
+                            <label for="customer_liability_percent" 
+                                   string="Customer Pays (%)"
+                                   invisible="liability_type != 'shared'"/>
+                            <div class="o_row" invisible="liability_type != 'shared'">
+                                <field name="customer_liability_percent"
+                                       class="oe_inline"/>
+                                <span class="oe_inline"> %</span>
+                            </div>
+                            
+                            <label for="company_liability_percent" string="Company Absorbs (%)"/>
+                            <div class="o_row">
+                                <field name="company_liability_percent" readonly="1" class="oe_inline"/>
+                                <span class="oe_inline"> %</span>
+                            </div>
+                        </group>
+                    </group>
+
+                    <!-- ============================================ -->
+                    <!-- SECTION 3: ADDITIONAL COLORANTS & COSTS      -->
+                    <!-- ============================================ -->
+                    <notebook>
+                        <page string="Additional Colorants" name="colorants">
+                            <div class="alert alert-info" role="alert">
+                                <strong>📝 Instructions:</strong>
+                                Enter the <strong>ADDITIONAL</strong> colorant shots to add to the existing tinted product.
+                                <br/>
+                                <em>Do NOT enter total shots - only the extra shots needed to adjust the color.</em>
+                            </div>
+
+                            <field name="additional_colorant_line_ids" nolabel="1">
+                                <!-- ✅ CORRECTED: Changed <tree> to <list> -->
+                                <list editable="bottom" create="0" delete="0">
+                                    <field name="colorant_id" column_invisible="1"/>
+                                    <field name="colorant_name" string="Colorant" readonly="1"/>
+                                    <field name="colorant_code" string="Code" readonly="1"/>
+                                    <field name="additional_shots" string="Additional Shots" sum="Total"/>
+                                    <field name="ml_volume" string="ml" readonly="1" sum="Total" optional="hide"/>
+                                    <field name="qty_litres" string="Litres" readonly="1" sum="Total" optional="hide"/>
+                                    <field name="available_stock" string="Stock (L)" readonly="1" optional="show"/>
+                                    <field name="unit_cost_incl_vat" string="Unit Cost" readonly="1" optional="hide"/>
+                                    <field name="line_cost_incl_vat" string="Line Cost" readonly="1" sum="Total Cost"/>
+                                    <field name="stock_warning" column_invisible="1"/>
+                                </list>
+                            </field>
+
+                            <!-- Stock Warnings -->
+                            <div class="mt-3">
+                                <field name="stock_warning_message" nolabel="1" widget="html"/>
+                            </div>
+                        </page>
+
+                        <page string="Cost Summary" name="cost_summary">
+                            <!-- COST BREAKDOWN -->
+                            <group>
+                                <group string="Re-Tinting Costs">
+                                    <label for="additional_colorant_cost_incl_vat" string="Additional Colorants"/>
+                                    <div class="o_row">
+                                        <field name="additional_colorant_cost_incl_vat" readonly="1"/>
+                                        <span> KES</span>
+                                    </div>
+                                    
+                                    <label for="retint_service_cost" string="Service Charge (Optional)"/>
+                                    <div class="o_row">
+                                        <field name="retint_service_cost"/>
+                                        <span> KES</span>
+                                    </div>
+                                    
+                                    <separator/>
+                                    
+                                    <label for="total_retint_cost_incl_vat" string="Total Re-Tint Cost" class="fw-bold"/>
+                                    <div class="o_row">
+                                        <field name="total_retint_cost_incl_vat" readonly="1" class="fw-bold"/>
+                                        <span class="fw-bold"> KES</span>
+                                    </div>
+                                </group>
+                                
+                                <group string="Liability Split">
+                                    <label for="customer_charge_amount" string="Customer Pays" class="text-success"/>
+                                    <div class="o_row">
+                                        <field name="customer_charge_amount" readonly="1" class="text-success fw-bold"/>
+                                        <span class="text-success fw-bold"> KES</span>
+                                        <span class="text-muted ms-2">(<field name="customer_liability_percent" readonly="1" class="text-muted" nolabel="1"/>%)</span>
+                                    </div>
+                                    
+                                    <label for="company_absorption_amount" string="Company Absorbs" class="text-danger"/>
+                                    <div class="o_row">
+                                        <field name="company_absorption_amount" readonly="1" class="text-danger fw-bold"/>
+                                        <span class="text-danger fw-bold"> KES</span>
+                                        <span class="text-muted ms-2">(<field name="company_liability_percent" readonly="1" class="text-muted" nolabel="1"/>%)</span>
+                                    </div>
+                                </group>
+                            </group>
+
+                            <separator string="New Product Details"/>
+                            
+                            <group>
+                                <group>
+                                    <field name="new_product_name" readonly="1"/>
+                                    
+                                    <label for="new_product_cost_incl_vat" string="Product Cost (Accounting)"/>
+                                    <div class="o_row">
+                                        <field name="new_product_cost_incl_vat" readonly="1"/>
+                                        <span> KES</span>
+                                    </div>
+                                </group>
+                                
+                                <group>
+                                    <label for="new_product_selling_price" string="Selling Price (POS)" class="fw-bold"/>
+                                    <div class="o_row">
+                                        <field name="new_product_selling_price" readonly="1" class="fw-bold"/>
+                                        <span class="fw-bold"> KES</span>
+                                    </div>
+                                </group>
+                            </group>
+
+                            <!-- VISUAL SUMMARY -->
+                            <div class="alert alert-success" role="alert">
+                                <h4>✅ POS Transaction Summary</h4>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Product Name:</strong></td>
+                                        <td><field name="new_product_name" readonly="1" nolabel="1"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Selling Price:</strong></td>
+                                        <td><field name="new_product_selling_price" readonly="1" nolabel="1"/> KES</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Breakdown:</strong></td>
+                                        <td>
+                                            <field name="original_selling_price" readonly="1" nolabel="1"/> KES (original)
+                                            + <field name="customer_charge_amount" readonly="1" nolabel="1" class="text-success fw-bold"/> KES (re-tint charge)
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Customer Pays:</strong></td>
+                                        <td class="text-success fw-bold">
+                                            <field name="new_product_selling_price" readonly="1" nolabel="1"/> KES
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Company Absorbs:</strong></td>
+                                        <td class="text-danger">
+                                            <field name="company_absorption_amount" readonly="1" nolabel="1"/> KES
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </page>
+                    </notebook>
+
+                    <!-- Hidden fields -->
+                    <field name="has_stock_warnings" invisible="1"/>
+                    <field name="original_cost_excl_vat" invisible="1"/>
+                    <field name="additional_colorant_cost_excl_vat" invisible="1"/>
+                    <field name="new_product_cost_excl_vat" invisible="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- ACTION TO OPEN RE-TINTING WIZARD                                -->
+    <!-- ================================================================ -->
+    <record id="action_retint_wizard" model="ir.actions.act_window">
+        <field name="name">Re-Tint Returned Product</field>
+        <field name="res_model">retint.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

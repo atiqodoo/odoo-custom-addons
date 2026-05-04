@@ -6,48 +6,48 @@
         <field name="model">pos.order</field>
         <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
         <field name="arch" type="xml">
-            
+
             <!-- Header Buttons for Both Tiers -->
             <xpath expr="//header" position="inside">
                 <!-- TIER 1: Extra Amount Buttons -->
-                <button name="action_calculate_extra_amount" 
-                        string="Calculate Extra" 
-                        type="object" 
-                        class="btn-primary" 
+                <button name="action_calculate_extra_amount"
+                        string="Calculate Extra"
+                        type="object"
+                        class="btn-primary"
                         invisible="extra_state != 'draft'"/>
-                <button name="action_open_distribution_wizard" 
-                        string="Distribute Extra" 
-                        type="object" 
-                        class="btn-success" 
+                <button name="action_open_distribution_wizard"
+                        string="Distribute Extra"
+                        type="object"
+                        class="btn-success"
                         invisible="extra_state == 'draft'"/>
-                
-                <!-- TIER 2: Base Profit Buttons (NEW!) -->
-                <button name="action_calculate_base_profit" 
-                        string="Calculate Base Profit" 
-                        type="object" 
-                        class="btn-info" 
+
+                <!-- TIER 2: Base Profit Buttons -->
+                <button name="action_calculate_base_profit"
+                        string="Calculate Base Profit"
+                        type="object"
+                        class="btn-info"
                         invisible="not ((extra_state == 'distributed' and remaining_extra_amount == 0) or total_extra_amount &lt;= 0)"
                         help="Available after extra distributed OR when no extra amount exists"/>
-                <button name="action_open_base_profit_wizard" 
-                        string="Share Base Profit" 
-                        type="object" 
-                        class="btn-warning" 
+                <button name="action_open_base_profit_wizard"
+                        string="Share Base Profit"
+                        type="object"
+                        class="btn-warning"
                         invisible="profit_state != 'calculated'"/>
-                
+
                 <!-- Reset Button -->
-                <button name="action_reset_extra_state" 
-                        string="Reset" 
-                        type="object" 
-                        class="btn-secondary" 
-                        groups="point_of_sale.group_pos_manager" 
+                <button name="action_reset_extra_state"
+                        string="Reset"
+                        type="object"
+                        class="btn-secondary"
+                        groups="point_of_sale.group_pos_manager"
                         invisible="extra_state == 'draft'"/>
-                
+
                 <!-- Status Bars -->
-                <field name="extra_state" 
-                       widget="statusbar" 
+                <field name="extra_state"
+                       widget="statusbar"
                        statusbar_visible="draft,calculated,distributed"/>
-                <field name="profit_state" 
-                       widget="statusbar" 
+                <field name="profit_state"
+                       widget="statusbar"
                        statusbar_visible="draft,calculated,shared"
                        invisible="extra_state != 'distributed'"/>
             </xpath>
@@ -55,19 +55,19 @@
             <!-- Smart Buttons -->
             <xpath expr="//div[@name='button_box']" position="inside">
                 <!-- Extra Distributions Smart Button -->
-                <button name="action_view_distributions" 
-                        type="object" 
-                        class="oe_stat_button" 
-                        icon="fa-money" 
+                <button name="action_view_distributions"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-money"
                         invisible="distribution_count == 0">
                     <field name="distribution_count" widget="statinfo" string="Extra Dist."/>
                 </button>
-                
-                <!-- Base Profit Distributions Smart Button (NEW!) -->
-                <button name="action_view_base_profit_distributions" 
-                        type="object" 
-                        class="oe_stat_button" 
-                        icon="fa-share-alt" 
+
+                <!-- Base Profit Distributions Smart Button -->
+                <button name="action_view_base_profit_distributions"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-share-alt"
                         invisible="base_profit_distribution_count == 0">
                     <field name="base_profit_distribution_count" widget="statinfo" string="Base Profit"/>
                 </button>
@@ -86,7 +86,7 @@
                             <field name="remaining_extra_amount" widget="monetary"/>
                         </group>
                     </group>
-                    
+
                     <separator string="Order Lines - Extra Amount Details"/>
                     <field name="lines" nolabel="1" mode="tree,form">
                         <form>
@@ -98,7 +98,9 @@
                                     <field name="price_subtotal_incl"/>
                                 </group>
                                 <group>
-                                    <field name="calculate_with_quantity"/>
+                                    <field name="calc_qty"
+                                           widget="integer"
+                                           string="Calc Qty"/>
                                     <field name="pricelist_price_incl"/>
                                     <field name="paid_price_per_unit"/>
                                     <field name="extra_amount_per_unit"/>
@@ -112,11 +114,16 @@
                             <field name="qty" readonly="1"/>
                             <field name="price_unit" readonly="1" widget="monetary"/>
                             <field name="price_subtotal_incl" readonly="1" widget="monetary"/>
-                            <field name="calculate_with_quantity" widget="boolean_toggle"/>
+                            <field name="calc_qty"
+                                   widget="integer"
+                                   string="Calc Qty"
+                                   optional="show"/>
                             <field name="pricelist_price_incl" widget="monetary" readonly="1" optional="show"/>
                             <field name="paid_price_per_unit" widget="monetary" readonly="1" optional="show"/>
                             <field name="extra_amount_per_unit" widget="monetary" readonly="1"/>
-                            <field name="total_extra_amount" widget="monetary" readonly="1"
+                            <field name="total_extra_amount"
+                                   widget="monetary"
+                                   readonly="1"
                                    decoration-success="total_extra_amount &gt; 0"
                                    decoration-danger="total_extra_amount &lt; 0"/>
                             <field name="product_cost" widget="monetary" readonly="1" optional="hide"/>
@@ -125,44 +132,46 @@
                 </page>
             </xpath>
 
-            <!-- TAB 2: Base Profit (NEW!) -->
+            <!-- TAB 2: Base Profit -->
             <xpath expr="//notebook" position="inside">
                 <page string="Base Profit" name="base_profit_page">
-                    
+
                     <!-- Locked Message - Only show if extra EXISTS but NOT distributed -->
-                    <div class="alert alert-warning" role="alert" 
+                    <div class="alert alert-warning"
+                         role="alert"
                          invisible="(extra_state == 'distributed' and remaining_extra_amount == 0) or total_extra_amount &lt;= 0">
-                        <p><strong>🔒 TIER 2 Locked</strong></p>
+                        <p><strong>&#128274; TIER 2 Locked</strong></p>
                         <p>Complete TIER 1 (Extra Amount) distribution first before accessing base profit sharing.</p>
                         <p>Remaining extra amount to distribute: <field name="remaining_extra_amount" readonly="1" widget="monetary"/></p>
                     </div>
-                    
+
                     <!-- Info Message - Show when no extra exists -->
-                    <div class="alert alert-info" role="alert" 
+                    <div class="alert alert-info"
+                         role="alert"
                          invisible="total_extra_amount &gt; 0">
-                        <p><strong>ℹ️ No Extra Amount</strong></p>
+                        <p><strong>&#8505;&#65039; No Extra Amount</strong></p>
                         <p>Customer paid equal to or below pricelist price. No extra amount to distribute.</p>
                         <p>You can proceed directly to base profit sharing.</p>
                     </div>
-                    
+
                     <!-- Unlocked - Show Base Profit -->
                     <div invisible="not ((extra_state == 'distributed' and remaining_extra_amount == 0) or total_extra_amount &lt;= 0)">
                         <group string="Base Profit Summary" name="base_profit_summary_group">
                             <group>
-                                <field name="total_base_profit" 
+                                <field name="total_base_profit"
                                        widget="monetary"
                                        decoration-success="total_base_profit &gt; 0"
                                        decoration-danger="total_base_profit &lt; 0"/>
                                 <field name="total_shared_base_profit" widget="monetary"/>
                             </group>
                             <group>
-                                <field name="remaining_base_profit" 
+                                <field name="remaining_base_profit"
                                        widget="monetary"
                                        decoration-warning="remaining_base_profit &lt; total_base_profit"
                                        decoration-muted="remaining_base_profit == 0"/>
                             </group>
                         </group>
-                        
+
                         <separator string="Order Lines - Base Profit Breakdown"/>
                         <field name="lines" nolabel="1" mode="tree,form">
                             <form>
@@ -174,7 +183,10 @@
                                         <field name="price_subtotal_incl"/>
                                     </group>
                                     <group>
-                                        <field name="calculate_with_quantity"/>
+                                        <field name="calc_qty"
+                                               widget="integer"
+                                               string="Calc Qty"
+                                               readonly="1"/>
                                         <field name="pricelist_price_incl" widget="monetary"/>
                                         <field name="pricelist_price_excl_vat" widget="monetary"/>
                                         <field name="base_profit_per_unit" widget="monetary"/>
@@ -186,25 +198,29 @@
                                 <field name="product_id" readonly="1"/>
                                 <field name="qty" readonly="1"/>
                                 <field name="price_subtotal_incl" readonly="1" widget="monetary"/>
-                                <field name="calculate_with_quantity" readonly="1" widget="boolean_toggle"/>
+                                <field name="calc_qty"
+                                       widget="integer"
+                                       string="Calc Qty"
+                                       readonly="1"
+                                       optional="show"/>
                                 <field name="pricelist_price_incl" widget="monetary" readonly="1" optional="show"/>
                                 <field name="pricelist_price_excl_vat" widget="monetary" readonly="1"/>
                                 <field name="base_profit_per_unit" widget="monetary" readonly="1"/>
-                                <field name="total_base_profit" 
-                                       widget="monetary" 
+                                <field name="total_base_profit"
+                                       widget="monetary"
                                        readonly="1"
                                        decoration-success="total_base_profit &gt; 0"
                                        decoration-danger="total_base_profit &lt; 0"/>
                             </list>
                         </field>
-                        
+
                         <div class="alert alert-info" role="alert" style="margin-top: 15px;">
                             <p><strong>Base Profit Calculation (VAT Exclusive):</strong></p>
                             <ul>
-                                <li>Base Profit = (Pricelist excl VAT - Purchase Price) × Quantity</li>
+                                <li>Base Profit = (Pricelist excl VAT - Purchase Price) × Calc Qty</li>
                                 <li>Both amounts exclude VAT for accurate accounting profit</li>
                                 <li>Purchase price from product cost (AVCO)</li>
-                                <li>Same quantity toggle as extra amount applies</li>
+                                <li>Same Calc Qty as extra amount tab applies here</li>
                                 <li><strong>Available even when no extra amount exists</strong> (customer pays ≤ pricelist)</li>
                             </ul>
                         </div>

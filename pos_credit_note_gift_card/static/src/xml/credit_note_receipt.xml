@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <!--
+        CreditNoteReceipt
+        =================
+        Thermal-printer OWL component template for the POS credit-note receipt.
+
+        Rendered by printer.print(CreditNoteReceiptComponent, { data: {...} }).
+
+        ``props.data`` shape (filled by the Python controller):
+            company_name     : str
+            company_address  : str
+            company_phone    : str
+            pos_name         : str
+            order_name       : str
+            date             : str
+            cashier          : str
+            lines            : [{product, qty, unit_price, discount, subtotal}]
+            amount_total     : float
+            currency_symbol  : str
+            gift_card_code   : str
+            gift_card_amount : float
+            gift_card_program: str
+
+        Width: 72 mm — standard 80 mm thermal roll with 4 mm margins.
+    -->
+    <t t-name="pos_credit_note_gift_card.CreditNoteReceipt">
+        <div class="pos-receipt pos-credit-note-receipt">
+
+            <!-- ── Company Header ─────────────────────────────────────── -->
+            <div class="pos-receipt-center-align">
+                <div class="pos-receipt-shop-name">
+                    <t t-esc="props.data.company_name"/>
+                </div>
+                <t t-if="props.data.company_address">
+                    <div><t t-esc="props.data.company_address"/></div>
+                </t>
+                <t t-if="props.data.company_phone">
+                    <div>Tel: <t t-esc="props.data.company_phone"/></div>
+                </t>
+                <div><t t-esc="props.data.pos_name"/></div>
+            </div>
+
+            <!-- ── Credit Note Stamp ──────────────────────────────────── -->
+            <div class="pos-receipt-separator"/>
+            <div class="pos-receipt-center-align pos-credit-note-stamp">
+                *** CREDIT NOTE ***
+            </div>
+            <div class="pos-receipt-separator"/>
+
+            <!-- ── Order Meta ─────────────────────────────────────────── -->
+            <div class="pos-receipt-amount">
+                <span>Order:</span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="props.data.order_name"/>
+                </span>
+            </div>
+            <div class="pos-receipt-amount">
+                <span>Date:</span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="props.data.date"/>
+                </span>
+            </div>
+            <t t-if="props.data.cashier">
+                <div class="pos-receipt-amount">
+                    <span>Cashier:</span>
+                    <span class="pos-receipt-right-align">
+                        <t t-esc="props.data.cashier"/>
+                    </span>
+                </div>
+            </t>
+
+            <div class="pos-receipt-separator"/>
+
+            <!-- ── Returned Lines ─────────────────────────────────────── -->
+            <t t-foreach="props.data.lines" t-as="line" t-key="line_index">
+                <div class="pos-receipt-line-name">
+                    <t t-esc="line.product"/>
+                </div>
+                <div class="pos-receipt-amount">
+                    <span>
+                        <t t-esc="line.qty"/> x
+                        <t t-esc="props.data.currency_symbol"/>
+                        <t t-esc="line.unit_price.toFixed(2)"/>
+                        <t t-if="line.discount > 0">
+                            &#160;(-<t t-esc="line.discount"/>%)
+                        </t>
+                    </span>
+                    <span class="pos-receipt-right-align">
+                        <t t-esc="props.data.currency_symbol"/>
+                        <t t-esc="line.subtotal.toFixed(2)"/>
+                    </span>
+                </div>
+            </t>
+
+            <div class="pos-receipt-separator"/>
+
+            <!-- ── Return Total ───────────────────────────────────────── -->
+            <div class="pos-receipt-amount receipt-total">
+                <span>RETURN TOTAL</span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="props.data.currency_symbol"/>
+                    <t t-esc="props.data.amount_total.toFixed(2)"/>
+                </span>
+            </div>
+
+            <div class="pos-receipt-separator"/>
+
+            <!-- ── Gift Card Details ──────────────────────────────────── -->
+            <div class="pos-credit-note-giftcard-section">
+                <div class="pos-receipt-center-align pos-credit-note-giftcard-title">
+                    GIFT CARD CREDIT NOTE
+                </div>
+                <t t-if="props.data.gift_card_program">
+                    <div class="pos-receipt-amount">
+                        <span>Program:</span>
+                        <span class="pos-receipt-right-align">
+                            <t t-esc="props.data.gift_card_program"/>
+                        </span>
+                    </div>
+                </t>
+                <div class="pos-receipt-center-align pos-credit-note-code-label">
+                    Code:
+                </div>
+                <div class="pos-receipt-center-align pos-credit-note-code">
+                    <t t-esc="props.data.gift_card_code"/>
+                </div>
+                <div class="pos-receipt-amount receipt-total">
+                    <span>CREDIT BALANCE</span>
+                    <span class="pos-receipt-right-align">
+                        <t t-esc="props.data.currency_symbol"/>
+                        <t t-esc="props.data.gift_card_amount.toFixed(2)"/>
+                    </span>
+                </div>
+            </div>
+
+            <div class="pos-receipt-separator"/>
+
+            <!-- ── Instructions ──────────────────────────────────────── -->
+            <div class="pos-receipt-center-align pos-credit-note-instructions">
+                Present this code at checkout to redeem your credit.
+                Gift card balance does not expire.
+            </div>
+
+            <!-- ── Footer ────────────────────────────────────────────── -->
+            <div class="pos-receipt-separator"/>
+            <div class="pos-receipt-center-align pos-receipt-footer">
+                Thank you for your business.
+            </div>
+
+        </div>
+    </t>
+</templates>

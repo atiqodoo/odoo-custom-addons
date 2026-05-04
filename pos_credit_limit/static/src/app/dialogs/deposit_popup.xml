@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Issue 1: Deposit path informational dialog.
+         Shown when customer has prepaid credit (partner.credit < 0)
+         and order total fits within the deposit balance.
+         Cashier confirms before proceeding. -->
+    <t t-name="pos_credit_limit.DepositPopup">
+        <Dialog title="props.title">
+
+            <div class="pcl-deposit-popup p-3">
+
+                <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+                    <i class="fa fa-university fa-lg me-2"/>
+                    <strong>Customer Deposit on Account</strong>
+                </div>
+
+                <p class="mb-3">
+                    This customer has an unused deposit (pre-payment) on their account.
+                    The order will be charged against their deposit balance.
+                </p>
+
+                <table class="table table-sm table-bordered mb-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="table-info">
+                            <td><strong>Customer Deposit</strong></td>
+                            <td class="text-end fw-bold text-primary" t-esc="props.depositBalance"/>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">This Order</td>
+                            <td class="text-end fw-bold" t-esc="props.orderTotal"/>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p class="text-muted small mb-0">
+                    Proceeding will draw the order amount from the customer's deposit.
+                    No credit limit is consumed.
+                </p>
+
+            </div>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-primary btn-lg" t-on-click="props.close">
+                    Proceed with Deposit
+                </button>
+            </t>
+
+        </Dialog>
+    </t>
+
+
+    <!-- Scenario A2 (Issue 2): Partial deposit confirm dialog.
+         Shown when order total exceeds deposit balance.
+         Cashier can charge the deposit amount on Customer Account and
+         collect the remainder by cash/card.
+         "Cancel" → do NOT add payment line.
+         "Charge on Account" → add line, amount preset to depositBalance. -->
+    <t t-name="pos_credit_limit.DepositPartialPopup">
+        <Dialog title="props.title">
+
+            <div class="pcl-deposit-partial-popup p-3">
+
+                <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                    <i class="fa fa-exclamation-circle fa-lg me-2"/>
+                    <strong>Order total exceeds deposit balance</strong>
+                </div>
+
+                <p class="mb-3">
+                    This customer's deposit covers part of the order. You can charge
+                    the deposit amount on Customer Account and collect the remainder
+                    by another payment method.
+                </p>
+
+                <table class="table table-sm table-bordered mb-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="table-info">
+                            <td><strong>Available Deposit</strong></td>
+                            <td class="text-end fw-bold text-primary" t-esc="props.depositBalance"/>
+                        </tr>
+                        <tr class="table-danger">
+                            <td><strong>This Order Total</strong></td>
+                            <td class="text-end fw-bold text-danger" t-esc="props.orderTotal"/>
+                        </tr>
+                        <tr class="table-warning">
+                            <td><strong>Pay by Other Method</strong></td>
+                            <td class="text-end fw-bold text-warning" t-esc="props.remainingAmount"/>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p class="text-muted small mb-0">
+                    The Customer Account line will be preset to
+                    <strong t-esc="props.depositBalance"/>.
+                    Collect <strong t-esc="props.remainingAmount"/> by cash, card, or
+                    another method.
+                </p>
+
+            </div>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary btn-lg me-2" t-on-click="props.close">
+                    Cancel
+                </button>
+                <button class="btn btn-warning btn-lg"
+                        t-on-click="() => { props.onConfirm(); props.close(); }">
+                    Charge <t t-esc="props.depositBalance"/> on Account
+                </button>
+            </t>
+
+        </Dialog>
+    </t>
+
+</templates>

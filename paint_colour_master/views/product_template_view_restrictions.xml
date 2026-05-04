@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Hide Attributes & Variants tab when colour code is assigned -->
+    <record id="view_product_template_form_inherit_hide_variants" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.hide.variants</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Hide the Attributes & Variants page when colour_code_id is set -->
+            <xpath expr="//page[@name='variants']" position="attributes">
+                <attribute name="invisible">colour_code_id</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

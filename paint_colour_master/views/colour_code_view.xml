@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- View for Colours - Tree View -->
+    <record id="view_colour_code_tree" model="ir.ui.view">
+        <field name="name">colour.code.tree</field>
+        <field name="model">colour.code</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="fandeck_id"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="vendor_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- View for Colours - Form View -->
+    <record id="view_colour_code_form" model="ir.ui.view">
+        <field name="name">colour.code.form</field>
+        <field name="model">colour.code</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="fandeck_id"/>
+                        <field name="code"/>
+                        <field name="name"/>
+                        <field name="vendor_id"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action for Colours -->
+    <record id="action_colour_code" model="ir.actions.act_window">
+        <field name="name">Colour Codes</field>
+        <field name="res_model">colour.code</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Colour Code
+            </p>
+        </field>
+    </record>
+</odoo>

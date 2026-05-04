@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ════════════════════════════════════════════════════════
+             List View — pos.neg.reconciliation.line
+             ════════════════════════════════════════════════════════ -->
+        <record id="pos_neg_reconciliation_line_tree" model="ir.ui.view">
+            <field name="name">pos.neg.reconciliation.line.tree</field>
+            <field name="model">pos.neg.reconciliation.line</field>
+            <field name="arch" type="xml">
+                <list string="Negative Stock Reconciliation Log"
+                      decoration-danger="price_diff_amount &gt; 0 and not price_diff_move_id"
+                      default_order="reconcile_date desc">
+                    <field name="reconcile_date" string="Date"/>
+                    <field name="reconcile_type" string="Type"
+                           decoration-info="reconcile_type == 'receipt'"
+                           decoration-warning="reconcile_type == 'adjustment'"/>
+                    <field name="product_id" string="Product"/>
+                    <field name="pos_order_id" string="POS Order" optional="show"/>
+                    <field name="source_picking_id" string="Receipt / Adjustment" optional="show"/>
+                    <field name="reconcile_qty" string="Qty"/>
+                    <field name="original_cost" string="AVCO at Sale"/>
+                    <field name="incoming_cost" string="Purchase Cost"/>
+                    <field name="price_diff_per_unit" string="Diff/Unit"
+                           decoration-danger="price_diff_per_unit &gt; 0"
+                           decoration-success="price_diff_per_unit &lt; 0"
+                           decoration-muted="price_diff_per_unit == 0"/>
+                    <field name="price_diff_amount" string="Total Diff"
+                           decoration-danger="price_diff_amount &gt; 0"
+                           decoration-success="price_diff_amount &lt; 0"/>
+                    <field name="price_diff_move_id" string="Price Diff JE" optional="show"/>
+                    <field name="currency_id" column_invisible="1"/>
+                    <field name="company_id" optional="show"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ════════════════════════════════════════════════════════
+             Form View — pos.neg.reconciliation.line
+             ════════════════════════════════════════════════════════ -->
+        <record id="pos_neg_reconciliation_line_form" model="ir.ui.view">
+            <field name="name">pos.neg.reconciliation.line.form</field>
+            <field name="model">pos.neg.reconciliation.line</field>
+            <field name="arch" type="xml">
+                <form string="Reconciliation Event">
+                    <sheet>
+                        <group>
+                            <group string="Event">
+                                <field name="reconcile_date" readonly="1"/>
+                                <field name="reconcile_type" readonly="1"/>
+                                <field name="company_id" readonly="1"/>
+                            </group>
+                            <group string="Product &amp; Orders">
+                                <field name="product_id" readonly="1"/>
+                                <field name="pos_order_id" readonly="1"/>
+                                <field name="source_picking_id" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="Quantities &amp; Costs">
+                            <group>
+                                <field name="reconcile_qty" readonly="1"/>
+                                <field name="original_cost" readonly="1"/>
+                                <field name="incoming_cost" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="price_diff_per_unit" readonly="1"/>
+                                <field name="price_diff_amount" readonly="1"/>
+                                <field name="price_diff_move_id" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="Negative SVL Reference">
+                            <field name="neg_layer_id" readonly="1"/>
+                        </group>
+                        <group string="Note">
+                            <field name="note" readonly="1" nolabel="1"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ════════════════════════════════════════════════════════
+             Search View — pos.neg.reconciliation.line
+             ════════════════════════════════════════════════════════ -->
+        <record id="pos_neg_reconciliation_line_search" model="ir.ui.view">
+            <field name="name">pos.neg.reconciliation.line.search</field>
+            <field name="model">pos.neg.reconciliation.line</field>
+            <field name="arch" type="xml">
+                <search string="Reconciliation Log">
+                    <field name="product_id" string="Product"/>
+                    <field name="pos_order_id" string="POS Order"/>
+                    <field name="source_picking_id" string="Receipt"/>
+                    <field name="reconcile_date" string="Date"/>
+
+                    <filter string="Vendor Receipts" name="filter_receipt"
+                            domain="[('reconcile_type', '=', 'receipt')]"/>
+                    <filter string="Inventory Adjustments" name="filter_adjustment"
+                            domain="[('reconcile_type', '=', 'adjustment')]"/>
+                    <separator/>
+                    <filter string="Has Price Difference" name="filter_has_diff"
+                            domain="[('price_diff_amount', '!=', 0)]"/>
+                    <filter string="Missing JE (needs attention)" name="filter_missing_je"
+                            domain="[('price_diff_amount', '!=', 0), ('price_diff_move_id', '=', False)]"/>
+                    <separator/>
+                    <filter string="This Month" name="filter_this_month"
+                            domain="[('reconcile_date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+                    <filter string="This Year" name="filter_this_year"
+                            domain="[('reconcile_date', '&gt;=', (context_today() + relativedelta(month=1, day=1)).strftime('%Y-%m-%d'))]"/>
+
+                    <group expand="0" string="Group By">
+                        <filter string="Product" name="group_product"
+                                context="{'group_by': 'product_id'}"/>
+                        <filter string="Type" name="group_type"
+                                context="{'group_by': 'reconcile_type'}"/>
+                        <filter string="POS Order" name="group_pos_order"
+                                context="{'group_by': 'pos_order_id'}"/>
+                        <filter string="Month" name="group_month"
+                                context="{'group_by': 'reconcile_date:month'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- ════════════════════════════════════════════════════════
+             Window Action
+             ════════════════════════════════════════════════════════ -->
+        <record id="action_pos_neg_reconciliation_log" model="ir.actions.act_window">
+            <field name="name">Negative Stock Reconciliation Log</field>
+            <field name="res_model">pos.neg.reconciliation.line</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="pos_neg_reconciliation_line_search"/>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No reconciliation events recorded yet.
+                </p>
+                <p>
+                    Events appear here when a vendor receipt or inventory adjustment
+                    closes a negative stock position created by a POS oversell.
+                </p>
+            </field>
+        </record>
+
+        <!-- ════════════════════════════════════════════════════════
+             Menu Items
+             ════════════════════════════════════════════════════════ -->
+
+        <!-- Under Inventory > Reporting -->
+        <menuitem id="menu_pos_neg_stock_root"
+                  name="POS Negative Stock"
+                  parent="stock.menu_warehouse_report"
+                  sequence="99"/>
+
+        <menuitem id="menu_pos_neg_reconciliation_log"
+                  name="Reconciliation Log"
+                  parent="menu_pos_neg_stock_root"
+                  action="action_pos_neg_reconciliation_log"
+                  sequence="10"/>
+
+        <menuitem id="menu_pos_neg_reconciliation_report"
+                  name="Reconciliation Report"
+                  parent="menu_pos_neg_stock_root"
+                  action="action_pos_neg_reconciliation_report"
+                  sequence="20"/>
+
+    </data>
+</odoo>

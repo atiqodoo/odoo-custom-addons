@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Define the action first to ensure the XML ID is registered -->
+    <record id="action_generate_barcode_wizard" model="ir.actions.act_window">
+        <field name="name">Generate Barcodes</field>
+        <field name="res_model">product.barcode.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_product_ids': active_ids}</field>
+    </record>
+
+    <!-- Define the view after the action -->
+    <record id="view_product_product_form_inherit" model="ir.ui.view">
+        <field name="name">product.product.form.inherit</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(product_barcode_custom.action_generate_barcode_wizard)d" string="Generate Barcode" type="action" class="oe_highlight"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

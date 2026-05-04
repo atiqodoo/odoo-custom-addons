@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Product Vendor Pricing List View -->
+    <record id="product_vendor_pricing_tree" model="ir.ui.view">
+        <field name="name">product.vendor.pricing.list</field>
+        <field name="model">product.vendor.pricing</field>
+        <field name="arch" type="xml">
+            <list string="Vendor Pricing Rules" editable="bottom">
+                <field name="partner_id"/>
+                <field name="product_tmpl_id"/>
+                <field name="product_id" optional="show"/>
+                <field name="min_qty"/>
+                <field name="max_qty"/>
+                <field name="price_unit" optional="show"/>
+                <field name="discount_percentage"/>
+                <field name="freight_percentage"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Product Vendor Pricing Form View -->
+    <record id="product_vendor_pricing_form" model="ir.ui.view">
+        <field name="name">product.vendor.pricing.form</field>
+        <field name="model">product.vendor.pricing</field>
+        <field name="arch" type="xml">
+            <form string="Vendor Pricing Rule">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="product_tmpl_id"/>
+                            <field name="product_id"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="min_qty"/>
+                            <field name="max_qty"/>
+                            <field name="price_unit"/>
+                        </group>
+                    </group>
+                    <group string="Cost Adjustments">
+                        <group>
+                            <field name="discount_percentage"/>
+                        </group>
+                        <group>
+                            <field name="freight_percentage"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Menu Action -->
+    <record id="product_vendor_pricing_action" model="ir.actions.act_window">
+        <field name="name">Vendor Pricing Rules</field>
+        <field name="res_model">product.vendor.pricing</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_product_vendor_pricing"
+              name="Vendor Pricing Rules"
+              parent="purchase.menu_procurement_management"
+              action="product_vendor_pricing_action"
+              sequence="50"/>
+</odoo>

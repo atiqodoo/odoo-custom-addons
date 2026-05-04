@@ -8,6 +8,18 @@
         <field name="model">cost.comparison.wizard</field>
         <field name="arch" type="xml">
             <form string="Cost Comparison &amp; Volume Scaling">
+                <header>
+                    <!-- ============================================ -->
+                    <!-- NEW: SINGLE BUTTON ADDED                     -->
+                    <!-- ============================================ -->
+                    <button name="action_open_quotation_generator"
+                            string="📝 Create Quotation"
+                            type="object"
+                            class="btn-primary"
+                            help="Open quotation generator to select products and set prices"/>
+                    
+                    <button string="Close" special="cancel" class="btn-secondary"/>
+                </header>
                 <sheet>
                     <!-- ============================================== -->
                     <!-- HEADER - TITLE                                 -->
