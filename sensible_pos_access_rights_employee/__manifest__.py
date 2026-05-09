@@ -29,8 +29,9 @@
     'author': 'Sensible Consulting Services',
     'website': 'https://sensiblecs.com',
     'license': 'AGPL-3',
-    'depends': ['pos_hr'],
+    'depends': ['pos_hr', 'pos_fixed_discount', 'pos_cod'],
     'data': [
+        'security/ir.model.access.csv',
         'views/sbl_hr_employee_view.xml'
     ],
     'assets': {

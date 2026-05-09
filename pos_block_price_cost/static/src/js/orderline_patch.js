@@ -10,22 +10,18 @@
  * implementation to handle both Odoo 18 SaaS and Enterprise builds.
  *
  * Behaviour:
- *   - Shows a browser alert warning immediately when price drops below cost
- *   - Does NOT auto-reset the price (cashier is warned but can still try to proceed)
- *   - Hard block happens later at PaymentScreen.validateOrder (pos_restriction.js)
+ *   - Logs a console.warn when price drops below cost (badge turns red in UI)
+ *   - Hard block happens later at PaymentScreen.validateOrder / COD button (pos_restriction.js)
  *   - Refund / return lines (qty < 0) are always skipped
  */
 
 import { PosOrderline } from "@point_of_sale/app/models/pos_order_line";
 import { Orderline } from "@point_of_sale/app/generic_components/orderline/orderline";
 import { patch } from "@web/core/utils/patch";
-import { _t } from "@web/core/l10n/translation";
 
 // Allow pcBelowCost through OWL's strict prop shape validator
 Orderline.props.line.shape.pcBelowCost = { type: Boolean, optional: true };
 
-// Stored outside the reactive model to avoid OWL reactivity interference
-const _pcAlertTimers = new WeakMap();
 
 console.log("pos_block_price_cost: orderline_patch.js loaded");
 
@@ -47,13 +43,9 @@ patch(PosOrderline.prototype, {
         return result;
     },
 
-    // ── Core check (debounced — fires 700 ms after last keystroke) ───────────
+    // ── Core check ───────────────────────────────────────────────────────────
 
     _pcCheckBelowCost() {
-        // Cancel any pending alert from the previous keystroke
-        clearTimeout(_pcAlertTimers.get(this));
-        _pcAlertTimers.delete(this);
-
         const qty = this.get_quantity ? this.get_quantity() : this.qty;
         if (qty < 0) return;   // skip refund lines
 
@@ -64,12 +56,9 @@ patch(PosOrderline.prototype, {
         if (cost <= 0) return;
 
         // Use ex-VAT unit price so we compare apples-to-apples with standard_price
-        let effectiveExVat, priceWithTax, priceWithoutTax;
+        let effectiveExVat;
         try {
-            const prices = this.get_all_prices(1);
-            effectiveExVat = prices.priceWithoutTax;
-            priceWithTax = prices.priceWithTax;
-            priceWithoutTax = prices.priceWithoutTax;
+            effectiveExVat = this.get_all_prices(1).priceWithoutTax;
         } catch (_) {
             return;
         }
@@ -79,20 +68,6 @@ patch(PosOrderline.prototype, {
                 `pos_block_price_cost: BELOW COST — ` +
                 `ex-VAT effective=${effectiveExVat.toFixed(2)} < cost=${cost}`
             );
-            // Show cost inclusive of VAT using the same tax ratio as the selling price
-            const vatRatio = priceWithoutTax !== 0 ? priceWithTax / priceWithoutTax : 1;
-            const costIncVat = cost * vatRatio;
-            const msg = (
-                "⚠ " + _t("Price Below Cost") + "\n\n" +
-                product.display_name + "\n" +
-                _t("Cost (inc. VAT): ") + costIncVat.toFixed(2) + "\n" +
-                _t("Selling (inc. VAT): ") + priceWithTax.toFixed(2) + "\n\n" +
-                _t("A manager PIN will be required to complete this sale.")
-            );
-            _pcAlertTimers.set(this, setTimeout(() => {
-                _pcAlertTimers.delete(this);
-                alert(msg);
-            }, 30000));
         }
     },
 

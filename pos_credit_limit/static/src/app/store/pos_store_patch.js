@@ -29,6 +29,8 @@
 
 import { PosStore } from "@point_of_sale/app/store/pos_store";
 import { patch } from "@web/core/utils/patch";
+import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { _t } from "@web/core/l10n/translation";
 
 /** Filter devtools output: type [PCL-Gate3] in the console filter box */
 const LOG_PREFIX = "[PCL-Gate3]";
@@ -138,6 +140,38 @@ patch(PosStore.prototype, {
             );
             return null; // Caller interprets null as fail-closed (block payment)
         }
+    },
+
+    async selectPartner() {
+        const currentOrder = this.get_order();
+        const currentPartner = currentOrder?.get_partner?.();
+        const accountLines = (currentOrder?.payment_ids || []).filter((line) => {
+            const method = line.payment_method_id;
+            return method && (method.type === "pay_later" || method.pcl_is_credit_method);
+        });
+
+        if (accountLines.length) {
+            console.warn(
+                `${LOG_PREFIX} BLOCKED partner change — Customer Account payment line exists` +
+                ` | currentPartner=${currentPartner?.name || "none"} (${currentPartner?.id || "none"})` +
+                ` | accountLineCount=${accountLines.length}`,
+                accountLines.map((line) => ({
+                    amount: line.get_amount?.() ?? line.amount,
+                    method: line.payment_method_id?.name,
+                    approvedPartnerId: line.pcl_approved_partner_id,
+                    approvedPartnerName: line.pcl_approved_partner_name,
+                }))
+            );
+            this.dialog.add(AlertDialog, {
+                title: _t("Remove Customer Account Payment First"),
+                body: _t(
+                    "This order already has a Customer Account payment line. Remove that payment line before changing the customer, then add Customer Account again so payment terms, overdue invoices, and credit limit are checked for the selected customer."
+                ),
+            });
+            return currentPartner;
+        }
+
+        return await super.selectPartner(...arguments);
     },
 
 });

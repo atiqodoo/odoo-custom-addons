@@ -3,10 +3,6 @@ import { patch } from "@web/core/utils/patch";
 
 patch(TicketScreen.prototype, {
     shouldHideDeleteButton(order) {
-        const employee = this.pos.get_cashier();
-        if (employee.sbl_hide_pos_delete_order_button) {
-            return true;
-        }
         return super.shouldHideDeleteButton(order);
     },
 });

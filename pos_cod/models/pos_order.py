@@ -408,6 +408,41 @@ class PosOrder(models.Model):
         return rows
 
     @api.model
+    def get_cod_order_lines(self, order_id=None, order_ref=None):
+        """Read-only COD line details for the POS card item viewer."""
+        order = self.browse(int(order_id)) if order_id else self.browse()
+        if order_ref and (not order.exists() or not order.is_cod):
+            order = self.search([
+                ('is_cod', '=', True),
+                ('cod_state', 'in', ('pending', 'partial')),
+                '|',
+                ('name', '=', order_ref),
+                ('pos_reference', '=', order_ref),
+            ], limit=1)
+
+        if not order.exists() or not order.is_cod:
+            return []
+
+        returned_by_product = order._cod_returned_qty_by_product()
+        rows = []
+        for line in order.lines.filtered(lambda l: l.qty > 0).sorted(lambda l: l.id):
+            product_id = line.product_id.id
+            already_returned = min(float(line.qty), returned_by_product.get(product_id, 0.0))
+            returned_by_product[product_id] = max(round(returned_by_product.get(product_id, 0.0) - already_returned, 4), 0.0)
+            rows.append({
+                'id': line.id,
+                'product_id': [product_id, line.product_id.display_name],
+                'full_product_name': line.full_product_name or line.product_id.display_name,
+                'qty': float(line.qty),
+                'returned_qty': already_returned,
+                'remaining_qty': max(round(float(line.qty) - already_returned, 4), 0.0),
+                'price_unit': float(line.price_unit),
+                'price_subtotal_incl': float(line.price_subtotal_incl),
+                'discount': float(line.discount or 0.0),
+            })
+        return rows
+
+    @api.model
     def collect_cod_payment(
         self,
         order_id=None,
@@ -594,7 +629,7 @@ class PosOrder(models.Model):
                 move = self.env['account.move'].create({
                 'move_type': 'entry',
                 'journal_id': journal.id,
-                'date': fields.Date.today(),
+                'date': fields.Date.context_today(self),
                 'ref': 'COD-PAY-%s' % order.name,
                 'narration': 'COD Payment: %s | %s' % (order.name, order.partner_id.name),
                 'is_cod_entry': False,
@@ -720,7 +755,14 @@ class PosOrder(models.Model):
         try:
             self._create_order_picking()
 
-            pending = self.picking_ids.filtered(lambda p: p.state not in ('done', 'cancel'))
+            all_pickings = self.picking_ids
+            _logger.info(
+                '%s _cod_validate_picking: pickings after creation for order %s: %s',
+                _COD, self.name,
+                [(p.name, p.state) for p in all_pickings],
+            )
+
+            pending = all_pickings.filtered(lambda p: p.state not in ('done', 'cancel'))
             if not pending:
                 _logger.warning(
                     '%s _cod_validate_picking: no pending picking after creation for order %s '
@@ -735,19 +777,68 @@ class PosOrder(models.Model):
 
                 pick.action_assign()
 
+                _logger.info(
+                    '%s _cod_validate_picking: pick %s state after assign=%s moves=%s',
+                    _COD, pick.name, pick.state,
+                    [(m.product_id.name, m.state, len(m.move_line_ids)) for m in pick.move_ids],
+                )
+
+                # Force-create move lines for any moves that could not be reserved,
+                # allowing COD dispatch even when on-hand stock is zero or negative.
+                for move in pick.move_ids.filtered(
+                    lambda m: m.state not in ('done', 'cancel', 'assigned')
+                ):
+                    _logger.info(
+                        '%s _cod_validate_picking: force-assigning move %s (product=%s qty=%s)',
+                        _COD, move.id, move.product_id.name, move.product_uom_qty,
+                    )
+                    if not move.move_line_ids:
+                        self.env['stock.move.line'].create({
+                            'move_id': move.id,
+                            'picking_id': pick.id,
+                            'product_id': move.product_id.id,
+                            'product_uom_id': move.product_uom.id,
+                            'quantity': move.product_uom_qty,
+                            'location_id': move.location_id.id,
+                            'location_dest_id': move.location_dest_id.id,
+                        })
+                    # Write state directly — readonly=True is UI-only, ORM allows it.
+                    move.sudo().write({'state': 'assigned'})
+
+                # Set done qty on all pending move lines.
                 for move in pick.move_ids:
                     if move.state in ('done', 'cancel'):
                         continue
-                    for detail in move.move_line_ids:
-                        detail.qty_done = detail.reserved_qty or detail.product_uom_qty
+                    for ml in move.move_line_ids:
+                        ml.quantity = ml.quantity or move.product_uom_qty
+                pick.move_ids.filtered(
+                    lambda m: m.state not in ('done', 'cancel')
+                ).write({'picked': True})
 
-                pick.with_context(skip_backorder=True).button_validate()
+                _logger.info(
+                    '%s _cod_validate_picking: calling _action_done for pick %s state=%s',
+                    _COD, pick.name, pick.state,
+                )
+                # Use _action_done directly to bypass button_validate pre-hooks.
+                # cod_dispatch=True tells our StockQuant override to allow the
+                # quant to go negative (Option C / l10n_ke_edi_oscu_stock bypass).
+                pick.with_context(
+                    skip_backorder=True,
+                    cancel_backorder=True,
+                    cod_dispatch=True,
+                )._action_done()
 
                 _logger.info(
                     '%s _cod_validate_picking: picking %s validated for order %s.',
                     _COD, pick.name, self.name,
                 )
 
+        except UserError as exc:
+            _logger.warning(
+                '%s _cod_validate_picking: UserError for order %s: %s',
+                _COD, self.name, exc,
+            )
+            raise
         except Exception as exc:
             _logger.error(
                 '%s _cod_validate_picking: FAILED for order %s: %s',
@@ -769,6 +860,10 @@ class PosOrder(models.Model):
                     _COD, self.name, done.mapped('name'),
                 )
                 return True
+            # Inject cod_dispatch so any _action_done calls triggered inside the
+            # standard POS picking-creation flow (e.g. by paint_tinting) also
+            # bypass the l10n_ke_edi_oscu_stock negative-stock constraint.
+            return super(PosOrder, self.with_context(cod_dispatch=True))._create_order_picking()
         return super()._create_order_picking()
 
     # ── Accounting ─────────────────────────────────────────────────────────────
@@ -895,7 +990,7 @@ class PosOrder(models.Model):
         move = self.env['account.move'].create({
             'move_type': 'entry',
             'journal_id': sales_journal.id,
-            'date': fields.Date.today(),
+            'date': fields.Date.context_today(self),
             'ref': 'COD-CONF-%s' % self.name,
             'narration': 'COD Dispatch Confirmation | %s | Customer: %s' % (
                 self.name, self.partner_id.name,
@@ -981,7 +1076,7 @@ class PosOrder(models.Model):
         move = self.env['account.move'].create({
             'move_type': 'entry',
             'journal_id': first_journal.id,
-            'date': fields.Date.today(),
+            'date': fields.Date.context_today(self),
             'ref': 'COD-PAY-%s' % self.name,
             'narration': 'COD Payment Collection | %s | %s' % (self.name, self.partner_id.name),
             'is_cod_entry': False,
@@ -1069,7 +1164,7 @@ class PosOrder(models.Model):
         return self.env['account.move'].create({
             'move_type': 'entry',
             'journal_id': journal.id,
-            'date': fields.Date.today(),
+            'date': fields.Date.context_today(self),
             'ref': 'COD-RET-%s' % self.name,
             'narration': 'COD Return: %s | %s' % (self.name, self.partner_id.name),
             'is_cod_entry': False,
@@ -1147,17 +1242,77 @@ class PosOrder(models.Model):
                 'move_ids': moves,
             })
             picking.action_confirm()
+
+            # Build lot map for lot/serial-tracked products.
+            # Strategy 1: scan done dispatch pickings (move lines going away from
+            # the warehouse, i.e. NOT towards the warehouse dest).
+            # Strategy 2: fall back to pack_lot_ids on the POS order lines, which
+            # always store the lot names selected at the time of sale.
+            lot_map = {}  # product_id -> [(stock.lot record, qty)]
+            done_pickings = self.picking_ids.filtered(lambda p: p.state == 'done')
+            for op in done_pickings:
+                for ml in op.move_line_ids:
+                    if ml.lot_id and ml.location_dest_id.usage == 'customer':
+                        lot_map.setdefault(ml.product_id.id, []).append((ml.lot_id, ml.quantity))
+
+            if not lot_map:
+                # Fallback: resolve lot names from POS order line pack_lot_ids
+                company = self.company_id or self.env.company
+                for line in self.lines.filtered(lambda l: l.product_id.is_storable and l.qty > 0):
+                    if line.product_id.tracking == 'none':
+                        continue
+                    for pack_lot in line.pack_lot_ids:
+                        if not pack_lot.lot_name:
+                            continue
+                        lot = self.env['stock.lot'].search([
+                            ('name', '=', pack_lot.lot_name),
+                            ('product_id', '=', line.product_id.id),
+                            ('company_id', '=', company.id),
+                        ], limit=1)
+                        if lot:
+                            qty = 1.0 if line.product_id.tracking == 'serial' else float(line.qty)
+                            lot_map.setdefault(line.product_id.id, []).append((lot, qty))
+
+            _logger.info(
+                '%s _cod_create_return_picking: lot_map=%s (done_pickings=%d)',
+                _COD,
+                {pid: [(l.name, q) for l, q in vals] for pid, vals in lot_map.items()},
+                len(done_pickings),
+            )
+
             for move in picking.move_ids:
                 move.move_line_ids.unlink()
-                self.env['stock.move.line'].create({
-                    'picking_id': picking.id,
-                    'move_id': move.id,
-                    'product_id': move.product_id.id,
-                    'product_uom_id': move.product_uom.id,
-                    'quantity': move.product_uom_qty,
-                    'location_id': source_location.id,
-                    'location_dest_id': dest_location.id,
-                })
+                pid = move.product_id.id
+                qty_to_return = move.product_uom_qty
+                lots = lot_map.get(pid, [])
+
+                if lots and move.product_id.tracking != 'none':
+                    qty_left = qty_to_return
+                    for lot, lot_qty in lots:
+                        if qty_left <= 0:
+                            break
+                        use_qty = round(min(lot_qty, qty_left), 4)
+                        self.env['stock.move.line'].create({
+                            'picking_id': picking.id,
+                            'move_id': move.id,
+                            'product_id': pid,
+                            'product_uom_id': move.product_uom.id,
+                            'quantity': use_qty,
+                            'location_id': source_location.id,
+                            'location_dest_id': dest_location.id,
+                            'lot_id': lot.id,
+                        })
+                        qty_left = round(qty_left - use_qty, 4)
+                else:
+                    self.env['stock.move.line'].create({
+                        'picking_id': picking.id,
+                        'move_id': move.id,
+                        'product_id': pid,
+                        'product_uom_id': move.product_uom.id,
+                        'quantity': qty_to_return,
+                        'location_id': source_location.id,
+                        'location_dest_id': dest_location.id,
+                    })
             picking.move_ids.write({'picked': True})
             picking.with_context(cancel_backorder=True)._action_done()
             _logger.info('%s _cod_create_return_picking: validated picking %s for order %s', _COD, picking.name, self.name)

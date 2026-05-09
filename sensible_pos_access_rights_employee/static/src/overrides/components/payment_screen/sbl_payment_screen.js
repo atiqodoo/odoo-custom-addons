@@ -2,48 +2,76 @@
 
 import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
 import { patch } from "@web/core/utils/patch";
+import { sblDebug } from "@sensible_pos_access_rights_employee/authorization/sbl_authorization";
 
 patch(PaymentScreen.prototype, {
-    setup() {
-        super.setup();
-        this._filterDisabledPaymentMethods();
+    async addNewPaymentLine(paymentMethod) {
+        return await this.pos.sblGuardedAction(
+            "payment_method",
+            () => super.addNewPaymentLine(paymentMethod),
+            { label: paymentMethod?.name || "Payment Method", paymentMethod }
+        );
     },
-    _filterDisabledPaymentMethods() {
-        const cashier = this.pos.get_cashier();
-        const disabledMethods = cashier?.sbl_disabled_payment_method_ids || [];
-        if (disabledMethods.length > 0) {
-            const disabledMethodIds = disabledMethods.map(dpm => dpm.id);
-            this.payment_methods_from_config = this.payment_methods_from_config
-                .filter(pm => !disabledMethodIds.includes(pm.id))
-                .slice()
-                .sort((a, b) => a.sequence - b.sequence);
-        }
+
+    async toggleIsToInvoice() {
+        return await this.pos.sblGuardedAction("payment_invoice", () => super.toggleIsToInvoice(), {
+            label: "Invoice",
+        });
     },
-    getNumpadButtons() {
-        const buttons = super.getNumpadButtons();
-        const employee = this.pos.get_cashier();
-        for (const button of buttons) {
-            if (button.value === "quantity") {
-                button.disabled = employee.sbl_disable_pos_qty;
-            }
-            if (button.value === "price") {
-                button.disabled = !this.pos.cashierHasPriceControlRights() || employee.sbl_disable_pos_change_price;
-            }
-            if (button.value === "discount") {
-                button.disabled = !this.pos.config.manual_discount || employee.sbl_disable_pos_discount_button;
-            }
-            if (button.value === "-") {
-                button.disabled = employee.sbl_disable_pos_numpad_plus_minus;
-            }
-        }
-        const clickButton = buttons.find(button => button.value === this.pos.numpadMode);
-        if (clickButton) {
-            for (const button of buttons) {
-                if (!["quantity", "discount", "price", "-"].includes(button.value)) {
-                    button.disabled = clickButton.disabled;
+
+    async sblSelectPaymentCustomer() {
+        return await this.pos.sblGuardedAction(
+            "payment_customer",
+            async () => {
+                this.pos.sblBypassCustomerSelectionAuthorization = true;
+                try {
+                    return await this.pos.selectPartner();
+                } finally {
+                    this.pos.sblBypassCustomerSelectionAuthorization = false;
                 }
-            }
+            },
+            { label: "Payment Customer" }
+        );
+    },
+
+    async openCashbox() {
+        return await this.pos.sblGuardedAction("open_cashbox", () => super.openCashbox(), {
+            label: "Open Cashbox",
+        });
+    },
+
+    async addTip() {
+        return await this.pos.sblGuardedAction("payment_tip", () => super.addTip(), {
+            label: "Tip",
+        });
+    },
+
+    async toggleShippingDatePicker() {
+        return await this.pos.sblGuardedAction(
+            "payment_ship_later",
+            () => super.toggleShippingDatePicker(),
+            { label: "Ship Later" }
+        );
+    },
+
+    async validateOrder(isForceValidate) {
+        return await this.pos.sblGuardedAction(
+            "payment_validate",
+            () => super.validateOrder(isForceValidate),
+            { label: "Validate Payment" }
+        );
+    },
+
+    async updateSelectedPaymentline(amount = false) {
+        if (this.sblPaymentAmountAuthorized) {
+            return super.updateSelectedPaymentline(amount);
         }
-        return buttons;
+        const allowed = await this.pos.sblAuthorizeAction("numpad", { label: "Payment Amount" });
+        if (!allowed) {
+            sblDebug("payment amount update blocked");
+            return false;
+        }
+        this.sblPaymentAmountAuthorized = true;
+        return super.updateSelectedPaymentline(amount);
     },
 });

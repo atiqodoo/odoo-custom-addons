@@ -111,10 +111,11 @@ patch(ProductScreen.prototype, {
             this.pos.add_new_order();
 
         } catch (err) {
-            codError(COMPONENT, "onCodButtonClick", "Failed to dispatch COD order:", err?.message || err);
+            const errMsg = err?.data?.message || err?.message || "An unexpected error occurred. Please try again.";
+            codError(COMPONENT, "onCodButtonClick", "Failed to dispatch COD order:", errMsg);
             this._codDialog.add(AlertDialog, {
                 title: "COD Dispatch Failed",
-                body:  err?.message || "An unexpected error occurred. Please try again.",
+                body:  errMsg,
             });
         }
     },

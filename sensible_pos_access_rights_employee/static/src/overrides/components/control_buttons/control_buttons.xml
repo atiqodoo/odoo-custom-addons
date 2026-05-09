@@ -5,41 +5,42 @@
             <t t-set="current_employee" t-value="pos.get_cashier()"/>
         </xpath>
         <xpath expr="//SelectPartnerButton" position="attributes">
-            <attribute name="t-if">!current_employee.sbl_hide_pos_customer_selection_button and !props.showRemainingButtons</attribute>
+            <attribute name="t-if">!props.showRemainingButtons</attribute>
         </xpath>
         <xpath expr="//button[@t-on-click='props.onClickMore']" position="attributes">
-            <attribute name="t-if">!current_employee.sbl_hide_pos_customer_selection_button and !props.showRemainingButtons and !ui.isSmall and props.onClickMore</attribute>
+            <attribute name="t-if">!props.showRemainingButtons and !ui.isSmall and props.onClickMore</attribute>
         </xpath>
 
         <!-- Actions Popup Buttons - Base POS Actions -->
         <!-- Hide General Note Button (first OrderlineNoteButton in popup with label attribute) -->
         <xpath expr="//t[@t-if='props.showRemainingButtons']/div/OrderlineNoteButton[@label='internalNoteLabel(this.pos.get_order())']" position="attributes">
-            <attribute name="t-if">!current_employee?.sbl_hide_pos_action_general_note</attribute>
+            <attribute name="t-if">true</attribute>
         </xpath>
 
         <!-- Hide Customer Note Button (second OrderlineNoteButton in popup with icon attribute) -->
         <xpath expr="//t[@t-if='props.showRemainingButtons']/div/OrderlineNoteButton[@icon=&quot;'fa fa-sticky-note'&quot;]" position="attributes">
-            <attribute name="t-if">!current_employee?.sbl_hide_pos_action_customer_note</attribute>
+            <attribute name="t-if">true</attribute>
         </xpath>
 
         <!-- Hide Pricelist Button -->
         <xpath expr="//t[@t-if='props.showRemainingButtons']/div/button[hasclass('o_pricelist_button')]" position="attributes">
-            <attribute name="t-if">!current_employee?.sbl_hide_pos_action_pricelist</attribute>
+            <attribute name="t-if">true</attribute>
         </xpath>
 
         <!-- Hide Refund Button -->
         <xpath expr="//t[@t-if='props.showRemainingButtons']/div/button[@t-on-click='() =&gt; this.clickRefund()']" position="attributes">
-            <attribute name="t-if">!current_employee?.sbl_hide_pos_action_refund</attribute>
+            <attribute name="t-if">true</attribute>
         </xpath>
 
         <!-- Hide Fiscal Position Button (preserve original conditional) -->
         <xpath expr="//t[@t-if='props.showRemainingButtons']/div/button[hasclass('o_fiscal_position_button')]" position="attributes">
-            <attribute name="t-if">pos.models['account.fiscal.position'].length and !current_employee?.sbl_hide_pos_action_fiscal_position</attribute>
+            <attribute name="t-if">pos.models['account.fiscal.position'].length</attribute>
         </xpath>
 
         <!-- Hide Cancel Order Button -->
         <xpath expr="//t[@t-if='props.showRemainingButtons']/div/button[@t-on-click='() =&gt; this.pos.onDeleteOrder(this.pos.get_order())']" position="attributes">
-            <attribute name="t-if">!current_employee?.sbl_hide_pos_action_cancel_order</attribute>
+            <attribute name="t-if">true</attribute>
+            <attribute name="t-on-click">() =&gt; this.pos.sblGuardedAction('cancel_order', () =&gt; this.pos.onDeleteOrder(this.pos.get_order()), { label: 'Cancel Order' })</attribute>
         </xpath>
     </t>
 </templates>

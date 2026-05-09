@@ -6,31 +6,35 @@
         </xpath>
         <!-- Hide Install App menu -->
         <xpath expr="//DropdownItem[@t-if='!isDisplayStandalone']" position="attributes">
-            <attribute name="t-if">!isDisplayStandalone and !currentEmployee?.sbl_hide_pos_install_app</attribute>
+            <attribute name="t-if">!isDisplayStandalone</attribute>
+            <attribute name="onSelected">() =&gt; pos.sblGuardedAction('install_app', () =&gt; window.open(this.appUrl), { label: 'Install App' })</attribute>
         </xpath>
         <!-- Hide Orders menu -->
         <xpath expr="//DropdownItem[@onSelected=&quot;() =&gt; this.pos.showScreen('TicketScreen')&quot;]" position="attributes">
-            <attribute name="t-if">!currentEmployee?.sbl_hide_pos_orders_menu</attribute>
+            <attribute name="t-if">true</attribute>
+            <attribute name="onSelected">() =&gt; pos.sblGuardedAction('orders_menu', () =&gt; this.pos.showScreen('TicketScreen'), { label: 'Orders' })</attribute>
         </xpath>
         <!-- Hide Cash In/Out menu -->
         <xpath expr="//DropdownItem[@t-if='showCashMoveButton']" position="attributes">
-            <attribute name="t-if">showCashMoveButton and !currentEmployee?.sbl_hide_pos_cash_in_out</attribute>
+            <attribute name="t-if">showCashMoveButton</attribute>
         </xpath>
         <!-- Hide Backend menu -->
         <xpath expr="//DropdownItem[@onSelected='() =&gt; pos.closePos()']" position="attributes">
-            <attribute name="t-if">!currentEmployee?.sbl_hide_pos_backend_menu</attribute>
+            <attribute name="t-if">true</attribute>
         </xpath>
         <!-- Hide Close Register menu -->
         <xpath expr="//DropdownItem[@onSelected='() =&gt; this.pos.closeSession()']" position="attributes">
-            <attribute name="t-if">!currentEmployee?.sbl_hide_pos_close_register</attribute>
+            <attribute name="t-if">true</attribute>
         </xpath>
         <!-- Hide Clear Cache menu -->
         <xpath expr="//DropdownItem[@onSelected='() =&gt; this.clearCache()']" position="attributes">
-            <attribute name="t-if">this.env.debug and !currentEmployee?.sbl_hide_pos_clear_cache</attribute>
+            <attribute name="t-if">this.env.debug</attribute>
+            <attribute name="onSelected">() =&gt; pos.sblGuardedAction('clear_cache', () =&gt; this.clearCache(), { label: 'Clear Cache' })</attribute>
         </xpath>
         <!-- Hide Debug Window menu -->
         <xpath expr="//DropdownItem[@onSelected='() =&gt; debug.toggleWidget()']" position="attributes">
-            <attribute name="t-if">this.env.debug and !currentEmployee?.sbl_hide_pos_debug_window</attribute>
+            <attribute name="t-if">this.env.debug</attribute>
+            <attribute name="onSelected">() =&gt; pos.sblGuardedAction('debug_window', () =&gt; debug.toggleWidget(), { label: 'Debug Window' })</attribute>
         </xpath>
     </t>
 </templates>

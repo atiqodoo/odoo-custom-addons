@@ -44,6 +44,8 @@
             'pos_cod/static/src/app/components/cod_banner/CodBanner.xml',
             'pos_cod/static/src/app/components/cod_banner/CodBanner.js',
             # Layer 3 — Dialogs and Screens
+            'pos_cod/static/src/app/components/cod_line_details_dialog/CodLineDetailsDialog.xml',
+            'pos_cod/static/src/app/components/cod_line_details_dialog/CodLineDetailsDialog.js',
             'pos_cod/static/src/app/components/cod_return_dialog/CodReturnDialog.xml',
             'pos_cod/static/src/app/components/cod_return_dialog/CodReturnDialog.js',
             'pos_cod/static/src/app/screens/cod_orders_screen/cod_orders_screen.scss',

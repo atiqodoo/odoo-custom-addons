@@ -4,6 +4,7 @@ import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { makeAwaitable } from "@point_of_sale/app/store/make_awaitable_dialog";
 import { NumberPopup } from "@point_of_sale/app/utils/input_popups/number_popup";
+import { CodLineDetailsDialog } from "@pos_cod/app/components/cod_line_details_dialog/CodLineDetailsDialog";
 import { CodReturnDialog } from "@pos_cod/app/components/cod_return_dialog/CodReturnDialog";
 import { codWarn, codError } from "@pos_cod/app/utils/cod_logger";
 
@@ -62,7 +63,7 @@ export class CodOrdersScreen extends Component {
             // Appending 'Z' tells JS to parse as UTC so toLocaleString() converts to
             // the browser's local timezone (e.g. Africa/Nairobi = UTC+3).
             const utc = dateStr.replace(" ", "T") + "Z";
-            return new Date(utc).toLocaleString();
+            return new Date(utc).toLocaleString("en-GB");
         } catch {
             return dateStr;
         }
@@ -198,6 +199,10 @@ export class CodOrdersScreen extends Component {
         const result = await makeAwaitable(this.dialog, CodReturnDialog, { order });
         if (!result || !result.amount) return;
         await this.processCod(order, "return", result.amount, result.lines);
+    }
+
+    onViewLines(order) {
+        this.dialog.add(CodLineDetailsDialog, { order });
     }
 
     onBack() {

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="pos_block_price_cost.CodBelowCostDialog">
+        <Dialog title="'COD Blocked — Item(s) Priced Below Cost'">
+
+            <div class="cod-dialog-body">
+
+                <!-- ── Warning banner ──────────────────────────────────── -->
+                <div class="alert alert-danger mb-0">
+
+                    <div class="fw-bold mb-2">
+                        &#9888; The following items have a selling price
+                        <strong>below their cost price (incl. VAT)</strong>:
+                    </div>
+
+                    <!-- ── Detail table ──────────────────────────────────── -->
+                    <table class="table table-sm table-bordered bg-white mb-2">
+                        <thead class="table-danger">
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-end">Cost (incl. VAT)</th>
+                                <th class="text-end">Selling Price (incl. VAT)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="props.offenders" t-as="item" t-key="item_index">
+                                <tr>
+                                    <td t-esc="item.product_name"/>
+                                    <td class="text-end"
+                                        t-esc="item.cost_incl.toFixed(2)"/>
+                                    <td class="text-end text-danger fw-bold"
+                                        t-esc="item.price_incl.toFixed(2)"/>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <div class="small">
+                        COD payment cannot be applied while items are priced below cost.
+                        Please adjust the selling price before proceeding.
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── Footer ─────────────────────────────────────────────── -->
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="onOk">OK</button>
+            </t>
+
+        </Dialog>
+    </t>
+
+</templates>

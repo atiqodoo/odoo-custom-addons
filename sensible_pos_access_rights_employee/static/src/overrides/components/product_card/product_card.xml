@@ -10,7 +10,7 @@
 
         <!-- Modify the t-if condition to include the cashier's field check -->
         <xpath expr="//div[hasclass('product-information-tag')]" position="attributes">
-            <attribute name="t-if">props.productInfo and !sblCashier?.sbl_hide_pos_action_product_info</attribute>
+            <attribute name="t-if">props.productInfo</attribute>
         </xpath>
     </t>
 </templates>

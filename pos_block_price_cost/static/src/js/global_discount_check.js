@@ -3,10 +3,9 @@
 /**
  * global_discount_check.js
  * ─────────────────────────
- * Patches PaymentScreen.validateOrder to block validation when a global
- * discount product line (e.g. "GENERAL DISCOUNT APPLIED") reduces the
- * order total by more than the total tax-inclusive profit of all real
- * product lines.
+ * Patches PaymentScreen.validateOrder AND ProductScreen.onCodButtonClick to
+ * block when a global discount product line reduces the order total by more
+ * than the total tax-inclusive profit of all real product lines.
  *
  * How the global discount is detected
  * ─────────────────────────────────────
@@ -40,11 +39,19 @@
  * Refund lines (qty < 0) are always exempt.
  * Loaded AFTER pos_restriction.js → outermost patch, this check runs first.
  * Reuses _pcRequestManagerOverride() defined by pos_restriction.js.
+ *
+ * COD check (ProductScreen.onCodButtonClick):
+ *   Same profit-vs-discount logic runs when the cashier clicks the COD button.
+ *   Loaded BEFORE cod_check.js → runs as an inner patch (after cod_check.js's
+ *   below-cost guard but before the CodWizard opens).
  */
 
 import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
+import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
+import { useService } from "@web/core/utils/hooks";
+import { ManagerPinDialog } from "./manager_pin_dialog";
 
 console.log("pos_block_price_cost: global_discount_check.js loaded");
 
@@ -53,10 +60,85 @@ console.log("pos_block_price_cost: global_discount_check.js loaded");
 //   plain integer, [id, name] tuple, or reactive object with .id property.
 function _resolveId(val) {
     if (!val && val !== 0) return null;
-    if (Array.isArray(val))         return val[0];
-    if (typeof val === 'object')    return val.id || null;
+    if (Array.isArray(val))      return val[0];
+    if (typeof val === 'object') return val.id || null;
     return val;
 }
+
+// ── Compute globalDiscountAmount and totalProfit for any order ────────────────
+function _computeDiscountAndProfit(order, discountProductId) {
+    // Odoo 18: getOrderlines() (SaaS) | get_orderlines() (Enterprise) | .orderlines (reactive)
+    const lines = order.getOrderlines
+        ? order.getOrderlines()
+        : (order.get_orderlines
+            ? order.get_orderlines()
+            : [...(order.orderlines || [])]);
+
+    let globalDiscountAmount = 0;
+    let totalProfit          = 0;
+
+    for (const line of lines) {
+        const product = line.getProduct
+            ? line.getProduct()
+            : (line.get_product ? line.get_product() : null);
+
+        if (!product) continue;
+
+        let priceWithTax, priceWithoutTax;
+        try {
+            const prices    = line.get_all_prices(1);
+            priceWithTax    = prices.priceWithTax;
+            priceWithoutTax = prices.priceWithoutTax;
+        } catch (_) {
+            continue;
+        }
+
+        const qty = line.getQuantity
+            ? line.getQuantity()
+            : (line.get_quantity ? line.get_quantity() : line.qty);
+
+        const isDiscountLine = discountProductId !== null
+            ? (product.id === discountProductId)
+            : (product.standard_price === 0 && priceWithTax < 0 && qty >= 0);
+
+        if (isDiscountLine) {
+            globalDiscountAmount += Math.abs(priceWithTax * qty);
+            continue;
+        }
+
+        if (qty < 0) continue;
+
+        const cost          = product.standard_price || 0;
+        const taxMultiplier = (priceWithoutTax && priceWithoutTax !== 0)
+            ? priceWithTax / priceWithoutTax
+            : 1;
+        const costInclTax   = cost * taxMultiplier;
+
+        totalProfit += (priceWithTax - costInclTax) * qty;
+    }
+
+    return { globalDiscountAmount, totalProfit };
+}
+
+// ── Show ManagerPinDialog via an explicit dialog service ──────────────────────
+// Used by the ProductScreen patch which cannot call this._pcRequestManagerOverride
+// (that method only exists on PaymentScreen via pos_restriction.js).
+function _openManagerPinDialog(dialogService, invalidLines) {
+    return new Promise((resolve) => {
+        dialogService.add(ManagerPinDialog, {
+            invalidLines,
+            onConfirm: (employeeName) => {
+                console.log(
+                    `pos_block_price_cost [global_discount_check]: Override granted by '${employeeName}'`
+                );
+                resolve(true);
+            },
+            onCancel: () => resolve(false),
+        });
+    });
+}
+
+// ── PaymentScreen patch ───────────────────────────────────────────────────────
 
 patch(PaymentScreen.prototype, {
 
@@ -64,76 +146,13 @@ patch(PaymentScreen.prototype, {
         const order = this.currentOrder;
         if (!order) return super.validateOrder(...arguments);
 
-        // ── Resolve discount product ID from POS config ───────────────────────
         const discountProductId = _resolveId(
             this.pos && this.pos.config && this.pos.config.discount_product_id
         );
 
-        // ── Collect lines (dual-API: SaaS getOrderlines / Enterprise get_orderlines)
-        const lines = order.getOrderlines
-            ? order.getOrderlines()
-            : order.get_orderlines();
+        const { globalDiscountAmount, totalProfit } =
+            _computeDiscountAndProfit(order, discountProductId);
 
-        let globalDiscountAmount = 0;  // absolute tax-inclusive value of discount lines
-        let totalProfit          = 0;  // Σ (priceWithTax − costInclTax) × qty
-
-        for (const line of lines) {
-
-            // ── Resolve product ───────────────────────────────────────────────
-            const product = line.getProduct
-                ? line.getProduct()
-                : (line.get_product ? line.get_product() : null);
-
-            if (!product) continue;
-
-            // ── Resolve per-unit prices ───────────────────────────────────────
-            // get_all_prices(1) → prices for qty=1, reflecting any per-line discount.
-            let priceWithTax, priceWithoutTax;
-            try {
-                const prices = line.get_all_prices(1);
-                priceWithTax    = prices.priceWithTax;
-                priceWithoutTax = prices.priceWithoutTax;
-            } catch (_) {
-                continue;  // line not yet fully initialised
-            }
-
-            // ── Resolve quantity ──────────────────────────────────────────────
-            const qty = line.getQuantity
-                ? line.getQuantity()
-                : (line.get_quantity ? line.get_quantity() : line.qty);
-
-            // ── Detect discount product line ──────────────────────────────────
-            // Primary:  product.id matches the configured discount_product_id
-            // Fallback: negative selling price + zero cost (config unavailable)
-            const isDiscountLine = discountProductId !== null
-                ? (product.id === discountProductId)
-                : (product.standard_price === 0 && priceWithTax < 0 && qty >= 0);
-
-            if (isDiscountLine) {
-                // price_unit is negative by design; take absolute value
-                globalDiscountAmount += Math.abs(priceWithTax * qty);
-                continue;  // exclude from profit calculation
-            }
-
-            // ── Skip refund / return lines ────────────────────────────────────
-            if (qty < 0) continue;
-
-            // ── Tax-inclusive profit for this line ────────────────────────────
-            // standard_price is ALWAYS tax-exclusive in Odoo.
-            // Gross it up using this line's own tax ratio so both sides
-            // of the subtraction are in the same tax-inclusive space.
-            const cost = product.standard_price || 0;
-
-            const taxMultiplier = (priceWithoutTax && priceWithoutTax !== 0)
-                ? priceWithTax / priceWithoutTax
-                : 1;
-
-            const costInclTax = cost * taxMultiplier;
-
-            totalProfit += (priceWithTax - costInclTax) * qty;
-        }
-
-        // ── No discount line on this order — nothing to check ─────────────────
         if (globalDiscountAmount <= 0) {
             return super.validateOrder(...arguments);
         }
@@ -144,9 +163,7 @@ patch(PaymentScreen.prototype, {
             `totalProfitInclTax=${totalProfit.toFixed(2)}`
         );
 
-        // ── Block when discount erases all profit ─────────────────────────────
         if (globalDiscountAmount > totalProfit) {
-
             const discountFmt = globalDiscountAmount.toFixed(2);
             const profitFmt   = totalProfit.toFixed(2);
 
@@ -176,7 +193,92 @@ patch(PaymentScreen.prototype, {
             );
         }
 
-        // ── Pass through to pos_restriction.js per-line check ────────────────
         return super.validateOrder(...arguments);
+    },
+});
+
+// ── ProductScreen patch — COD button global-discount guard ────────────────────
+// Intercepts onCodButtonClick BEFORE the CodWizard opens.
+// Load order: global_discount_check.js (inner) < cod_check.js (outer).
+// Execution order on click: cod_check below-cost guard → this guard → CodWizard.
+
+patch(ProductScreen.prototype, {
+
+    setup(...args) {
+        super.setup(...args);
+        this._gdCodDialog = useService("dialog");
+    },
+
+    async onCodButtonClick() {
+        console.log("pos_block_price_cost [global_discount_check/COD]: onCodButtonClick — patch reached");
+
+        const order = this.currentOrder;
+        if (!order) return super.onCodButtonClick(...arguments);
+
+        const discountProductId = _resolveId(
+            this.pos && this.pos.config && this.pos.config.discount_product_id
+        );
+
+        console.log(
+            `pos_block_price_cost [global_discount_check/COD]: discountProductId=${discountProductId}`
+        );
+
+        let globalDiscountAmount, totalProfit;
+        try {
+            ({ globalDiscountAmount, totalProfit } =
+                _computeDiscountAndProfit(order, discountProductId));
+        } catch (err) {
+            console.error(
+                "pos_block_price_cost [global_discount_check/COD]: _computeDiscountAndProfit threw →", err
+            );
+            return super.onCodButtonClick(...arguments);
+        }
+
+        console.log(
+            `pos_block_price_cost [global_discount_check/COD]: ` +
+            `globalDiscountAmt=${globalDiscountAmount.toFixed(2)}  ` +
+            `totalProfitInclTax=${totalProfit.toFixed(2)}`
+        );
+
+        if (globalDiscountAmount <= 0) {
+            return super.onCodButtonClick(...arguments);
+        }
+
+        console.log(
+            `pos_block_price_cost [global_discount_check/COD]: ` +
+            `discount detected — evaluating profit...`
+        );
+
+        if (globalDiscountAmount > totalProfit) {
+            const discountFmt = globalDiscountAmount.toFixed(2);
+            const profitFmt   = totalProfit.toFixed(2);
+
+            const summary = [
+                _t("Global Discount Amount") + `: ${discountFmt}`,
+                _t("Total Order Profit (incl. VAT)") + `: ${profitFmt}`,
+                _t("The discount exceeds total profit — COD order results in a net loss."),
+            ];
+
+            console.warn(
+                `pos_block_price_cost [global_discount_check/COD]: BLOCKED — ` +
+                `globalDiscountAmt (${discountFmt}) > totalProfitInclTax (${profitFmt})`
+            );
+
+            const granted = await _openManagerPinDialog(this._gdCodDialog, summary);
+
+            if (!granted) {
+                console.log(
+                    "pos_block_price_cost [global_discount_check/COD]: " +
+                    "Override DENIED or cancelled — COD dispatch blocked"
+                );
+                return;
+            }
+
+            console.log(
+                "pos_block_price_cost [global_discount_check/COD]: Override GRANTED — proceeding with COD"
+            );
+        }
+
+        return super.onCodButtonClick(...arguments);
     },
 });
