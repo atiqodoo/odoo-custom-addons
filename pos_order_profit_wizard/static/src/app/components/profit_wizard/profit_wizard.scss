@@ -1,0 +1,48 @@
+.pos .pos-profit-wizard {
+    width: 1100px;
+    max-width: 90vw;
+
+    .pos-profit-table-wrap {
+        max-height: 60vh;
+        overflow: auto;
+    }
+
+    .pos-profit-table {
+        table-layout: fixed;
+
+        th,
+        td {
+            white-space: normal;
+            vertical-align: middle;
+        }
+
+        .pos-profit-product {
+            width: 34%;
+            font-weight: 600;
+        }
+
+        input {
+            min-width: 7rem;
+        }
+    }
+
+    .pos-profit-total {
+        align-items: center;
+        border-top: 1px solid #d8dde6;
+        display: flex;
+        font-size: 1.25rem;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding-top: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .pos .pos-profit-wizard {
+        min-width: 0;
+
+        .pos-profit-table {
+            min-width: 850px;
+        }
+    }
+}

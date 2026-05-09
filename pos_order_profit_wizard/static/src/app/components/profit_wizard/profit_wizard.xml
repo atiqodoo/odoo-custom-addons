@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_order_profit_wizard.PosOrderProfitWizard">
+        <Dialog title="'Order Profit'" size="'xl'" bodyClass="'pos-profit-wizard'">
+            <div class="pos-profit-table-wrap">
+                <table class="table table-sm align-middle pos-profit-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-end">Qnty</th>
+                            <th class="text-end">Cost Price</th>
+                            <th class="text-end">Selling Price</th>
+                            <th class="text-end">Profit / Qnty</th>
+                            <th class="text-end">Total Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="state.rows" t-as="row" t-key="row.id">
+                            <td class="pos-profit-product">
+                                <t t-esc="row.productName"/>
+                            </td>
+                            <td class="text-end">
+                                <input class="form-control form-control-sm text-end"
+                                    type="number"
+                                    step="0.0001"
+                                    t-att-value="row.qty"
+                                    t-on-input="(ev) => this.updateQty(row, ev.target.value)"/>
+                            </td>
+                            <td class="text-end">
+                                <t t-esc="formatCurrency(row.costPrice)"/>
+                            </td>
+                            <td class="text-end">
+                                <input class="form-control form-control-sm text-end"
+                                    type="number"
+                                    step="0.01"
+                                    t-att-value="row.sellingPrice"
+                                    t-on-input="(ev) => this.updateSellingPrice(row, ev.target.value)"/>
+                            </td>
+                            <td class="text-end" t-att-class="profitPerQty(row) &lt; 0 ? 'text-danger fw-bold' : 'text-success fw-bold'">
+                                <t t-esc="formatCurrency(profitPerQty(row))"/>
+                            </td>
+                            <td class="text-end" t-att-class="totalProfit(row) &lt; 0 ? 'text-danger fw-bold' : 'text-success fw-bold'">
+                                <t t-esc="formatCurrency(totalProfit(row))"/>
+                            </td>
+                        </tr>
+                        <tr t-if="!state.rows.length">
+                            <td colspan="6" class="text-center text-muted py-4">No order lines to display.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pos-profit-total">
+                <span>Total Profit</span>
+                <strong t-att-class="grandTotalProfit &lt; 0 ? 'text-danger' : 'text-success'">
+                    <t t-esc="formatCurrency(grandTotalProfit)"/>
+                </strong>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary btn-lg" t-on-click="save" t-att-disabled="!state.rows.length">Save</button>
+                <button class="btn btn-secondary btn-lg" t-on-click="cancel">Discard</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>
