@@ -55,7 +55,7 @@ patch(PaymentScreen.prototype, {
     async addNewPaymentLine(paymentMethod) {
 
         // ── 1. Fast path: non-credit method ──────────────────────────────────
-        if (!paymentMethod.pcl_is_credit_method) {
+        if (!this._pclIsCustomerAccountMethod(paymentMethod)) {
             if (DEBUG) {
                 console.log(`${LOG_PREFIX} "${paymentMethod.name}" — not credit, bypassing all gates.`);
             }
@@ -97,7 +97,7 @@ patch(PaymentScreen.prototype, {
         // ── 3. Return order check (Issue 5) ───────────────────────────────────
         // currentOrder.return_pos_order_id is set when this order is a product return.
         const returnOrderRef = this.currentOrder?.return_pos_order_id;
-        const isReturn = !!returnOrderRef;
+        const isReturn = !!returnOrderRef || this._pclHasRefundLines(this.currentOrder);
 
         if (isReturn) {
             console.warn(`${LOG_PREFIX} Return order detected — return_pos_order_id: ${JSON.stringify(returnOrderRef?.id ?? returnOrderRef)}`);
@@ -105,6 +105,18 @@ patch(PaymentScreen.prototype, {
         }
 
         // ── 4. Gate 3: Real-Time Sync ─────────────────────────────────────────
+        if (this._pclIsAccountSettlementOrDepositOrder(this.currentOrder)) {
+            console.warn(
+                `${LOG_PREFIX} Account settlement/deposit detected — empty order with Customer Account. ` +
+                `Skipping payment terms, overdue invoice, and credit limit gates.`
+            );
+            const added = await super.addNewPaymentLine(paymentMethod);
+            if (added) {
+                this._pclStampCustomerAccountLine(this.currentOrder.get_selected_paymentline(), partner);
+            }
+            return added;
+        }
+
         const liveCredit = await this.pos.fetchPartnerCreditInfo(partner);
 
         if (!liveCredit) {
@@ -193,6 +205,7 @@ patch(PaymentScreen.prototype, {
             try {
                 const newLine = this.currentOrder.add_paymentline(paymentMethod);
                 if (newLine) {
+                    this._pclStampCustomerAccountLine(newLine, partner);
                     console.warn(`${LOG_PREFIX} Payment line added — id: ${newLine.id}, amount: ${newLine.amount}`);
                     this.numberBuffer.reset();
                     if (gate2Result.partialAmount !== undefined && gate2Result.partialAmount !== null) {
@@ -244,6 +257,7 @@ patch(PaymentScreen.prototype, {
             try {
                 const newLine = this.currentOrder.add_paymentline(paymentMethod);
                 if (newLine) {
+                    this._pclStampCustomerAccountLine(newLine, partner);
                     this.numberBuffer.reset();
                     newLine.set_amount(gate2Result.partialAmount);
                     console.warn(`${LOG_PREFIX} Partial line added — amount preset to ${gate2Result.partialAmount}`);
@@ -257,7 +271,11 @@ patch(PaymentScreen.prototype, {
         }
 
         // Full approval (no dialog shown in Gate 2) — safe to call super normally.
-        return await super.addNewPaymentLine(paymentMethod);
+        const added = await super.addNewPaymentLine(paymentMethod);
+        if (added) {
+            this._pclStampCustomerAccountLine(this.currentOrder.get_selected_paymentline(), partner);
+        }
+        return added;
     },
 
     // ─── Private helpers ─────────────────────────────────────────────────────
@@ -275,24 +293,17 @@ patch(PaymentScreen.prototype, {
      * @param {Object|number} returnOrderRef - return_pos_order_id value
      */
     async _pclHandleReturn(paymentMethod, partner, returnOrderRef) {
-        // Resolve original order from the store if possible
-        const allOrders = this.pos.models?.["pos.order"]?.getAll?.() || [];
-
-        let originalOrder = null;
-        if (returnOrderRef && typeof returnOrderRef === "object") {
-            originalOrder = returnOrderRef;
-        } else if (typeof returnOrderRef === "number") {
-            originalOrder = allOrders.find(
-                o => o.id === returnOrderRef || o.server_id === returnOrderRef
-            ) || null;
-        }
+        const originalOrder = this._pclResolveOriginalReturnOrder(returnOrderRef);
 
         const origPartner   = originalOrder?.partner_id;
         const origPartnerId = origPartner?.id ?? origPartner ?? null;
+        const originalPaidByCustomerAccount =
+            this._pclOrderPaidByCustomerAccount(originalOrder);
 
         console.warn(
             `${LOG_PREFIX} Return check | origPartnerId=${origPartnerId}` +
-            ` | currentPartnerId=${partner.id}`
+            ` | currentPartnerId=${partner.id}` +
+            ` | originalPaidByCustomerAccount=${originalPaidByCustomerAccount}`
         );
 
         if (!origPartnerId) {
@@ -334,12 +345,302 @@ patch(PaymentScreen.prototype, {
             return; // BLOCKED
         }
 
-        // Case C: same customer — allow without credit limit check
-        // (the return reduces the customer's balance; no limit is consumed)
+        if (!originalPaidByCustomerAccount) {
+            const msg =
+                `The original POS order was not paid by Customer Account. ` +
+                `Use the original refund method for this return.`;
+
+            console.warn(`${LOG_PREFIX} BLOCKED — return original payment is not Customer Account: ${msg}`);
+
+            await new Promise((resolve) => {
+                this.dialog.add(
+                    ReturnBlockedPopup,
+                    { title: "Return on Account Blocked", body: msg },
+                    { onClose: resolve }
+                );
+            });
+
+            return; // BLOCKED
+        }
+
+        // Case C: same customer + original Customer Account payment — allow
+        // without payment-terms, overdue-invoice, or credit-limit validation.
         console.warn(
-            `${LOG_PREFIX} Return on account ALLOWED — customer matches original (id: ${partner.id})`
+            `${LOG_PREFIX} Return on account ALLOWED — original was Customer Account ` +
+            `and customer matches (id: ${partner.id}); skipping Gate 1 / Gate 1.5 / Gate 2.`
         );
-        return await super.addNewPaymentLine(paymentMethod);
+        const added = await super.addNewPaymentLine(paymentMethod);
+        if (added) {
+            this._pclStampCustomerAccountLine(this.currentOrder.get_selected_paymentline(), partner);
+        }
+        return added;
+    },
+
+    async _isOrderValid(isForceValidate) {
+        const accountGuardOk = await this._pclValidateCustomerAccountLinesBeforeOrderValidation();
+        if (!accountGuardOk) {
+            return false;
+        }
+        return await super._isOrderValid(...arguments);
+    },
+
+    _pclIsCustomerAccountMethod(paymentMethod) {
+        return Boolean(
+            paymentMethod &&
+            (paymentMethod.type === "pay_later" || paymentMethod.pcl_is_credit_method)
+        );
+    },
+
+    _pclHasRefundLines(order) {
+        return Boolean(
+            (order?.lines || []).some((line) => line.refunded_orderline_id)
+        );
+    },
+
+    _pclIsAccountSettlementOrDepositOrder(order) {
+        if (!order) {
+            return false;
+        }
+        const rawLines = order.get_orderlines?.() || order.lines || [];
+        const saleLines = rawLines.filter((line) => {
+            const qty = Math.abs(line.qty ?? line.get_quantity?.() ?? 0);
+            return !line.is_reward_line && qty > 0;
+        });
+        const isEmptyAccountOrder = saleLines.length === 0;
+        console.warn(
+            `${LOG_PREFIX} Settlement/deposit check | order=${order.name || order.id}` +
+            ` | rawLineCount=${rawLines.length}` +
+            ` | saleLineCount=${saleLines.length}` +
+            ` | paymentLineCount=${(order.payment_ids || []).length}` +
+            ` | isEmptyAccountOrder=${isEmptyAccountOrder}`
+        );
+        return isEmptyAccountOrder;
+    },
+
+    _pclResolveOriginalReturnOrder(returnOrderRef) {
+        const allOrders = this.pos.models?.["pos.order"]?.getAll?.() || [];
+
+        if (returnOrderRef && typeof returnOrderRef === "object") {
+            return returnOrderRef;
+        }
+        if (typeof returnOrderRef === "number") {
+            const found = allOrders.find(
+                (order) => order.id === returnOrderRef || order.server_id === returnOrderRef
+            );
+            if (found) return found;
+        }
+
+        for (const line of this.currentOrder?.lines || []) {
+            const refLine = line.refunded_orderline_id;
+            const refOrder = refLine && typeof refLine === "object"
+                ? refLine.order_id
+                : null;
+            if (refOrder && typeof refOrder === "object") {
+                console.warn(
+                    `${LOG_PREFIX} Original return order resolved from refunded_orderline_id: ` +
+                    `${refOrder.name || refOrder.id}`
+                );
+                return refOrder;
+            }
+        }
+
+        console.warn(
+            `${LOG_PREFIX} Could not resolve original return order from return_pos_order_id ` +
+            `or refunded_orderline_id.`
+        );
+        return null;
+    },
+
+    _pclOrderPaidByCustomerAccount(order) {
+        const payments = order?.payment_ids || [];
+        const customerAccountPayments = payments.filter((payment) =>
+            this._pclIsCustomerAccountMethod(payment.payment_method_id)
+        );
+
+        console.warn(
+            `${LOG_PREFIX} Original payment scan | order=${order?.name || order?.id || "unknown"} | ` +
+            `paymentCount=${payments.length} | customerAccountCount=${customerAccountPayments.length}`,
+            payments.map((payment) => ({
+                amount: payment.amount,
+                methodId: payment.payment_method_id?.id,
+                methodName: payment.payment_method_id?.name,
+                methodType: payment.payment_method_id?.type,
+                pclIsCredit: payment.payment_method_id?.pcl_is_credit_method,
+            }))
+        );
+
+        return customerAccountPayments.length > 0;
+    },
+
+    _pclGetCustomerAccountPaymentLines(order = this.currentOrder) {
+        return (order?.payment_ids || []).filter((line) =>
+            this._pclIsCustomerAccountMethod(line.payment_method_id)
+        );
+    },
+
+    _pclStampCustomerAccountLine(paymentLine, partner) {
+        if (!paymentLine || !partner || !this._pclIsCustomerAccountMethod(paymentLine.payment_method_id)) {
+            return;
+        }
+        paymentLine.pcl_approved_partner_id = partner.id;
+        paymentLine.pcl_approved_partner_name = partner.name || "";
+        console.warn(
+            `${LOG_PREFIX} Customer Account line stamped | line=${paymentLine.id || paymentLine.uuid}` +
+            ` | approvedPartner=${paymentLine.pcl_approved_partner_name} (${partner.id})`
+        );
+    },
+
+    async _pclValidateCustomerAccountLinesBeforeOrderValidation() {
+        const order = this.currentOrder;
+        const partner = order?.partner_id;
+        const accountLines = this._pclGetCustomerAccountPaymentLines(order);
+
+        if (!accountLines.length) {
+            return true;
+        }
+
+        if (this._pclIsAccountSettlementOrDepositOrder(order)) {
+            console.warn(
+                `${LOG_PREFIX} Final guard ALLOW — account settlement/deposit order; ` +
+                `skipping payment terms, overdue invoice, and credit limit gates.`
+            );
+            return true;
+        }
+
+        console.warn(
+            `${LOG_PREFIX} Final Customer Account guard | accountLineCount=${accountLines.length}` +
+            ` | currentPartner=${partner?.name || "none"} (${partner?.id || "none"})`
+        );
+
+        if (!partner) {
+            await this._pclShowReturnBlocked(
+                "Customer Required",
+                "Customer Account payment cannot be validated without a customer. Remove the Customer Account payment line or select the approved customer again."
+            );
+            return false;
+        }
+
+        for (const line of accountLines) {
+            if (!line.pcl_approved_partner_id) {
+                await this._pclShowReturnBlocked(
+                    "Recheck Customer Account",
+                    "This Customer Account payment line was not stamped with an approved customer. Remove it and add Customer Account again so payment terms, overdue invoices, and credit limit are checked."
+                );
+                return false;
+            }
+
+            if (Number(line.pcl_approved_partner_id) !== Number(partner.id)) {
+                console.warn(
+                    `${LOG_PREFIX} BLOCKED final validation — partner changed after Customer Account approval` +
+                    ` | approved=${line.pcl_approved_partner_name} (${line.pcl_approved_partner_id})` +
+                    ` | current=${partner.name} (${partner.id})`
+                );
+                await this._pclShowReturnBlocked(
+                    "Customer Changed After Approval",
+                    `Customer Account was approved for "${line.pcl_approved_partner_name}". ` +
+                    `The current customer is "${partner.name}". Remove the Customer Account payment line and add it again for the current customer.`
+                );
+                return false;
+            }
+        }
+
+        const isReturn = !!order?.return_pos_order_id || this._pclHasRefundLines(order);
+        if (isReturn) {
+            const originalOrder = this._pclResolveOriginalReturnOrder(order.return_pos_order_id);
+            const origPartnerId = originalOrder?.partner_id?.id ?? originalOrder?.partner_id ?? null;
+            if (
+                originalOrder &&
+                Number(origPartnerId) === Number(partner.id) &&
+                this._pclOrderPaidByCustomerAccount(originalOrder)
+            ) {
+                console.warn(`${LOG_PREFIX} Final guard ALLOW — Customer Account return for same original customer.`);
+                return true;
+            }
+        }
+
+        if (this._pclIsAccountSettlementOrDepositOrder(this.currentOrder)) {
+            console.warn(
+                `${LOG_PREFIX} Account settlement/deposit detected — empty order with Customer Account. ` +
+                `Skipping payment terms, overdue invoice, and credit limit gates.`
+            );
+            const added = await super.addNewPaymentLine(paymentMethod);
+            if (added) {
+                this._pclStampCustomerAccountLine(this.currentOrder.get_selected_paymentline(), partner);
+            }
+            return added;
+        }
+
+        const liveCredit = await this.pos.fetchPartnerCreditInfo(partner);
+        if (!liveCredit) {
+            await this._pclShowReturnBlocked(
+                "Customer Account Recheck Failed",
+                `Cannot recheck live credit information for "${partner.name}". Remove the Customer Account payment line or try again online.`
+            );
+            return false;
+        }
+
+        if (liveCredit.has_overdue) {
+            await new Promise((resolve) => {
+                this.dialog.add(
+                    OverdueInvoicesPopup,
+                    {
+                        title:             "Overdue Invoices — Credit Blocked",
+                        partnerName:       liveCredit.partner_name || partner.name,
+                        overdueCount:      liveCredit.overdue_invoice_count,
+                        overdueAmount:     formatMoney(liveCredit.overdue_amount, this.pos.currency?.symbol || ""),
+                        oldestOverdueDate: liveCredit.oldest_overdue_date,
+                    },
+                    { onClose: resolve }
+                );
+            });
+            return false;
+        }
+
+        const gate1Passed = await validatePaymentTerms(
+            partner,
+            liveCredit.payment_term_id,
+            liveCredit.payment_term_name,
+            this.dialog
+        );
+        if (!gate1Passed) {
+            return false;
+        }
+
+        const accountAmount = accountLines.reduce(
+            (sum, line) => sum + Math.abs(line.get_amount?.() ?? line.amount ?? 0),
+            0
+        );
+        const gate2Result = await validateCreditLimit({
+            backendTotalDue:          liveCredit.total_due,
+            creditLimit:              liveCredit.credit_limit,
+            depositBalance:           liveCredit.deposit_balance || 0,
+            orderTotal:               accountAmount,
+            allOrders:                (this.pos.models?.["pos.order"]?.getAll?.() || []).filter(
+                (candidate) => candidate !== order
+            ),
+            partnerId:                partner.id,
+            creditMethodId:           accountLines[0].payment_method_id.id,
+            sessionIncomingPayments:  liveCredit.session_incoming_payments || 0,
+            dialogService:            this.dialog,
+            currencySymbol:           this.pos.currency?.symbol || "",
+        });
+
+        if (!gate2Result.allowed) {
+            return false;
+        }
+
+        console.warn(`${LOG_PREFIX} Final Customer Account guard PASSED for "${partner.name}".`);
+        return true;
+    },
+
+    async _pclShowReturnBlocked(title, body) {
+        await new Promise((resolve) => {
+            this.dialog.add(
+                ReturnBlockedPopup,
+                { title, body },
+                { onClose: resolve }
+            );
+        });
     },
 
     /**

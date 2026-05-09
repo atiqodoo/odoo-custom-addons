@@ -85,6 +85,11 @@
 
                             <t t-if="state.selectedOrderId === order.id">
                                 <div class="cod-actions">
+                                    <button class="btn btn-light"
+                                            t-on-click.stop="() => this.onViewLines(order)">
+                                        <i class="fa fa-list-ul me-1"/>
+                                        View Items
+                                    </button>
                                     <button class="btn btn-primary"
                                             t-att-disabled="!state.paymentMethodId or state.collecting"
                                             t-on-click.stop="() => this.onReceivePayment(order)">

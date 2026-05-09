@@ -4,6 +4,7 @@ import { ListContainer } from "@point_of_sale/app/generic_components/list_contai
 import { patch } from "@web/core/utils/patch";
 import { useService } from "@web/core/utils/hooks";
 import { xml } from "@odoo/owl";
+import { sblDebug } from "@sensible_pos_access_rights_employee/authorization/sbl_authorization";
 
 patch(ListContainer.prototype, {
     setup() {
@@ -11,16 +12,20 @@ patch(ListContainer.prototype, {
         this.pos = useService("pos");
     },
 
-    isCreateNewOrderButtonVisible() {
-        const employee = this.pos.get_cashier();
-        return employee && !employee.sbl_hide_pos_new_order_button;
+    async sblOnClickPlus() {
+        const allowed = await this.pos.sblAuthorizeAction("new_order", { label: "New Order" });
+        if (!allowed) {
+            sblDebug("new order blocked");
+            return false;
+        }
+        return this.props.onClickPlus();
     },
 });
 
 patch(ListContainer, {
     template: xml`
         <div class="overflow-hidden d-flex flex-grow-1" t-attf-class="{{props.class}}">
-            <button t-if="props.onClickPlus and isCreateNewOrderButtonVisible()" class="list-plus-btn btn btn-secondary btn-lg me-1" t-on-click="props.onClickPlus">
+            <button t-if="props.onClickPlus" class="list-plus-btn btn btn-secondary btn-lg me-1" t-on-click="sblOnClickPlus">
                 <i class="fa fa-fw fa-plus-circle" aria-hidden="true"/>
             </button>
             <button t-if="this.sizing.isLarger or props.forceSmall" t-on-click="toggle"

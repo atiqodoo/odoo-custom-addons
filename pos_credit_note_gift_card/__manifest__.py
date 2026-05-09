@@ -65,6 +65,8 @@ Configuration (POS Settings)
             'pos_credit_note_gift_card/static/src/js/return_order_validator.js',
             'pos_credit_note_gift_card/static/src/js/ticket_screen_guard.js',
             'pos_credit_note_gift_card/static/src/js/payment_screen_credit_note.js',
+            'pos_credit_note_gift_card/static/src/js/customer_account_return_guard.js',
+            'pos_credit_note_gift_card/static/src/js/exchange_adjustment_guard.js',
             'pos_credit_note_gift_card/static/src/xml/credit_note_receipt.xml',
             'pos_credit_note_gift_card/static/src/xml/payment_screen_credit_note.xml',
         ],

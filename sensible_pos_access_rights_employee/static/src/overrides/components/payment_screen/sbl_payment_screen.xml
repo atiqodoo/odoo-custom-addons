@@ -9,23 +9,24 @@
         </xpath>
         <!-- Hide Customer button -->
         <xpath expr="//button[hasclass('partner-button')]" position="attributes">
-            <attribute name="t-if">!sblCashier?.sbl_hide_pos_payment_customer_button</attribute>
+            <attribute name="t-if">true</attribute>
+            <attribute name="t-on-click">() =&gt; this.sblSelectPaymentCustomer()</attribute>
         </xpath>
         <!-- Hide Invoice button -->
         <xpath expr="//button[hasclass('js_invoice')]" position="attributes">
-            <attribute name="t-if">!sblCashier?.sbl_hide_pos_payment_invoice_button</attribute>
+            <attribute name="t-if">true</attribute>
         </xpath>
         <!-- Hide Ship Later button -->
         <xpath expr="//button[@t-on-click='toggleShippingDatePicker']" position="attributes">
-            <attribute name="t-if">pos.config.ship_later and !sblCashier?.sbl_hide_pos_payment_ship_later_button</attribute>
+            <attribute name="t-if">pos.config.ship_later</attribute>
         </xpath>
         <!-- Hide Tip button -->
         <xpath expr="//button[@t-on-click='addTip']" position="attributes">
-            <attribute name="t-if">pos.config.iface_tipproduct and pos.config.tip_product_id and !sblCashier?.sbl_hide_pos_tip_button</attribute>
+            <attribute name="t-if">pos.config.iface_tipproduct and pos.config.tip_product_id</attribute>
         </xpath>
         <!-- Hide Open Cashbox button -->
         <xpath expr="//button[hasclass('js_cashdrawer')]" position="attributes">
-            <attribute name="t-if">pos.config.iface_cashdrawer and !sblCashier?.sbl_hide_pos_open_cashbox_button</attribute>
+            <attribute name="t-if">pos.config.iface_cashdrawer</attribute>
         </xpath>
     </t>
 
@@ -36,7 +37,7 @@
             <t t-set="sblCashier" t-value="pos.get_cashier()"/>
         </xpath>
         <xpath expr="//button[hasclass('validation-button')]" position="attributes">
-            <attribute name="t-if">!sblCashier?.sbl_hide_pos_payment_validate_button</attribute>
+            <attribute name="t-if">true</attribute>
         </xpath>
     </t>
 
@@ -47,11 +48,11 @@
             <t t-set="sblCashier" t-value="pos.get_cashier()"/>
         </xpath>
         <xpath expr="//Numpad" position="attributes">
-            <attribute name="t-if">!sblCashier?.sbl_hide_pos_numpad</attribute>
+            <attribute name="t-if">true</attribute>
         </xpath>
         <!-- Add margin-top to Back/Validate container when numpad is hidden -->
         <xpath expr="//div[hasclass('left-content')]/div[last()]" position="attributes">
-            <attribute name="t-attf-class">d-flex flex-row gap-2 {{ sblCashier?.sbl_hide_pos_numpad ? 'mt-2' : '' }}</attribute>
+            <attribute name="t-attf-class">d-flex flex-row gap-2</attribute>
         </xpath>
     </t>
 
@@ -64,7 +65,7 @@
         </xpath>
         <!-- Mobile: Add flex-fill when Validate is hidden -->
         <xpath expr="//t[@t-if='ui.isSmall']/button" position="attributes">
-            <attribute name="t-attf-class">btn-switchpane back-button validation-button btn btn-light btn-lg lh-lg {{ sblCashier?.sbl_hide_pos_payment_validate_button ? 'flex-fill' : '' }}</attribute>
+            <attribute name="t-attf-class">btn-switchpane back-button validation-button btn btn-light btn-lg lh-lg</attribute>
         </xpath>
         <!-- Set cashier variable for desktop button -->
         <xpath expr="//t[@t-else='']/button" position="before">
@@ -72,7 +73,7 @@
         </xpath>
         <!-- Desktop: Change w-50 to w-100 when Validate is hidden -->
         <xpath expr="//t[@t-else='']/button" position="attributes">
-            <attribute name="t-attf-class">button back back-button validation btn btn-light btn-lg py-3 lh-lg {{ sblCashier?.sbl_hide_pos_payment_validate_button ? 'w-100' : 'w-50' }}</attribute>
+            <attribute name="t-attf-class">button back back-button validation btn btn-light btn-lg py-3 lh-lg w-50</attribute>
         </xpath>
     </t>
 </templates>
