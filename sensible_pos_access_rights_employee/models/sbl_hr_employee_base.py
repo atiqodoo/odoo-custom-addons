@@ -144,6 +144,14 @@ class HrEmployeeBase(models.AbstractModel):
         string='Payment Methods Requiring Authorization',
         help='Payment methods that require supervisor authorization for this employee.',
     )
+    sbl_deposit_settle_payment_method_ids = fields.Many2many(
+        'pos.payment.method',
+        'sbl_hr_employee_deposit_settle_payment_method_rel',
+        'employee_id',
+        'payment_method_id',
+        string='Deposit / Due Settlement Payment Methods Requiring Authorization',
+        help='Payment methods that require supervisor authorization when receiving customer deposits or settling due amounts.',
+    )
     sbl_hide_pos_install_app = fields.Boolean(
         string='Require Authorization for Install App',
         help='If checked, this employee needs supervisor authorization before using Install App.',
@@ -164,6 +172,11 @@ class HrEmployeeBase(models.AbstractModel):
         help='If checked, this employee needs supervisor authorization before closing the register.',
         default=False,
     )
+    sbl_hide_pos_daily_sale = fields.Boolean(
+        string='Require Authorization for Daily Sale',
+        help='If checked, this employee needs supervisor authorization before downloading the Daily Sale report.',
+        default=False,
+    )
     sbl_hide_pos_clear_cache = fields.Boolean(
         string='Require Authorization for Clear Cache',
         help='If checked, this employee needs supervisor authorization before clearing cache.',
@@ -172,6 +185,11 @@ class HrEmployeeBase(models.AbstractModel):
     sbl_hide_pos_debug_window = fields.Boolean(
         string='Require Authorization for Debug Window',
         help='If checked, this employee needs supervisor authorization before opening the debug window.',
+        default=False,
+    )
+    sbl_block_mpesa_sms_app = fields.Boolean(
+        string='Block M-Pesa SMS App',
+        help='If checked, this employee cannot open the M-Pesa SMS backend app.',
         default=False,
     )
 
@@ -194,6 +212,11 @@ class HrEmployeeBase(models.AbstractModel):
     sbl_hide_pos_action_refund = fields.Boolean(
         string='Require Authorization for Refund',
         help='If checked, this employee needs supervisor authorization before starting a refund.',
+        default=False,
+    )
+    sbl_hide_pos_action_reward = fields.Boolean(
+        string='Require Authorization for Reward',
+        help='If checked, this employee needs supervisor authorization before applying rewards.',
         default=False,
     )
     sbl_hide_pos_action_fiscal_position = fields.Boolean(

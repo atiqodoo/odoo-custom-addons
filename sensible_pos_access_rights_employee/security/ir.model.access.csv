@@ -1,3 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_sbl_pos_authorization_log_user,sbl.pos.authorization.log.user,model_sbl_pos_authorization_log,point_of_sale.group_pos_user,1,0,1,0
 access_sbl_pos_authorization_log_manager,sbl.pos.authorization.log.manager,model_sbl_pos_authorization_log,point_of_sale.group_pos_manager,1,1,1,1
+access_sbl_app_gate_config_user,sbl.app.gate.config.user,model_sbl_app_gate_config,base.group_user,1,0,0,0
+access_sbl_app_gate_config_system,sbl.app.gate.config.system,model_sbl_app_gate_config,base.group_system,1,1,1,1
+access_sbl_app_gate_log_user,sbl.app.gate.log.user,model_sbl_app_gate_log,base.group_user,0,0,1,0
+access_sbl_app_gate_log_system,sbl.app.gate.log.system,model_sbl_app_gate_log,base.group_system,1,1,1,1

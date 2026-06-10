@@ -433,20 +433,33 @@ class MrpProduction(models.Model):
         Open wizard to duplicate this MO multiple times
         """
         self.ensure_one()
-        
+
         if not self.is_tinting_mo:
             raise UserError(_('This action is only available for tinting Manufacturing Orders.'))
-        
+
+        ctx = {
+            'default_source_mo_id': self.id,
+            'default_product_name': self.product_id.display_name,
+            'default_selling_price': self.mo_selling_price or 0.0,
+        }
+        # Carry SO reference and SO line forward if opened from the exists-wizard
+        so_id = self.env.context.get('source_sale_order_id')
+        if so_id:
+            ctx['default_source_sale_order_id'] = so_id
+        sol_id = self.env.context.get('source_sale_order_line_id')
+        if sol_id:
+            ctx['default_source_sale_order_line_id'] = sol_id
+            sol = self.env['sale.order.line'].browse(sol_id).exists()
+            if sol:
+                ctx['default_selling_price'] = sol.price_unit
+
         return {
             'type': 'ir.actions.act_window',
             'name': _('Duplicate Tinting MO'),
             'res_model': 'mrp.production.duplicate.wizard',
             'view_mode': 'form',
             'target': 'new',
-            'context': {
-                'default_source_mo_id': self.id,
-                'default_product_name': self.product_id.display_name,
-            }
+            'context': ctx,
         }
     
     def action_view_duplicate_mos(self):
@@ -473,12 +486,43 @@ class MrpProduction(models.Model):
         Quick action: Duplicate this MO once
         """
         self.ensure_one()
-        
+
         if not self.is_tinting_mo:
             raise UserError(_('This action is only available for tinting Manufacturing Orders.'))
-        
+
+        # If triggered from an SO flow, open the duplicate wizard to capture selling price
+        # rather than jumping directly to the new MO (price is required per lot)
+        so_id = self.env.context.get('source_sale_order_id')
+        sol_id = self.env.context.get('source_sale_order_line_id')
+        if so_id or sol_id:
+            ctx = {
+                'default_source_mo_id': self.id,
+                'default_product_name': self.product_id.display_name,
+                'default_selling_price': self.mo_selling_price or 0.0,
+            }
+            if so_id:
+                ctx['default_source_sale_order_id'] = so_id
+            if sol_id:
+                ctx['default_source_sale_order_line_id'] = sol_id
+                sol = self.env['sale.order.line'].browse(sol_id).exists()
+                if sol:
+                    ctx['default_selling_price'] = sol.price_unit
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Duplicate Tinting MO'),
+                'res_model': 'mrp.production.duplicate.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': ctx,
+            }
+
         new_mo = self._duplicate_tinting_mo()
-        
+        ctx = {'default_source_mo_id': new_mo.id, 'default_product_name': new_mo.product_id.display_name}
+        if so_id:
+            ctx['default_source_sale_order_id'] = so_id
+        if sol_id:
+            ctx['default_source_sale_order_line_id'] = sol_id
+
         return {
             'type': 'ir.actions.act_window',
             'name': _('Duplicated Tinting MO'),
@@ -500,6 +544,7 @@ class MrpProduction(models.Model):
             'source_mo_id': self.id,
             'product_qty': 1.0,  # Always 1.0 for tinting
             'state': 'draft',
+            'mo_selling_price': self.mo_selling_price,
         })
         
         # Confirm the new MO immediately

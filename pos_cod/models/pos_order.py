@@ -452,6 +452,7 @@ class PosOrder(models.Model):
         action='payment',
         order_ref=None,
         return_lines=None,
+        mpesa_ref=False,
         **kwargs
     ):
         """RPC entry point called from CodOrdersScreen when the cashier clicks
@@ -462,6 +463,35 @@ class PosOrder(models.Model):
         Returns:
             dict: {success: bool, message: str, order_name: str}
         """
+        if self:
+            # In the POS data service this method can arrive as
+            # pos.order(<order_id>).collect_cod_payment(payment_method, amount, ...)
+            # instead of pos.order().collect_cod_payment(order_id, payment_method, ...).
+            # Normalize that shape before validating ids, otherwise payment method
+            # ids like 1/2 are mistaken for POS order ids.
+            if len(self) == 1 and session_id in ('payment', 'return'):
+                (
+                    order_id,
+                    payment_method_id,
+                    amount,
+                    session_id,
+                    action,
+                    order_ref,
+                    return_lines,
+                    mpesa_ref,
+                ) = (
+                    self.id,
+                    order_id,
+                    payment_method_id,
+                    amount,
+                    session_id,
+                    action,
+                    order_ref,
+                    return_lines if mpesa_ref is False else mpesa_ref,
+                )
+            elif len(self) == 1 and not order_id:
+                order_id = self.id
+
         payload = order_id if isinstance(order_id, dict) else kwargs
         if payload:
             order_id = (
@@ -480,6 +510,7 @@ class PosOrder(models.Model):
             amount = payload.get('amount', amount)
             session_id = payload.get('session_id') or payload.get('sessionId') or session_id
             action = payload.get('action') or action
+            mpesa_ref = payload.get('mpesa_ref') or payload.get('mpesaRef') or mpesa_ref
             order_ref = (
                 payload.get('order_ref')
                 or payload.get('orderRef')
@@ -488,10 +519,14 @@ class PosOrder(models.Model):
                 or payload.get('posReference')
                 or order_ref
             )
+            if 'return_lines' in payload:
+                return_lines = payload.get('return_lines')
+            elif 'returnLines' in payload:
+                return_lines = payload.get('returnLines')
 
         _logger.info(
-            '%s collect_cod_payment: order_id=%s order_ref=%s method_id=%s amount=%s session_id=%s action=%s',
-            _COD, order_id, order_ref, payment_method_id, amount, session_id, action,
+            '%s collect_cod_payment: order_id=%s order_ref=%s method_id=%s amount=%s session_id=%s action=%s mpesa_ref=%s',
+            _COD, order_id, order_ref, payment_method_id, amount, session_id, action, mpesa_ref,
         )
 
         if not order_id and not order_ref:
@@ -611,6 +646,17 @@ class PosOrder(models.Model):
                     'message': 'Payment method "%s" has no journal configured.' % payment_method.name,
                 }
 
+            if mpesa_ref:
+                _logger.info(
+                    '%s collect_cod_payment: M-Pesa ref=%s passed from POS for COD collection.',
+                    _COD, mpesa_ref,
+                )
+            elif getattr(payment_method, 'is_mpesa', False) and action != 'return':
+                _logger.warning(
+                    '%s collect_cod_payment: payment method %s is M-Pesa but no mpesa_ref was provided.',
+                    _COD, payment_method.display_name,
+                )
+
             cod_ar_account = order._cod_get_ar_account()
             company = order.company_id or self.env.company
             commercial_partner = order.partner_id.commercial_partner_id
@@ -695,17 +741,21 @@ class PosOrder(models.Model):
                 'cod_collection_payment_method_id': payment_method.id,
                 'cod_collection_amount': order._cod_paid_total() + (payment_amount if action != 'return' else 0.0),
             })
-            self.env['pos.cod.collection'].create({
+            collection = self.env['pos.cod.collection'].create({
                 'order_id': order.id,
                 'session_id': collection_session.id,
                 'payment_method_id': payment_method.id,
+                'mpesa_ref': mpesa_ref or False,
                 'move_id': move.id,
                 'kind': entry_kind,
                 'amount': payment_amount,
                 'return_line_qtys': normalized_return_lines if action == 'return' else False,
-                'note': 'COD %s via %s' % (entry_kind, payment_method.name),
+                'note': 'COD %s via %s%s' % (
+                    entry_kind,
+                    payment_method.name,
+                    (' | M-Pesa %s' % mpesa_ref) if mpesa_ref else '',
+                ),
             })
-
             if action == 'return':
                 picking = order._cod_create_return_picking(return_lines=normalized_return_lines)
                 if not picking:
@@ -1231,7 +1281,11 @@ class PosOrder(models.Model):
                 _logger.info('%s _cod_create_return_picking: no storable lines to return for order %s', _COD, self.name)
                 return False
 
-            picking = self.env['stock.picking'].create({
+            return_context = {
+                'cod_dispatch': True,
+                'pos_allow_negative_stock': True,
+            }
+            picking = self.env['stock.picking'].with_context(**return_context).create({
                 'partner_id': self.partner_id.id,
                 'picking_type_id': picking_type.id,
                 'location_id': source_location.id,
@@ -1241,7 +1295,26 @@ class PosOrder(models.Model):
                 'pos_session_id': self.session_id.id,
                 'move_ids': moves,
             })
+            picking = picking.with_context(**return_context)
             picking.action_confirm()
+
+            # Re-enforce partial return quantities after action_confirm.
+            # Automation rules (e.g. "Auto-Validate POS Picking on Return/Exchange")
+            # or procurement hooks triggered on picking creation can call
+            # action_assign() against the customer stock location, which has the
+            # full originally-dispatched quantity and resets product_uom_qty to
+            # that full amount, discarding our partial selection.
+            for move in picking.move_ids:
+                intended_qty = qty_map.get(move.product_id.id, 0.0)
+                if intended_qty > 0 and abs(move.product_uom_qty - intended_qty) > 0.0001:
+                    _logger.warning(
+                        '%s _cod_create_return_picking: product_uom_qty was %s but '
+                        'intended partial qty is %s for product_id=%s (move %s) '
+                        '— re-enforcing correct partial qty.',
+                        _COD, move.product_uom_qty, intended_qty,
+                        move.product_id.id, move.id,
+                    )
+                    move.with_context(**return_context).write({'product_uom_qty': intended_qty})
 
             # Build lot map for lot/serial-tracked products.
             # Strategy 1: scan done dispatch pickings (move lines going away from
@@ -1283,7 +1356,9 @@ class PosOrder(models.Model):
             for move in picking.move_ids:
                 move.move_line_ids.unlink()
                 pid = move.product_id.id
-                qty_to_return = move.product_uom_qty
+                # Read from qty_map (our intended partial qty), NOT move.product_uom_qty,
+                # which may still be wrong if action_confirm triggered a write we missed.
+                qty_to_return = qty_map.get(pid) or move.product_uom_qty
                 lots = lot_map.get(pid, [])
 
                 if lots and move.product_id.tracking != 'none':
@@ -1292,7 +1367,7 @@ class PosOrder(models.Model):
                         if qty_left <= 0:
                             break
                         use_qty = round(min(lot_qty, qty_left), 4)
-                        self.env['stock.move.line'].create({
+                        self.env['stock.move.line'].with_context(**return_context).create({
                             'picking_id': picking.id,
                             'move_id': move.id,
                             'product_id': pid,
@@ -1304,7 +1379,7 @@ class PosOrder(models.Model):
                         })
                         qty_left = round(qty_left - use_qty, 4)
                 else:
-                    self.env['stock.move.line'].create({
+                    self.env['stock.move.line'].with_context(**return_context).create({
                         'picking_id': picking.id,
                         'move_id': move.id,
                         'product_id': pid,
@@ -1313,8 +1388,8 @@ class PosOrder(models.Model):
                         'location_id': source_location.id,
                         'location_dest_id': dest_location.id,
                     })
-            picking.move_ids.write({'picked': True})
-            picking.with_context(cancel_backorder=True)._action_done()
+            picking.move_ids.with_context(**return_context).write({'picked': True})
+            picking.with_context(cancel_backorder=True, **return_context)._action_done()
             _logger.info('%s _cod_create_return_picking: validated picking %s for order %s', _COD, picking.name, self.name)
             return picking
         except Exception as exc:

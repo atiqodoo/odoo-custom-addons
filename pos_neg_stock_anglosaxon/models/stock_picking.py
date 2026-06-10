@@ -18,13 +18,16 @@ Two behavioural extensions on stock.picking:
 2. Price Difference Trigger (incoming / vendor receipt)
    ──────────────────────────────────────────────────────
    _action_done() carries a PRE-hook that snapshots each product's negative
-   qty_available BEFORE super() processes the receipt.  After super() completes
-   (which updates on-hand qty and creates receipt SVLs), a POST-hook calls
+   qty_available BEFORE super() processes a supplier receipt.  Customer returns
+   can also use incoming operation types, but they are deliberately excluded from
+   this vendor price-difference reconciliation.  After super() completes (which
+   updates on-hand qty and creates receipt SVLs), a POST-hook calls
    stock_move._reconcile_neg_layers_for_product() for each product that had
    negative stock, generating the Anglo-Saxon price difference journal entries.
 """
 
 import logging
+from markupsafe import Markup
 from odoo import _, api, fields, models
 
 _logger = logging.getLogger(__name__)
@@ -155,7 +158,10 @@ class StockPicking(models.Model):
                 picking._force_pos_quantities()
 
             # Call _action_done directly with cancel_backorder=True (Odoo 18 convention)
-            pos_out.with_context(cancel_backorder=True)._action_done()
+            pos_out.with_context(
+                cancel_backorder=True,
+                pos_allow_negative_stock=True,
+            )._action_done()
 
         return result
 
@@ -258,23 +264,34 @@ class StockPicking(models.Model):
         # ── PRE-HOOK: Snapshot negative exposure before receipt changes stock ─
 
         receipt_snapshots = {}
-        incoming_pickings = self.filtered(lambda p: p.picking_type_code == 'incoming')
+        incoming_pickings = self.filtered(
+            lambda p: (
+                p.picking_type_code == 'incoming'
+                and p.location_id.usage == 'supplier'
+                and p.location_dest_id.usage == 'internal'
+            )
+        )
 
         for picking in incoming_pickings:
             for move in picking.move_ids.filtered(
                 lambda m: m.state not in ('done', 'cancel')
-                and m.product_id.type == 'product'
+                and (m.product_id.is_storable or m.product_id.type == 'product')
             ):
                 product = move.product_id
                 current_qty = product.qty_available
+                received_qty = move.product_uom._compute_quantity(
+                    move.quantity,
+                    product.uom_id,
+                    rounding_method='HALF-UP',
+                )
 
-                if current_qty < 0:
+                if current_qty < 0 and received_qty > 0:
                     incoming_cost = move._get_pos_neg_incoming_cost()
                     key = (picking.id, move.id, product.id)
                     receipt_snapshots[key] = {
                         'product_id': product.id,
                         'neg_qty_before': abs(current_qty),
-                        'units_at_risk': min(abs(current_qty), move.product_uom_qty),
+                        'units_at_risk': min(abs(current_qty), received_qty),
                         'incoming_unit_cost': incoming_cost,
                         'picking_id': picking.id,
                     }
@@ -307,7 +324,13 @@ class StockPicking(models.Model):
 
         # ── STANDARD ODOO PROCESSING ──────────────────────────────────────────
 
-        result = super()._action_done()
+        if receipt_snapshots:
+            result = super(
+                StockPicking,
+                self.with_context(pos_allow_negative_stock=True),
+            )._action_done()
+        else:
+            result = super()._action_done()
 
         # ── POST-HOOK 1: Tag negative SVLs from POS oversells ─────────────────
 
@@ -400,7 +423,7 @@ class StockPicking(models.Model):
             # Post audit message on the POS order chatter for visibility
             if pos_order:
                 pos_order.message_post(
-                    body=(
+                    body=Markup(
                         '<b>[Negative Stock Created]</b><br/>'
                         f'Product: {svl.product_id.display_name}<br/>'
                         f'Qty oversold: {abs(svl.quantity):.2f}<br/>'

@@ -63,12 +63,54 @@
                     </group>
                     
                     <!-- ============================================ -->
-                    <!-- CUSTOMER SELECTION -->
+                    <!-- MODE SELECTION -->
                     <!-- ============================================ -->
-                    <group string="Customer">
+                    <group string="Action">
+                        <field name="quotation_mode" widget="radio" options="{'horizontal': True}"/>
+                    </group>
+
+                    <!-- ============================================ -->
+                    <!-- NEW QUOTATION: Customer -->
+                    <!-- ============================================ -->
+                    <group string="Customer" invisible="quotation_mode == 'existing'">
                         <field name="partner_id"
                                placeholder="Select customer..."
-                               options="{'no_create': True}"/>
+                               context="{'default_customer_rank': 1, 'default_is_company': False}"
+                               options="{'no_create': False, 'no_create_edit': False}"/>
+                        <group string="Create New Customer">
+                            <field name="new_customer_name"
+                                   placeholder="Customer name"/>
+                            <field name="new_customer_phone"
+                                   placeholder="Phone number"/>
+                            <field name="new_customer_email"
+                                   placeholder="Email address"/>
+                            <button name="action_create_customer_from_wizard"
+                                    string="Create Customer"
+                                    type="object"
+                                    class="btn-secondary"/>
+                        </group>
+                    </group>
+
+                    <!-- ============================================ -->
+                    <!-- ADD TO EXISTING: Quotation picker -->
+                    <!-- ============================================ -->
+                    <group string="Existing Quotation" invisible="quotation_mode == 'new'">
+                        <label for="existing_sale_order_id"/>
+                        <div class="o_row">
+                            <field name="existing_sale_order_id"
+                                   placeholder="Select quotation to add products to..."
+                                   options="{'no_create': True}"
+                                   required="quotation_mode == 'existing'"
+                                   class="o_field_widget"/>
+                            <button name="action_browse_quotations"
+                                    string="Browse List"
+                                    type="object"
+                                    class="btn btn-secondary btn-sm ms-1"
+                                    title="Open Sales quotations list to browse customer, total and status before selecting"/>
+                        </div>
+                        <field name="partner_id" readonly="1"
+                               invisible="not existing_sale_order_id"
+                               string="Customer (from quotation)"/>
                     </group>
                     
                     <!-- ============================================ -->
@@ -96,17 +138,18 @@
                          invisible="can_generate_quotation">
                         <strong>⚠️ Cannot Generate Quotation Yet</strong>
                         <p class="mb-0">
-                            <span invisible="not partner_id">✓ Customer selected</span>
-                            <span invisible="partner_id">✗ Please select a customer</span>
+                            <!-- New quotation: customer check -->
+                            <span invisible="quotation_mode != 'new' or not partner_id">✓ Customer selected</span>
+                            <span invisible="quotation_mode != 'new' or partner_id">✗ Please select a customer</span>
+                            <!-- Existing quotation: SO check -->
+                            <span invisible="quotation_mode != 'existing' or not existing_sale_order_id">✓ Existing quotation selected</span>
+                            <span invisible="quotation_mode != 'existing' or existing_sale_order_id">✗ Please select an existing quotation</span>
                             <br/>
                             <span invisible="total_selected == 0">✓ Products selected</span>
                             <span invisible="total_selected &gt; 0">✗ Please select at least one product</span>
                             <br/>
-                            <!-- ✅ FIXED: Escaped comparison operators -->
                             <span invisible="total_selected != total_selected_with_price">✓ All selected products have manual prices</span>
-                            <span invisible="total_selected == total_selected_with_price">
-                                ✗ Some products still need manual price
-                            </span>
+                            <span invisible="total_selected == total_selected_with_price">✗ Some products still need manual price</span>
                         </p>
                     </div>
                     
@@ -115,6 +158,8 @@
                     <!-- ============================================ -->
                     <field name="line_ids" nolabel="1">
                         <list editable="bottom" create="0" delete="0">
+                            <field name="comparison_line_id" column_invisible="1" force_save="1"/>
+
                             <!-- ======================================== -->
                             <!-- SELECTION CHECKBOX -->
                             <!-- ======================================== -->
@@ -152,8 +197,7 @@
                                    string="Selling Price (Enter Manually)"
                                    decoration-danger="selected and not price_manually_set"
                                    decoration-success="selected and price_manually_set"
-                                   placeholder="Enter price..."
-                                   required="selected"/>
+                                   placeholder="Enter price..."/>
                             
                             <field name="price_manually_set"
                                    column_invisible="1"/>
@@ -184,6 +228,7 @@
                     </field>
                     
                     <!-- Hidden fields -->
+                    <field name="comparison_line_ids_json" invisible="1" force_save="1"/>
                     
                 </sheet>
             </form>

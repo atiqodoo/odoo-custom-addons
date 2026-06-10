@@ -47,6 +47,7 @@ Configuration (POS Settings)
     'depends': [
         'point_of_sale',
         'pos_loyalty',
+        'pos_cod',
         'account',
     ],
     # pos_extra_amount_manager_extended is declared as an optional dependency
@@ -67,8 +68,10 @@ Configuration (POS Settings)
             'pos_credit_note_gift_card/static/src/js/payment_screen_credit_note.js',
             'pos_credit_note_gift_card/static/src/js/customer_account_return_guard.js',
             'pos_credit_note_gift_card/static/src/js/exchange_adjustment_guard.js',
+            'pos_credit_note_gift_card/static/src/js/credit_note_usage_guard.js',
             'pos_credit_note_gift_card/static/src/xml/credit_note_receipt.xml',
             'pos_credit_note_gift_card/static/src/xml/payment_screen_credit_note.xml',
+            'pos_credit_note_gift_card/static/src/xml/credit_note_usage_guard.xml',
         ],
     },
     'installable': True,

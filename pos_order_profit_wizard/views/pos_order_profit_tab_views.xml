@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_order_form_profit_tab" model="ir.ui.view">
+        <field name="name">pos.order.form.profit.tab</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="pos_extra_amount_manager_extended.view_pos_order_form_two_tier"/>
+        <field name="arch" type="xml">
+
+            <!-- New tab inserted after Base Profit tab -->
+            <xpath expr="//page[@name='base_profit_page']" position="after">
+                <page string="Order Profit" name="order_profit_tab">
+
+                    <group string="Profit Summary" name="order_profit_summary_group">
+                        <group>
+                            <field name="wizard_grand_total_profit"
+                                   widget="monetary"
+                                   decoration-success="wizard_grand_total_profit &gt; 0"
+                                   decoration-danger="wizard_grand_total_profit &lt; 0"/>
+                        </group>
+                    </group>
+
+                    <separator string="Order Lines - Profit Breakdown (Cost incl. VAT vs Selling Price)"/>
+
+                    <field name="lines" nolabel="1" mode="tree,form">
+                        <form>
+                            <group>
+                                <group>
+                                    <field name="product_id"/>
+                                    <field name="qty"/>
+                                    <field name="price_unit" string="Selling Price"/>
+                                </group>
+                                <group>
+                                    <field name="wizard_cost_price_incl_vat" widget="monetary"/>
+                                    <field name="wizard_profit_per_unit" widget="monetary"/>
+                                    <field name="wizard_total_profit" widget="monetary"/>
+                                </group>
+                            </group>
+                        </form>
+                        <list create="false" delete="false">
+                            <field name="product_id" readonly="1"/>
+                            <field name="qty" readonly="1"/>
+                            <field name="price_unit" readonly="1" widget="monetary" string="Selling Price"/>
+                            <field name="wizard_cost_price_incl_vat" readonly="1" widget="monetary"/>
+                            <field name="wizard_profit_per_unit"
+                                   readonly="1"
+                                   widget="monetary"
+                                   decoration-success="wizard_profit_per_unit &gt; 0"
+                                   decoration-danger="wizard_profit_per_unit &lt; 0"/>
+                            <field name="wizard_total_profit"
+                                   readonly="1"
+                                   widget="monetary"
+                                   decoration-success="wizard_total_profit &gt; 0"
+                                   decoration-danger="wizard_total_profit &lt; 0"/>
+                        </list>
+                    </field>
+
+                    <div class="alert alert-info" role="alert" style="margin-top: 15px;">
+                        <p><strong>Profit Calculation (Cost incl. VAT vs Selling Price):</strong></p>
+                        <ul>
+                            <li>Cost Price (incl. VAT) = Standard Cost × (1 + VAT Rate%)</li>
+                            <li>Profit / Unit = Selling Price − Cost Price (incl. VAT)</li>
+                            <li>Total Profit = Profit / Unit × Quantity</li>
+                            <li>Standard cost sourced from product AVCO/Standard Price</li>
+                        </ul>
+                    </div>
+
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

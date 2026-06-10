@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_config_form_cost_validation" model="ir.ui.view">
+        <field name="name">pos.config.form.cost.validation</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Add after the last separator in the form -->
+            <xpath expr="//separator[last()]" position="after">
+                <separator string="Price Validation"/>
+                <group>
+                    <group>
+                        <field name="block_below_cost" string="Block Sales Below Cost Price (VAT Inclusive)"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

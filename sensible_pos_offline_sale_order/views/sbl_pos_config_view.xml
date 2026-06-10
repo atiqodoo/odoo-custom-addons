@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sbl_pos_config_view_form_inherit" model="ir.ui.view">
+        <field name="name">pos.config.form.view.inherit</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//setting[@id='other_devices']" position="after">
+                <setting id="sbl_create_sale_order" string="Create Sale Order" help="Allow to create a sale order from the POS interface.">
+                    <field name="sbl_create_sale_order"/>
+                    <div class="content-group">
+                        <div class="row" invisible="not sbl_create_sale_order">
+                            <div class="col-lg-5 o_light_label">
+                                <label for="sbl_create_sale_order_action"/>
+                            </div>
+                            <div class="col-lg-7">
+                                <field name="sbl_create_sale_order_action"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div role="alert" class="alert alert-warning">
+                        If you enable the "Create Sale Order" option, cashiers can create sale orders from the POS interface while normal POS payment remains available.
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

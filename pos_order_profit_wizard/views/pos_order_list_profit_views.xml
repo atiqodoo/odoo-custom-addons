@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_order_list_profit_column" model="ir.ui.view">
+        <field name="name">pos.order.list.profit.column</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="pos_cod.view_pos_order_tree_inherit_cod"/>
+        <field name="arch" type="xml">
+
+            <!-- Append Grand Total Profit and Profit Margin (%) columns right after COD State -->
+            <xpath expr="//field[@name='cod_state']" position="after">
+                <field name="wizard_grand_total_profit"
+                       optional="show"
+                       string="Grand Total Profit"
+                       widget="monetary"
+                       decoration-success="wizard_grand_total_profit &gt; 0"
+                       decoration-danger="wizard_grand_total_profit &lt; 0"
+                       decoration-muted="wizard_grand_total_profit == 0"/>
+                <field name="wizard_profit_margin_pct"
+                       optional="show"
+                       string="Profit Margin (%)"
+                       decoration-success="wizard_profit_margin_pct &gt; 0"
+                       decoration-danger="wizard_profit_margin_pct &lt; 0"
+                       decoration-muted="wizard_profit_margin_pct == 0"/>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

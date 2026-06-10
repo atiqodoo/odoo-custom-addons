@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+
+    <t t-name="mpesa_c2b_pos.MpesaTransactionCard">
+        <div
+            class="mpesa-txn-card"
+            t-att-style="props.selected ? 'display:block;width:100%;padding:12px 14px;border:2px solid #008c45;border-radius:8px;background:#ecfdf5;cursor:pointer;box-shadow:0 1px 2px rgba(15,23,42,.08);' : 'display:block;width:100%;padding:12px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;box-shadow:0 1px 2px rgba(15,23,42,.08);'"
+            t-on-click="() => props.onSelect(props.txn)">
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;">
+                <span style="font-weight:800;color:#0f172a;" t-esc="props.txn.mpesa_ref"/>
+                <span style="padding:3px 8px;border-radius:999px;color:white;background:#008c45;font-size:12px;font-weight:800;" t-esc="matchLabel"/>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:6px 18px;">
+                <div style="display:flex;justify-content:space-between;gap:10px;">
+                    <span style="color:#64748b;">Customer</span>
+                    <span t-esc="props.txn.sender_name"/>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:10px;">
+                    <span style="color:#64748b;">Phone</span>
+                    <span t-esc="props.txn.sender_phone"/>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:10px;">
+                    <span style="color:#64748b;">Available</span>
+                    <strong t-esc="formatAmount(props.txn.amount)"/>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:10px;">
+                    <span style="color:#64748b;">Time</span>
+                    <span t-esc="formatTime(props.txn.transaction_date)"/>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:10px;">
+                    <span style="color:#64748b;">Order Total</span>
+                    <span t-esc="formatAmount(props.orderAmount)"/>
+                </div>
+                <div t-if="props.txn.difference !== 0" style="display:flex;justify-content:space-between;gap:10px;">
+                    <span style="color:#64748b;" t-esc="props.txn.difference > 0 ? 'Balance Left' : 'Remaining Due'"/>
+                    <span t-esc="formatAmount(Math.abs(props.txn.difference))"/>
+                </div>
+            </div>
+
+        </div>
+    </t>
+
+</templates>

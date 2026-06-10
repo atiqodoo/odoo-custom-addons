@@ -1,6 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <record id="view_account_move_line_promised_cost_diff_list" model="ir.ui.view">
+        <field name="name">account.move.line.promised.cost.diff.list</field>
+        <field name="model">account.move.line</field>
+        <field name="arch" type="xml">
+            <list string="Promised Cost Differences"
+                  create="false"
+                  edit="false"
+                  decoration-danger="promised_cost_difference_vat_incl &gt; 0"
+                  decoration-success="promised_cost_difference_vat_incl &lt; 0">
+                <field name="product_id"/>
+                <field name="quantity"/>
+                <field name="unit_price_vat_incl" widget="monetary"/>
+                <field name="vendor_promised_cost_vat_incl" widget="monetary"/>
+                <field name="promised_cost_difference_vat_incl"
+                       widget="monetary"
+                       decoration-danger="promised_cost_difference_vat_incl &gt; 0"
+                       decoration-success="promised_cost_difference_vat_incl &lt; 0"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
     <!-- ============================================= -->
     <!-- 1. Your Existing Buttons (Unchanged)          -->
     <!-- ============================================= -->
@@ -10,12 +32,17 @@
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='invoice_line_ids']" position="after">
-                <field name="discrepancy_count" readonly="1"/>
-                <field name="discrepancy_approved" readonly="1"/>
+                <field name="discrepancy_count" readonly="1" invisible="1"/>
+                <field name="discrepancy_approved" readonly="1" invisible="1"/>
+                <field name="promised_cost_diff_count" readonly="1" invisible="1"/>
                 <button name="action_view_discrepancies"
                         type="object"
                         string="View Discrepancies"
                         invisible="discrepancy_count == 0"/>
+                <button name="action_view_promised_cost_diffs"
+                        type="object"
+                        string="View Promised Cost Diff"
+                        invisible="promised_cost_diff_count == 0"/>
                 <button name="action_approve_discrepancy"
                         type="object"
                         string="Approve Discrepancies"

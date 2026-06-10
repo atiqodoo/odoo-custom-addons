@@ -1,11 +1,20 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
+from odoo.tools.float_utils import float_is_zero
 import logging
 
 _logger = logging.getLogger(__name__)
 
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
+
+    vendor_promised_cost_contact = fields.Char(
+        string="Vendor Sales/Customer Service Contact",
+        required=True,
+        tracking=True,
+        index=True,
+        help="Vendor sales or customer service person who confirmed the promised VAT-inclusive cost.",
+    )
 
     has_custom_pricing_lines = fields.Boolean(
         string="Has Custom Pricing Lines",
@@ -18,11 +27,26 @@ class PurchaseOrder(models.Model):
         for order in self:
             order.has_custom_pricing_lines = any(line.use_custom_pricing for line in order.order_line)
 
+    def _get_invoice_wizard_received_qty(self, po_line):
+        received_to_bill = max((po_line.qty_received or 0.0) - (po_line.qty_invoiced or 0.0), 0.0)
+        rounding = po_line.product_uom.rounding if po_line.product_uom else 0.01
+        return 0.0 if float_is_zero(received_to_bill, precision_rounding=rounding) else received_to_bill
+
     def action_create_invoice_wizard(self):
         self.ensure_one()
         _logger.info(f"Creating invoice wizard for PO {self.name}")
         line_vals = []
         for line in self.order_line.filtered(lambda l: l.product_id):
+            received_qty = self._get_invoice_wizard_received_qty(line)
+            if not received_qty:
+                _logger.info(
+                    "Skipping %s on PO %s: received=%s, already invoiced=%s",
+                    line.product_id.display_name,
+                    self.name,
+                    line.qty_received,
+                    line.qty_invoiced,
+                )
+                continue
             # Check ProductVendorPricing
             domain = [
                 ('partner_id', '=', self.partner_id.id),
@@ -53,7 +77,7 @@ class PurchaseOrder(models.Model):
 
                 line_vals.append((0, 0, {
                     'product_id': line.product_id.id,
-                    'product_qty': line.product_qty,
+                    'product_qty': received_qty,
                     'price_unit': line.price_unit,
                     'vendor_price': False,  # Explicitly set to blank
                     'use_custom_pricing': use_custom_pricing,

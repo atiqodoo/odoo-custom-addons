@@ -44,23 +44,58 @@ patch(PosOrder.prototype, {
 
         const scaleFactor = this._getNetEarningScaleFactor();
 
-        // ── Zero-payment guard ────────────────────────────────────────────────
+        // ── Zero-payment guard (fixed) ────────────────────────────────────────
         // If the entire order is covered by loyalty redemption (scale = 0),
-        // no money changes hands at all.  Earning 0 points regardless of
-        // rule type — including unit-based rules which are otherwise
-        // discount-immune (they would survive the proportional scaling below).
+        // no money changes hands so no points should be earned.
         //
-        // This prevents a customer from "gaming" the program by spending just
-        // enough points to zero the bill while still earning full unit points.
+        // FIX: The previous implementation set points = 0 for every entry, which
+        // wiped BOTH earning AND spending (since 'points' is the net delta:
+        // earned − spent).  A customer who redeemed 100 pts would have those 100
+        // pts NOT deducted from their card because the net delta was forced to 0.
+        //
+        // Correct behaviour: zero the earning portion only.  The spending
+        // deduction must survive so the card balance is reduced.
+        // We derive spending-per-coupon directly from reward-line points_cost
+        // values — the same field the backend reads — so both sides agree.
         if (scaleFactor <= 0) {
+            console.log(
+                "[loyalty_zero_pay] pointsForPrograms: scale=0" +
+                " (fully covered by redemption) → zeroing earning, preserving spending"
+            );
+
             for (const program of programs) {
                 if (!result[program.id]?.length) continue;
-                result[program.id] = result[program.id].map((e) => ({ ...e, points: 0 }));
+
+                result[program.id] = result[program.id].map((entry) => {
+                    const couponId = entry.coupon_id;
+
+                    // Sum points_cost from every reward line that belongs to this coupon
+                    let costFromLines = 0;
+                    for (const line of this.get_orderlines()) {
+                        if (
+                            line.is_reward_line &&
+                            (line.coupon_id?.id ?? line.coupon_id) === couponId &&
+                            (line.points_cost || 0) > 0
+                        ) {
+                            costFromLines += line.points_cost;
+                        }
+                    }
+
+                    // points = −spending (earning zeroed, spending preserved as deduction)
+                    const correctedPoints = -costFromLines;
+
+                    console.log(
+                        "[loyalty_zero_pay]   program=" + program.id +
+                        " | coupon=" + couponId +
+                        " | original_points=" + entry.points +
+                        " | original_won=" + (entry.won ?? "?") +
+                        " | cost_from_reward_lines=" + costFromLines.toFixed(2) +
+                        " | corrected_points=" + correctedPoints.toFixed(2)
+                    );
+
+                    return { ...entry, points: correctedPoints, won: 0 };
+                });
             }
-            console.log(
-                "[loyalty_zero_pay] pointsForPrograms: scale=0 (fully covered by redemption)" +
-                " → earning zeroed on all programs"
-            );
             return result;
         }
 
@@ -100,23 +135,82 @@ patch(PosOrder.prototype, {
      * Proof of equivalence with per-line proportional allocation:
      *   net_i = V_i × (V - D) / V  →  Σ net_i = (V-D)/V × ΣV_i = scale × gross_subtotal
      *
+     * FIX: The previous implementation used `l.get_price_with_tax ? f() : 0`,
+     * which is a truthiness check — valid but silently returns 0 if the method
+     * name differs in this Odoo version.  The robust getter below tries multiple
+     * APIs (matching loyalty_earning_engine.js _getTaxInclusiveTotal) before
+     * falling back to the stored field price_subtotal_incl.
+     *
+     * FIX: The previous `if (grossTotal <= 0) return 1` caused the zero-payment
+     * guard to NEVER fire when product-line prices all resolved to 0 (API miss).
+     * Now: if product lines exist but all return 0, log a warning and return 1
+     * (conservative — do not prevent earning when we cannot verify prices).
+     * If there are genuinely no product lines, return 0 (no earning base).
+     *
      * @returns {number} value in [0, 1]
      */
     _getNetEarningScaleFactor() {
-        const allLines = this.get_orderlines();
+        const allLines    = this.get_orderlines();
         const productLines = allLines.filter((l) => !l.is_reward_line);
         const rewardLines  = allLines.filter((l) => l.is_reward_line);
 
+        // Robust tax-inclusive price getter — mirrors _getTaxInclusiveTotal in
+        // loyalty_earning_engine.js.  Tries the live method first, then falls
+        // back to the stored computed field so we always get a value.
+        const getLineTaxTotal = (l) => {
+            if (typeof l.get_price_with_tax === 'function') {
+                return l.get_price_with_tax();
+            }
+            if (typeof l.get_all_prices === 'function') {
+                const prices = l.get_all_prices();
+                if (prices && typeof prices.priceWithTax === 'number') {
+                    return prices.priceWithTax;
+                }
+            }
+            // Final fallback: stored field (always available, set at line creation)
+            return l.price_subtotal_incl ?? 0;
+        };
+
         const grossTotal = productLines.reduce(
-            (s, l) => s + (l.get_price_with_tax ? l.get_price_with_tax() : 0), 0
+            (s, l) => s + Math.max(0, getLineTaxTotal(l)), 0
         );
-        if (grossTotal <= 0) return 1;
+
+        console.log(
+            "[loyalty_scale] _getNetEarningScaleFactor"
+            + " | product_lines=" + productLines.length
+            + " | reward_lines=" + rewardLines.length
+            + " | grossTotal=" + grossTotal.toFixed(4)
+        );
+
+        if (grossTotal <= 0) {
+            if (productLines.length === 0) {
+                // No product lines at all — no earning base
+                console.log("[loyalty_scale] no product lines → scale=0 (no earning base)");
+                return 0;
+            }
+            // Product lines exist but all returned 0 — price API could not be resolved.
+            // Conservative: do not zero earning; let Odoo handle this normally.
+            console.warn(
+                "[loyalty_scale] product lines exist (" + productLines.length + ")" +
+                " but grossTotal=0 — price API could not be resolved for any line." +
+                " Defaulting to scale=1 (conservative, no adjustment)."
+            );
+            return 1;
+        }
 
         const totalDeductions = rewardLines.reduce(
-            (s, l) => s + Math.abs(l.get_price_with_tax ? l.get_price_with_tax() : 0), 0
+            (s, l) => s + Math.abs(getLineTaxTotal(l)), 0
         );
 
-        return Math.max(0, Math.min(1, (grossTotal - totalDeductions) / grossTotal));
+        const scale = Math.max(0, Math.min(1, (grossTotal - totalDeductions) / grossTotal));
+
+        console.log(
+            "[loyalty_scale] _getNetEarningScaleFactor"
+            + " | totalDeductions=" + totalDeductions.toFixed(4)
+            + " | scale=" + scale.toFixed(6)
+        );
+
+        return scale;
     },
 
     /**

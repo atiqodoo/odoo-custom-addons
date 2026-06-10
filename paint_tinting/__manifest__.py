@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Paint Tinting Module',
-    'version': '18.0.1.0.1',
+    'version': '18.0.1.0.2',
     'category': 'Manufacturing',
     'summary': 'Custom paint tinting module with LargoTint integration for Crown Kenya PLC',
     'description': """
@@ -35,6 +35,7 @@
         'sale',  # ✅ ADDED: Required for quotation generation
         'sale_management',  # ✅ ADDED: For sale order management
         'paint_colour_master',  # Existing colour/fandeck module
+        'point_of_sale',
     ],
     'data': [
         # Security
@@ -50,6 +51,7 @@
         'views/colorant_mapping_wizard_views.xml',
         'views/retint_wizard_views.xml',
         'views/tint_wizard_views.xml',
+        'views/tint_product_exists_wizard_views.xml',
         'views/cost_comparison_wizard_views.xml',
         'views/quotation_generator_wizard_views.xml',
         'views/mrp_production_duplicate_wizard_views.xml',
@@ -67,6 +69,14 @@
         # Menu
         'views/menu_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'paint_tinting/static/src/js/colorant_sort.js',
+        ],
+        'point_of_sale._assets_pos': [
+            'paint_tinting/static/src/js/pos_sale_fix.js',
+        ],
+    },
     'demo': [],
     'installable': True,
     'application': True,

@@ -16,6 +16,9 @@ LAYOUT_FIELDS = {
     "ui_sort_products_by_sales",
     "ui_sales_ranking_days",
     "ui_sales_ranking_scope",
+    "ui_navbar_search_mode",
+    "ui_hide_odoo_logo",
+    "ui_background_color",
 }
 
 
@@ -116,6 +119,49 @@ class PosConfig(models.Model):
         help="Controls whether product sales ranking is calculated for this POS shop, the whole company, or only the current POS session.",
     )
 
+    ui_navbar_search_mode = fields.Selection(
+        selection=[
+            ("compact", "Compact"),
+            ("expanded", "Expanded Across Top Bar"),
+        ],
+        string="Navbar Product Search",
+        default="expanded",
+        required=True,
+        help="Controls how much horizontal room the POS product search receives in the top bar.",
+    )
+
+    ui_hide_odoo_logo = fields.Boolean(
+        string="Hide Odoo Logo in POS Navbar",
+        default=True,
+        help="Hide the Odoo wordmark in the POS top bar to free space for product search and status banners.",
+    )
+
+    ui_background_color = fields.Char(
+        string="POS Background Color",
+        default="#e9ecef",
+        help="CSS background color applied to this POS shop UI, for example #e9ecef, lightblue, or rgb(240, 245, 255).",
+    )
+
+    @api.constrains("ui_background_color")
+    def _check_ui_background_color(self):
+        forbidden_fragments = [";", "{", "}", "<", ">", "url(", "var("]
+        for config in self:
+            color = (config.ui_background_color or "").strip()
+            if not color:
+                continue
+            lowered = color.lower()
+            if any(fragment in lowered for fragment in forbidden_fragments):
+                _logger.warning(
+                    "[POS UI Layout][constraint] Invalid ui_background_color=%s on POS config '%s' (id=%s).",
+                    color,
+                    config.name,
+                    config.id,
+                )
+                raise ValidationError(
+                    "POS Background Color for '%s' must be a plain CSS color value."
+                    % config.name
+                )
+
     @api.constrains("product_flex", "order_flex")
     def _check_ui_flex_ratios(self):
         for config in self:
@@ -163,6 +209,9 @@ class PosConfig(models.Model):
             "ui_sort_products_by_sales": self.ui_sort_products_by_sales,
             "ui_sales_ranking_days": self.ui_sales_ranking_days,
             "ui_sales_ranking_scope": self.ui_sales_ranking_scope,
+            "ui_navbar_search_mode": self.ui_navbar_search_mode,
+            "ui_hide_odoo_logo": self.ui_hide_odoo_logo,
+            "ui_background_color": self.ui_background_color,
         }
 
     @api.model_create_multi

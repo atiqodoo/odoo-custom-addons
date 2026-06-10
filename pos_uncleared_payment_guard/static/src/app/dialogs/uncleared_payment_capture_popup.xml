@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_uncleared_payment_guard.UnclearedPaymentCapturePopup">
+        <Dialog title="props.title" size="'lg'">
+            <div class="upg-uncleared-payment-capture p-3">
+                <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
+                    <i class="fa fa-university"/>
+                    <div>
+                        <div class="fw-bold">Mapped payment requires deposit details</div>
+                        <div class="small">
+                            <t t-esc="props.methodName"/>
+                            <t t-if="props.amountText"> - <t t-esc="props.amountText"/></t>
+                        </div>
+                    </div>
+                </div>
+                <div t-if="state.error" class="alert alert-danger py-2" t-esc="state.error"/>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Deposit Bank Journal</label>
+                        <select class="form-select form-select-lg"
+                                t-att-value="state.depositBankJournalId"
+                                t-on-change="(ev) => this.onInput('depositBankJournalId', ev)">
+                            <t t-foreach="props.bankJournals" t-as="journal" t-key="journal.id">
+                                <option t-att-value="journal.id">
+                                    <t t-esc="journal.name"/>
+                                    <t t-if="journal.code"> (<t t-esc="journal.code"/>)</t>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-bold">Cheque Bank</label>
+                        <input class="form-control form-control-lg" t-att-value="state.chequeBank"
+                               t-on-input="(ev) => this.onInput('chequeBank', ev)"/>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-bold">Cheque Account Number</label>
+                        <input class="form-control form-control-lg" t-att-value="state.chequeAccountNumber"
+                               t-on-input="(ev) => this.onInput('chequeAccountNumber', ev)"/>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-bold">Cheque Number</label>
+                        <input class="form-control form-control-lg" t-att-value="state.chequeNumber"
+                               t-on-input="(ev) => this.onInput('chequeNumber', ev)"/>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-bold">Cheque Date</label>
+                        <input type="date" class="form-control form-control-lg" t-att-value="state.chequeDate"
+                               t-on-input="(ev) => this.onInput('chequeDate', ev)"/>
+                    </div>
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary btn-lg" t-on-click="cancel">Cancel</button>
+                <button class="btn btn-primary btn-lg" t-on-click="confirm">Save Details</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

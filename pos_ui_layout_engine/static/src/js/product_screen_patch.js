@@ -8,6 +8,7 @@ const PREFIX = "[POS UI Layout Engine]";
 const VALID_LAYOUTS = new Set(["default", "wide", "split"]);
 const VALID_DENSITIES = new Set(["compact", "normal", "large"]);
 const VALID_WEIGHTS = new Set(["normal", "bold"]);
+const DEFAULT_BACKGROUND_COLOR = "#e9ecef";
 
 function clampFlex(value, fallback) {
     const parsed = Number(value);
@@ -15,6 +16,21 @@ function clampFlex(value, fallback) {
         return fallback;
     }
     return Math.min(Math.max(parsed, 0.5), 10);
+}
+
+function sanitizeBackgroundColor(value) {
+    const color = String(value || "").trim();
+    if (!color) {
+        return DEFAULT_BACKGROUND_COLOR;
+    }
+    const lowered = color.toLowerCase();
+    if (/[;{}<>]/.test(color) || lowered.includes("url(") || lowered.includes("var(")) {
+        return DEFAULT_BACKGROUND_COLOR;
+    }
+    if (window.CSS?.supports?.("background-color", color)) {
+        return color;
+    }
+    return DEFAULT_BACKGROUND_COLOR;
 }
 
 function sanitizeConfig(config = {}) {
@@ -27,6 +43,7 @@ function sanitizeConfig(config = {}) {
         weight,
         productFlex: clampFlex(config.product_flex, 3),
         orderFlex: clampFlex(config.order_flex, 2),
+        backgroundColor: sanitizeBackgroundColor(config.ui_background_color),
     };
 }
 
@@ -49,6 +66,11 @@ patch(ProductScreen.prototype, {
         ].join(" ");
         console.debug(`${PREFIX} ProductScreen classes`, classes, config);
         return classes;
+    },
+
+    get uiLayoutEngineScreenStyle() {
+        const config = this.uiLayoutEngineConfig;
+        return `--pos-ui-background-color: ${config.backgroundColor}`;
     },
 
     get uiLayoutEngineProductFlexStyle() {
@@ -87,8 +109,10 @@ patch(ProductScreen.prototype, {
                 product_flex: this.pos?.config?.product_flex,
                 order_flex: this.pos?.config?.order_flex,
                 ui_action_button_placement: this.pos?.config?.ui_action_button_placement,
+                ui_background_color: this.pos?.config?.ui_background_color,
             },
             sanitized: config,
+            screenStyle: this.uiLayoutEngineScreenStyle,
             productStyle: this.uiLayoutEngineProductFlexStyle,
             orderStyle: this.uiLayoutEngineOrderFlexStyle,
         };

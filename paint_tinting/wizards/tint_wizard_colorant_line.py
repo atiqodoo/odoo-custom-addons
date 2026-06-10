@@ -10,7 +10,7 @@ class TintWizardColorantLine(models.TransientModel):
     """Colorant line in tinting wizard - handles shot-to-ml-to-litre conversion"""
     _name = 'tint.wizard.colorant.line'
     _description = 'Tinting Wizard Colorant Line'
-    _order = 'colorant_code'
+    _order = 'shots desc, colorant_code'
 
     # Parent wizard
     wizard_id = fields.Many2one(
@@ -57,6 +57,20 @@ class TintWizardColorantLine(models.TransientModel):
         digits=(10, 2),
         default=0.0,
         help='Enter shots to add, then press Tab — value accumulates into Total Shots automatically'
+    )
+
+    # Display-only: records each individual addition step
+    shots_history = fields.Char(
+        string='Shots History',
+        default='',
+        help='Shows each shots addition step, e.g. 30 + 15 + 5 = 50'
+    )
+
+    shots_history_total = fields.Float(
+        string='Shots History Total',
+        digits=(10, 2),
+        default=0.0,
+        help='Internal guard used to keep shot history when Total Shots is updated by Add Shots.'
     )
 
     # Auto-computed: ml volume
@@ -193,13 +207,17 @@ class TintWizardColorantLine(models.TransientModel):
         if self.shots_to_add and self.shots_to_add > 0:
             increment = self.shots_to_add
             previous = self.shots
-            self.shots = previous + increment
+            new_total = previous + increment
+            self.shots = new_total
+            self.shots_history_total = new_total
             self.shots_to_add = 0.0
             _logger.info(
                 f"ONCHANGE ADD SHOTS | {self.colorant_code} | "
                 f"Previous: {previous} | Added: {increment} | "
                 f"New Total: {self.shots}"
             )
+            step = f"{increment:g}"
+            self.shots_history = f"{self.shots_history} + {step}" if self.shots_history else step
 
     @api.onchange('shots')
     def _onchange_shots(self):
@@ -207,6 +225,15 @@ class TintWizardColorantLine(models.TransientModel):
         Fired when user directly edits the Total Shots column (e.g. to reset to 0).
         Compute methods depending on shots handle all downstream updates automatically.
         """
+        if self.shots_history and self.shots == self.shots_history_total:
+            _logger.info(
+                f"ONCHANGE SHOTS FROM ADD SHOTS | {self.colorant_code} | "
+                f"Keeping history: {self.shots_history}"
+            )
+            return
+
+        self.shots_history = ''
+        self.shots_history_total = 0.0
         _logger.info(
             f"ONCHANGE SHOTS DIRECT EDIT | {self.colorant_code} | "
             f"New value: {self.shots}"

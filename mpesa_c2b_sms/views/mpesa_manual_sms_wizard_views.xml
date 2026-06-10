@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mpesa_manual_sms_wizard_form" model="ir.ui.view">
+        <field name="name">mpesa.manual.sms.wizard.form</field>
+        <field name="model">mpesa.manual.sms.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Create Manual M-Pesa SMS">
+                <sheet>
+                    <group>
+                        <group string="Safaricom Details">
+                            <field name="mpesa_ref" placeholder="UEVGE5XIEW"/>
+                            <field name="amount"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="transaction_date"/>
+                            <field name="transaction_cost"/>
+                            <field name="utility_balance"/>
+                        </group>
+                        <group string="Sender">
+                            <field name="sender_name"/>
+                            <field name="sender_phone"/>
+                            <field name="partner_id"/>
+                        </group>
+                    </group>
+                    <group string="Audit Evidence">
+                        <field name="reason" nolabel="1" placeholder="Network delay, Safaricom SMS missing, bridge offline, parse error, statement verification..."/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_create_manual_sms" string="Create Transaction" type="object" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_mpesa_manual_sms_wizard" model="ir.actions.act_window">
+        <field name="name">Create Manual SMS</field>
+        <field name="res_model">mpesa.manual.sms.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="groups_id" eval="[(4, ref('mpesa_c2b_sms.group_mpesa_manual_entry')), (4, ref('mpesa_c2b_sms.group_mpesa_manager'))]"/>
+    </record>
+
+</odoo>

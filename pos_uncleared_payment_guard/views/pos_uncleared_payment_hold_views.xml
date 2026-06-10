@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_upg_hold_tree" model="ir.ui.view">
+        <field name="name">pos.uncleared.payment.hold.list</field>
+        <field name="model">pos.uncleared.payment.hold</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="state == 'pending'"
+                  decoration-warning="state == 'accounting_transfer_seen'"
+                  decoration-info="state == 'manual_cleared'"
+                  decoration-success="state == 'accounting_cleared'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="payment_method_id"/>
+                <field name="amount"/>
+                <field name="state"/>
+                <field name="pos_order_id"/>
+                <field name="pos_session_id"/>
+                <field name="deposit_bank_journal_id"/>
+                <field name="cheque_number"/>
+                <field name="cheque_date"/>
+                <field name="accounting_transfer_move_id"/>
+                <field name="bank_statement_line_id"/>
+                <field name="account_move_id"/>
+                <field name="cleared_by_id"/>
+                <field name="cleared_date"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_upg_hold_form" model="ir.ui.view">
+        <field name="name">pos.uncleared.payment.hold.form</field>
+        <field name="model">pos.uncleared.payment.hold</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_check_accounting_clearance" type="object" string="Check Accounting Now"
+                            class="btn-secondary"
+                            invisible="state not in ('pending', 'accounting_transfer_seen')"/>
+                    <button name="action_open_clear_wizard" type="object" string="Mark Manually Cleared"
+                            class="btn-primary" groups="pos_uncleared_payment_guard.group_pos_uncleared_payment_manager"
+                            invisible="state not in ('pending', 'accounting_transfer_seen')"/>
+                    <button name="action_cancel_hold" type="object" string="Cancel Hold"
+                            groups="pos_uncleared_payment_guard.group_pos_uncleared_payment_manager"
+                            invisible="state not in ('pending', 'accounting_transfer_seen')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,accounting_transfer_seen,accounting_cleared,manual_cleared,cancelled"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="partner_id"/>
+                            <field name="commercial_partner_id"/>
+                            <field name="payment_method_id"/>
+                            <field name="amount"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="pos_order_id"/>
+                            <field name="pos_payment_id"/>
+                            <field name="pos_config_id"/>
+                            <field name="pos_session_id"/>
+                            <field name="account_move_id"/>
+                        </group>
+                    </group>
+                    <group string="Cheque Deposit Capture">
+                        <group>
+                            <field name="deposit_bank_journal_id"/>
+                            <field name="deposit_bank_account_id"/>
+                            <field name="mapped_journal_id"/>
+                            <field name="mapped_account_id"/>
+                        </group>
+                        <group>
+                            <field name="cheque_bank"/>
+                            <field name="cheque_account_number"/>
+                            <field name="cheque_number"/>
+                            <field name="cheque_date"/>
+                        </group>
+                    </group>
+                    <group string="Read-only Accounting Detection">
+                        <field name="accounting_transfer_move_id"/>
+                        <field name="bank_statement_line_id"/>
+                        <field name="accounting_detection_note"/>
+                    </group>
+                    <group string="Clearance">
+                        <field name="cleared_by_id"/>
+                        <field name="cleared_date"/>
+                        <field name="clear_reference"/>
+                        <field name="clear_reason"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_upg_hold_search" model="ir.ui.view">
+        <field name="name">pos.uncleared.payment.hold.search</field>
+        <field name="model">pos.uncleared.payment.hold</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="payment_method_id"/>
+                <field name="pos_order_id"/>
+                <filter name="pending" string="Pending" domain="[('state','=','pending')]"/>
+                <filter name="transfer_seen" string="Transfer Seen" domain="[('state','=','accounting_transfer_seen')]"/>
+                <filter name="accounting_cleared" string="Accounting Cleared" domain="[('state','=','accounting_cleared')]"/>
+                <filter name="manual_cleared" string="Manually Cleared" domain="[('state','=','manual_cleared')]"/>
+                <filter name="cancelled" string="Cancelled" domain="[('state','=','cancelled')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_partner" string="Customer" context="{'group_by':'partner_id'}"/>
+                    <filter name="group_method" string="Payment Method" context="{'group_by':'payment_method_id'}"/>
+                    <filter name="group_deposit_bank" string="Deposit Bank" context="{'group_by':'deposit_bank_journal_id'}"/>
+                    <filter name="group_state" string="State" context="{'group_by':'state'}"/>
+                    <filter name="group_session" string="Session" context="{'group_by':'pos_session_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_upg_holds" model="ir.actions.act_window">
+        <field name="name">Uncleared Payment Holds</field>
+        <field name="res_model">pos.uncleared.payment.hold</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_upg_hold_search"/>
+        <field name="domain">[]</field>
+        <field name="context">{}</field>
+    </record>
+</odoo>

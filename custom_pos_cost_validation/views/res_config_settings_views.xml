@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_pos_cost_validation" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.pos.cost.validation</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='point_of_sale']" position="inside">
+                <block title="Cost Protection" id="pos_cost_validation_section">
+                    <setting string="Block Sales Below Cost" 
+                             help="Prevent selling products below AVCO cost price (VAT inclusive)">
+                        <field name="block_below_cost"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

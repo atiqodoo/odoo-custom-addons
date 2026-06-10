@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_upg_detect_accounting_reconciliation" model="ir.cron">
+        <field name="name">POS Uncleared Payment Guard: Detect Accounting Clearance</field>
+        <field name="model_id" ref="model_pos_uncleared_payment_hold"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_detect_accounting_reconciliation()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

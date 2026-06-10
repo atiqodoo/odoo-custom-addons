@@ -31,9 +31,9 @@ export function sblIsActionRestricted(pos, actionKey, options = {}) {
     if (!cashier || !action.field) {
         return false;
     }
-    if (actionKey === "payment_method") {
+    if (["payment_method", "deposit_settle_payment_method", "cod_payment_method"].includes(actionKey)) {
         const paymentMethodId = options.paymentMethod?.id || options.paymentMethodId;
-        const disabledMethods = cashier.sbl_disabled_payment_method_ids || [];
+        const disabledMethods = cashier[action.field] || [];
         return Boolean(paymentMethodId && disabledMethods.some((method) => method.id === paymentMethodId));
     }
     return Boolean(cashier[action.field]);
@@ -64,6 +64,11 @@ export async function sblAuthorizeAction(pos, dialog, notification, actionKey, o
     }
 
     const order = pos.get_order?.();
+    const authorizationContext = {};
+    const paymentMethodId = options.paymentMethod?.id || options.paymentMethodId;
+    if (paymentMethodId) {
+        authorizationContext.payment_method_id = paymentMethodId;
+    }
     const payload = [
         pin,
         actionKey,
@@ -72,6 +77,7 @@ export async function sblAuthorizeAction(pos, dialog, notification, actionKey, o
         pos.session?.id || false,
         order?.pos_reference || order?.name || false,
         actionLabel,
+        authorizationContext,
     ];
 
     try {
@@ -101,7 +107,7 @@ export async function sblAuthorizeAction(pos, dialog, notification, actionKey, o
         return false;
     } catch (error) {
         sblError("backend authorization failed; trying local PIN fallback", error);
-        const localSupervisor = sblFindLocalSupervisorByPin(pos, pin);
+        const localSupervisor = sblFindLocalSupervisorByPin(pos, pin, cashier?.id, actionKey, options);
         if (localSupervisor) {
             notification?.add(
                 _t("Authorization approved locally. Backend log could not be written."),
@@ -129,12 +135,29 @@ export async function sblGuardedAction(pos, dialog, notification, actionKey, cal
     return false;
 }
 
-function sblFindLocalSupervisorByPin(pos, pin) {
+function sblFindLocalSupervisorByPin(pos, pin, cashierId = false, actionKey = false, options = {}) {
     const hashedPin = Sha1?.hash ? Sha1.hash(pin) : false;
     if (!hashedPin) {
         return false;
     }
     return pos.models["hr.employee"].find(
-        (employee) => employee._pin === hashedPin && employee._role === "manager"
+        (employee) =>
+            employee.id !== cashierId &&
+            employee._pin === hashedPin &&
+            employee._role === "manager" &&
+            !sblIsEmployeeRestrictedForAction(employee, actionKey, options)
     );
+}
+
+function sblIsEmployeeRestrictedForAction(employee, actionKey, options = {}) {
+    const action = sblGetAction(actionKey);
+    if (!employee || !action.field) {
+        return false;
+    }
+    if (["payment_method", "deposit_settle_payment_method", "cod_payment_method"].includes(actionKey)) {
+        const paymentMethodId = options.paymentMethod?.id || options.paymentMethodId;
+        const disabledMethods = employee[action.field] || [];
+        return Boolean(paymentMethodId && disabledMethods.some((method) => method.id === paymentMethodId));
+    }
+    return Boolean(employee[action.field]);
 }

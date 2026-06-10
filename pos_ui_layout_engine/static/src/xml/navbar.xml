@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_ui_layout_engine.Navbar"
+       t-inherit="point_of_sale.Navbar"
+       t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('pos-topheader')]" position="attributes">
+            <attribute name="t-att-class">{
+                'ui-navbar-search-expanded': pos.config.ui_navbar_search_mode === 'expanded',
+                'ui-navbar-hide-logo': pos.config.ui_hide_odoo_logo,
+            }</attribute>
+        </xpath>
+    </t>
+</templates>

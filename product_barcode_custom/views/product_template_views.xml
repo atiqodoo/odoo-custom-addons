@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Show nexx_barcode on the product template form for single-variant products -->
+    <record id="view_product_template_form_inherit_nexx_barcode" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.nexx.barcode</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='barcode']" position="after">
+                <field name="nexx_barcode"
+                       string="Nexx Barcode (Nexx ERP)"
+                       invisible="product_variant_count > 1"
+                       placeholder="e.g. NX-00012345"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Add nexx_barcode to the product search so typing a Nexx barcode in the
+         search bar finds the matching product in both template and variant list views. -->
+    <record id="view_product_template_search_inherit_nexx_barcode" model="ir.ui.view">
+        <field name="name">product.template.search.inherit.nexx.barcode</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="filter_domain">['|', '|', '|', '|', ('default_code', 'ilike', self), ('product_variant_ids.default_code', 'ilike', self), ('name', 'ilike', self), ('barcode', 'ilike', self), ('nexx_barcode', 'ilike', self)]</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

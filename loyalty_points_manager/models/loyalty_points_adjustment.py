@@ -152,6 +152,7 @@ class LoyaltyPointsAdjustment(models.Model):
             
             # Update loyalty card points
             loyalty_card.points = new_balance
+            record._create_loyalty_history(loyalty_card)
             
             # Create accounting entry if configured
             if record.journal_id and record.debit_account_id and record.credit_account_id and record.points_value:
@@ -186,6 +187,7 @@ class LoyaltyPointsAdjustment(models.Model):
                         loyalty_card.points -= record.points_amount
                     else:
                         loyalty_card.points += record.points_amount
+                    record._create_loyalty_history(loyalty_card, reverse=True)
                 
                 # Cancel accounting entry
                 if record.account_move_id and record.account_move_id.state == 'posted':
@@ -254,6 +256,34 @@ class LoyaltyPointsAdjustment(models.Model):
         move = self.env['account.move'].create(move_vals)
         move.action_post()
         self.account_move_id = move.id
+
+    def _create_loyalty_history(self, loyalty_card, reverse=False):
+        """Register this manual adjustment in the standard loyalty card history."""
+        self.ensure_one()
+
+        is_add = self.operation_type == 'add'
+        if reverse:
+            is_add = not is_add
+
+        used = 0.0 if is_add else self.points_amount
+        issued = self.points_amount if is_add else 0.0
+        operation = _('points added') if is_add else _('points reduced')
+        if reverse:
+            operation = _('cancel reversal - %s') % operation
+        description = _('%(reference)s - Manual %(operation)s: %(reason)s') % {
+            'reference': self.name,
+            'operation': operation,
+            'reason': self.reason,
+        }
+
+        self.env['loyalty.history'].sudo().create({
+            'card_id': loyalty_card.id,
+            'description': description,
+            'used': used,
+            'issued': issued,
+            'order_model': self._name,
+            'order_id': self.id,
+        })
 
     def unlink(self):
         for record in self:

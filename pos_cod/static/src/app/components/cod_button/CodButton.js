@@ -24,6 +24,36 @@ import { makeAwaitable } from "@point_of_sale/app/store/make_awaitable_dialog";
 import { codWarn, codError, codLog } from "@pos_cod/app/utils/cod_logger";
 
 const COMPONENT = "CodButton";
+const COD_DISPATCH_PRINT_EVENT = "pos-cod:dispatch-print";
+
+async function notifyCodDispatchPrint({ pos, order, serialized, backendResult, codPayload }) {
+    const detail = {
+        pos,
+        order,
+        serialized,
+        backendResult,
+        codPayload,
+        promises: [],
+    };
+    codWarn(COMPONENT, "notifyCodDispatchPrint", "Emitting COD dispatch print event.", {
+        order_name: order?.name,
+        order_uid: order?.uuid || order?.uid || order?.id,
+        amount_total: serialized?.amount_total,
+    });
+    window.dispatchEvent(new CustomEvent(COD_DISPATCH_PRINT_EVENT, { detail }));
+    codLog(COMPONENT, "notifyCodDispatchPrint", "COD dispatch print listeners:", {
+        promise_count: detail.promises.length,
+    });
+    if (detail.promises.length) {
+        const results = await Promise.allSettled(detail.promises);
+        const failures = results.filter((entry) => entry.status === "rejected");
+        if (failures.length) {
+            codError(COMPONENT, "notifyCodDispatchPrint", "One or more COD dispatch print listeners failed.", {
+                failures: failures.map((entry) => entry.reason?.message || String(entry.reason)),
+            });
+        }
+    }
+}
 
 patch(ProductScreen.prototype, {
 
@@ -102,8 +132,15 @@ patch(ProductScreen.prototype, {
             serialized.delivery_notes       = delivery_notes  || "";
 
             codWarn(COMPONENT, "onCodButtonClick", "Sending COD order to backend...");
-            await this.pos.cod_create_order(serialized);
+            const backendResult = await this.pos.cod_create_order(serialized);
             codWarn(COMPONENT, "onCodButtonClick", "COD order dispatched successfully.");
+            await notifyCodDispatchPrint({
+                pos: this.pos,
+                order,
+                serialized,
+                backendResult,
+                codPayload: result.payload,
+            });
 
             this.pos.removePendingOrder?.(order);
             order.clearCommands?.();

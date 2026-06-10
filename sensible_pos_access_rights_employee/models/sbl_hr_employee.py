@@ -1,11 +1,23 @@
 # Powered by Sensible Consulting Services
 # -*- coding: utf-8 -*-
 # © 2025 Sensible Consulting Services (<https://sensiblecs.com/>)
-from odoo import api, models
+from odoo import api, fields, models
 
 
 class HrEmployeeBase(models.Model):
     _inherit = 'hr.employee'
+
+    sbl_block_mpesa_sms_app = fields.Boolean(
+        string='Block M-Pesa SMS App',
+        help='If checked, this employee cannot open the M-Pesa SMS backend app.',
+        default=False,
+    )
+
+    def write(self, vals):
+        result = super().write(vals)
+        if 'sbl_block_mpesa_sms_app' in vals:
+            self.env['ir.ui.menu'].clear_caches()
+        return result
 
     @api.model
     def _load_pos_data_fields(self, config_id):
@@ -24,12 +36,13 @@ class HrEmployeeBase(models.Model):
             'sbl_hide_pos_payment_customer_button', 'sbl_hide_pos_payment_invoice_button',
             'sbl_hide_pos_payment_validate_button', 'sbl_hide_pos_payment_ship_later_button',
             'sbl_hide_pos_tip_button', 'sbl_hide_pos_open_cashbox_button',
-            'sbl_disabled_payment_method_ids',
+            'sbl_disabled_payment_method_ids', 'sbl_deposit_settle_payment_method_ids',
             'sbl_hide_pos_install_app', 'sbl_hide_pos_orders_menu',
             'sbl_hide_pos_backend_menu', 'sbl_hide_pos_close_register',
-            'sbl_hide_pos_clear_cache', 'sbl_hide_pos_debug_window',
+            'sbl_hide_pos_daily_sale', 'sbl_hide_pos_clear_cache', 'sbl_hide_pos_debug_window',
             'sbl_hide_pos_action_general_note', 'sbl_hide_pos_action_customer_note',
             'sbl_hide_pos_action_pricelist', 'sbl_hide_pos_action_refund',
-            'sbl_hide_pos_action_fiscal_position', 'sbl_hide_pos_action_cancel_order',
+            'sbl_hide_pos_action_reward', 'sbl_hide_pos_action_fiscal_position',
+            'sbl_hide_pos_action_cancel_order',
             'sbl_hide_pos_action_product_info'
         ]

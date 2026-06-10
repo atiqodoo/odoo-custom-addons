@@ -19,6 +19,7 @@ pickings and we can match their move SVLs.
 """
 
 import logging
+from markupsafe import Markup
 from odoo import models
 
 _logger = logging.getLogger(__name__)
@@ -82,7 +83,7 @@ class PosOrder(models.Model):
                 self.name,
             )
             self.message_post(
-                body=(
+                body=Markup(
                     '<b>[Negative Stock Created]</b><br/>'
                     f'Product: {svl.product_id.display_name}<br/>'
                     f'Qty oversold: {abs(svl.quantity):.2f}<br/>'

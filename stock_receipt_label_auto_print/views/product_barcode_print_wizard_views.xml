@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_product_barcode_print_wizard_form" model="ir.ui.view">
+        <field name="name">product.barcode.print.wizard.form</field>
+        <field name="model">product.barcode.print.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Barcode Label Print">
+                <header>
+                    <button name="action_print_labels"
+                            type="object"
+                            string="Print Labels"
+                            class="btn-primary"/>
+                    <button name="action_select_all"
+                            type="object"
+                            string="Select All"/>
+                    <button name="action_deselect_all"
+                            type="object"
+                            string="Deselect All"/>
+                    <button name="action_clear_lines"
+                            type="object"
+                            string="Clear"/>
+                </header>
+                <sheet>
+                    <group col="2">
+                        <field name="config_id"/>
+                        <field name="printer_name"/>
+                        <field name="company_title"/>
+                        <field name="barcode_source" widget="radio"
+                               options="{'horizontal': true}"/>
+                    </group>
+
+                    <group>
+                        <field name="product_ids"
+                               widget="many2many_tags"
+                               placeholder="Search products by name, code, barcode, or Nexx barcode"/>
+                        <button name="action_add_products"
+                                type="object"
+                                string="Add Products"
+                                class="btn-primary"/>
+                    </group>
+
+                    <field name="line_ids" nolabel="1">
+                        <list editable="bottom" no_open="1" limit="200">
+                            <field name="selected" widget="boolean_toggle"/>
+                            <field name="product_id" readonly="1"
+                                   options="{'no_open': True}"/>
+                            <field name="barcode_value" readonly="1"/>
+                            <field name="label_qty"/>
+                        </list>
+                    </field>
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
+    <record id="action_product_barcode_print_wizard" model="ir.actions.act_window">
+        <field name="name">Barcode Label Print</field>
+        <field name="res_model">product.barcode.print.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_product_barcode_print_wizard_form"/>
+        <field name="target">current</field>
+        <field name="context">{}</field>
+    </record>
+
+    <menuitem id="menu_barcode_label_print_root"
+              name="Barcode Print"
+              sequence="45"
+              groups="stock.group_stock_user"/>
+
+    <menuitem id="menu_product_barcode_print_wizard"
+              name="Print Product Barcodes"
+              parent="menu_barcode_label_print_root"
+              action="action_product_barcode_print_wizard"
+              sequence="10"
+              groups="stock.group_stock_user"/>
+
+</odoo>

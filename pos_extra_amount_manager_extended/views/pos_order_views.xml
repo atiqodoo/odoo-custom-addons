@@ -101,6 +101,13 @@
                                     <field name="calc_qty"
                                            widget="integer"
                                            string="Calc Qty"/>
+                                    <field name="pricelist_config_status" readonly="1"/>
+                                    <field name="pricelist_item_id" readonly="1"/>
+                                    <button name="action_open_pricelist_item_wizard"
+                                            string="Add to Pricelist"
+                                            type="object"
+                                            class="btn-primary"
+                                            invisible="pricelist_config_status != 'missing'"/>
                                     <field name="pricelist_price_incl"/>
                                     <field name="paid_price_per_unit"/>
                                     <field name="extra_amount_per_unit"/>
@@ -111,6 +118,11 @@
                         </form>
                         <list editable="bottom" create="false" delete="false">
                             <field name="product_id" readonly="1"/>
+                            <button name="action_open_pricelist_item_wizard"
+                                    string="Add Price"
+                                    type="object"
+                                    class="btn-primary"
+                                    invisible="pricelist_config_status != 'missing'"/>
                             <field name="qty" readonly="1"/>
                             <field name="price_unit" readonly="1" widget="monetary"/>
                             <field name="price_subtotal_incl" readonly="1" widget="monetary"/>
@@ -118,6 +130,12 @@
                                    widget="integer"
                                    string="Calc Qty"
                                    optional="show"/>
+                            <field name="pricelist_config_status"
+                                   readonly="1"
+                                   optional="show"
+                                   decoration-danger="pricelist_config_status == 'missing'"
+                                   decoration-success="pricelist_config_status == 'configured'"/>
+                            <field name="pricelist_item_id" readonly="1" optional="hide"/>
                             <field name="pricelist_price_incl" widget="monetary" readonly="1" optional="show"/>
                             <field name="paid_price_per_unit" widget="monetary" readonly="1" optional="show"/>
                             <field name="extra_amount_per_unit" widget="monetary" readonly="1"/>
@@ -187,6 +205,8 @@
                                                widget="integer"
                                                string="Calc Qty"
                                                readonly="1"/>
+                                        <field name="pricelist_config_status" readonly="1"/>
+                                        <field name="pricelist_item_id" readonly="1"/>
                                         <field name="pricelist_price_incl" widget="monetary"/>
                                         <field name="pricelist_price_excl_vat" widget="monetary"/>
                                         <field name="base_profit_per_unit" widget="monetary"/>
@@ -203,6 +223,12 @@
                                        string="Calc Qty"
                                        readonly="1"
                                        optional="show"/>
+                                <field name="pricelist_config_status"
+                                       readonly="1"
+                                       optional="show"
+                                       decoration-danger="pricelist_config_status == 'missing'"
+                                       decoration-success="pricelist_config_status == 'configured'"/>
+                                <field name="pricelist_item_id" readonly="1" optional="hide"/>
                                 <field name="pricelist_price_incl" widget="monetary" readonly="1" optional="show"/>
                                 <field name="pricelist_price_excl_vat" widget="monetary" readonly="1"/>
                                 <field name="base_profit_per_unit" widget="monetary" readonly="1"/>

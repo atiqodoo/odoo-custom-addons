@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_upg_root"
+              name="Customer Account Controls"
+              parent="point_of_sale.menu_point_root"
+              sequence="85"
+              groups="pos_uncleared_payment_guard.group_pos_uncleared_payment_viewer"/>
+    <menuitem id="menu_upg_holds"
+              name="Uncleared Payment Holds"
+              parent="menu_upg_root"
+              action="action_upg_holds"
+              sequence="10"
+              groups="pos_uncleared_payment_guard.group_pos_uncleared_payment_viewer"/>
+</odoo>

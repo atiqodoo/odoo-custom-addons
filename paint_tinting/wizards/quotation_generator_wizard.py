@@ -40,7 +40,7 @@ class QuotationGeneratorLine(models.TransientModel):
     """
     _name = 'quotation.generator.line'
     _description = 'Quotation Generator Line'
-    _order = 'product_id'
+    _order = 'id'
     
     # ============================================
     # RELATIONSHIP
@@ -256,14 +256,44 @@ class QuotationGeneratorWizard(models.TransientModel):
     # ============================================
     # CUSTOMER SELECTION
     # ============================================
+    # MODE SELECTION
+    # ============================================
+    quotation_mode = fields.Selection([
+        ('new', 'Create New Quotation'),
+        ('existing', 'Add to Existing Quotation'),
+    ], string='Mode', default='new', required=True)
+
+    existing_sale_order_id = fields.Many2one(
+        'sale.order',
+        string='Existing Quotation',
+        domain="[('state', 'in', ['draft', 'sent'])]",
+        help='Select an existing quotation to add products to'
+    )
+
+    # ============================================
+    # CUSTOMER SELECTION
+    # ============================================
     partner_id = fields.Many2one(
         'res.partner',
         string='Customer',
-        required=True,
+        required=False,
         domain="[('customer_rank', '>', 0)]",
         help='Customer for this quotation'
     )
-    
+
+    new_customer_name = fields.Char(
+        string='New Customer Name',
+        help='Name to use when creating a customer from this quotation wizard'
+    )
+
+    new_customer_phone = fields.Char(
+        string='Phone'
+    )
+
+    new_customer_email = fields.Char(
+        string='Email'
+    )
+
     # ============================================
     # PRODUCT LINES
     # ============================================
@@ -306,18 +336,66 @@ class QuotationGeneratorWizard(models.TransientModel):
             )
             _logger.info(f"  Selected: {wizard.total_selected}, With Price: {wizard.total_selected_with_price}")
     
-    @api.depends('total_selected', 'total_selected_with_price', 'partner_id')
+    @api.depends('total_selected', 'total_selected_with_price', 'partner_id',
+                 'quotation_mode', 'existing_sale_order_id')
     def _compute_can_generate(self):
         """Check if quotation can be generated"""
         for wizard in self:
-            can_generate = (
-                wizard.partner_id and
+            prices_ready = (
                 wizard.total_selected > 0 and
                 wizard.total_selected == wizard.total_selected_with_price
             )
+            if wizard.quotation_mode == 'new':
+                can_generate = bool(wizard.partner_id) and prices_ready
+            else:
+                can_generate = bool(wizard.existing_sale_order_id) and prices_ready
             wizard.can_generate_quotation = can_generate
             _logger.info(f"  Can generate quotation: {can_generate}")
     
+    # ============================================
+    # ONCHANGE METHODS
+    # ============================================
+    @api.onchange('existing_sale_order_id')
+    def _onchange_existing_sale_order_id(self):
+        if self.existing_sale_order_id:
+            self.partner_id = self.existing_sale_order_id.partner_id
+
+    def action_create_customer_from_wizard(self):
+        """Create a customer profile from the quotation wizard and select it."""
+        self.ensure_one()
+
+        customer_name = (self.new_customer_name or '').strip()
+        if not customer_name:
+            raise ValidationError("Please enter the new customer name.")
+
+        partner = self.env['res.partner'].create({
+            'name': customer_name,
+            'phone': (self.new_customer_phone or '').strip() or False,
+            'email': (self.new_customer_email or '').strip() or False,
+            'customer_rank': 1,
+        })
+
+        self.partner_id = partner.id
+        self.new_customer_name = False
+        self.new_customer_phone = False
+        self.new_customer_email = False
+
+        _logger.info(
+            "Created customer %s (ID: %s) from quotation generator wizard %s",
+            partner.display_name,
+            partner.id,
+            self.id,
+        )
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Generate Quotation',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
     # ============================================
     # DEFAULT_GET: LOAD LINES FROM COMPARISON + STORE IDs
     # ============================================
@@ -488,6 +566,20 @@ class QuotationGeneratorWizard(models.TransientModel):
         )
     
     # ============================================
+    # BROWSE QUOTATIONS - opens Sales list to help user pick the right SO
+    # ============================================
+    def action_browse_quotations(self):
+        """Open the Sales quotations list as a dialog so the user can
+        browse customer names, totals and status before selecting."""
+        action = self.env.ref('sale.action_quotations_with_onboarding').sudo().read()[0]
+        action['target'] = 'new'
+        action['view_mode'] = 'list,form'
+        action['views'] = [(False, 'list'), (False, 'form')]
+        action['domain'] = [('state', 'in', ['draft', 'sent'])]
+        action['context'] = {}
+        return action
+
+    # ============================================
     # QUOTATION GENERATION METHOD - FIXED
     # ============================================
     def action_generate_quotation(self):
@@ -517,12 +609,15 @@ class QuotationGeneratorWizard(models.TransientModel):
         # ============================================
         _logger.info("📋 STEP 1: VALIDATION")
         _logger.info("-" * 80)
-        
-        if not self.partner_id:
-            _logger.error("❌ No customer selected!")
-            raise UserError("Please select a customer first!")
-        
-        _logger.info(f"  ✅ Customer: {self.partner_id.name} (ID: {self.partner_id.id})")
+
+        if self.quotation_mode == 'new':
+            if not self.partner_id:
+                raise UserError("Please select a customer first!")
+            _logger.info(f"  ✅ Customer: {self.partner_id.name} (ID: {self.partner_id.id})")
+        else:
+            if not self.existing_sale_order_id:
+                raise UserError("Please select an existing quotation!")
+            _logger.info(f"  ✅ Existing quotation: {self.existing_sale_order_id.name} (ID: {self.existing_sale_order_id.id})")
         
         self._validate_manual_prices()
         
@@ -556,22 +651,27 @@ class QuotationGeneratorWizard(models.TransientModel):
         _logger.info(f"     Formula: {formula_json[:200]}...")
         
         # ============================================
-        # STEP 3: CREATE SALE ORDER
+        # STEP 3: CREATE OR FETCH SALE ORDER
         # ============================================
-        _logger.info("📋 STEP 3: SALE ORDER CREATION")
+        _logger.info("📋 STEP 3: SALE ORDER")
         _logger.info("-" * 80)
-        
-        sale_order = self.env['sale.order'].create({
-            'partner_id': self.partner_id.id,
-            'date_order': fields.Datetime.now(),
-            'pricelist_id': self.partner_id.property_product_pricelist.id,
-            'note': f"Tinted Paint Quotation\n"
-                   f"Colour: {self.colour_code_id.code} - {self.colour_code_id.name}\n"
-                   f"Fandeck: {self.fandeck_id.name}\n"
-                   f"Category: {self.base_category_id.name}",
-        })
-        
-        _logger.info(f"  ✅ Sale order created: {sale_order.name} (ID: {sale_order.id})")
+
+        if self.quotation_mode == 'new':
+            sale_order = self.env['sale.order'].create({
+                'partner_id': self.partner_id.id,
+                'date_order': fields.Datetime.now(),
+                'pricelist_id': self.partner_id.property_product_pricelist.id,
+                'note': (
+                    f"Tinted Paint Quotation\n"
+                    f"Colour: {self.colour_code_id.code} - {self.colour_code_id.name}\n"
+                    f"Fandeck: {self.fandeck_id.name}\n"
+                    f"Category: {self.base_category_id.name}"
+                ),
+            })
+            _logger.info(f"  ✅ Sale order created: {sale_order.name} (ID: {sale_order.id})")
+        else:
+            sale_order = self.existing_sale_order_id
+            _logger.info(f"  ✅ Using existing sale order: {sale_order.name} (ID: {sale_order.id})")
         
         # ============================================
         # STEP 4: CREATE SALE ORDER LINES - FIXED MAPPING
@@ -579,24 +679,19 @@ class QuotationGeneratorWizard(models.TransientModel):
         _logger.info("📋 STEP 4: SALE ORDER LINES CREATION")
         _logger.info("-" * 80)
         
-        # Get original comparison line IDs in the same order they were displayed
-        orig_comparison_ids = json.loads(self.comparison_line_ids_json or '[]')
-        
-        if len(orig_comparison_ids) != len(self.line_ids):
-            raise UserError("Mismatch between stored comparison lines and current wizard lines.")
-        
         lines_created = 0
-        
-        for idx, quot_line in enumerate(selected_lines):
-            # Get corresponding original comparison line by index
-            if idx >= len(orig_comparison_ids):
-                raise UserError(f"Line index {idx} exceeds stored comparison lines.")
-                
-            comp_line_id = orig_comparison_ids[idx]
-            comp_line = self.env['cost.comparison.line'].browse(comp_line_id)
+
+        for idx, quot_line in enumerate(self.line_ids, 1):
+            if not quot_line.selected:
+                continue
+
+            comp_line = quot_line.comparison_line_id
             
-            if not comp_line.exists():
-                raise UserError(f"Comparison line ID {comp_line_id} no longer exists.")
+            if not comp_line:
+                raise UserError(
+                    "A quotation line is missing its source comparison line. "
+                    "Please close and reopen the quotation generator."
+                )
             
             _logger.info(f"  🔧 Processing line {idx+1}/{len(selected_lines)}")
             _logger.info(f"     Comparison line ID: {comp_line.id}")
@@ -664,9 +759,10 @@ class QuotationGeneratorWizard(models.TransientModel):
         _logger.info("📋 STEP 5: CHATTER MESSAGE")
         _logger.info("-" * 80)
         
+        action_label = "Tinted Paint Products Added" if self.quotation_mode == 'existing' else "Tinted Paint Quotation Created"
         sale_order.message_post(
             body=f"""
-            <strong>Tinted Paint Quotation Created</strong><br/>
+            <strong>{action_label}</strong><br/>
             <ul>
                 <li>Colour: {self.colour_code_id.code} - {self.colour_code_id.name}</li>
                 <li>Fandeck: {self.fandeck_id.name}</li>
@@ -677,7 +773,7 @@ class QuotationGeneratorWizard(models.TransientModel):
                 {f'<li>Volume scaled: {source_wizard.source_volume_litres:.0f}L → {source_wizard.target_volume_litres:.0f}L ({source_wizard.scale_factor:.2f}×)</li>' if source_wizard.show_scaled_products else ''}
             </ul>
             """,
-            subject="Quotation Generated"
+            subject=action_label
         )
         
         _logger.info(f"  ✅ Chatter message posted to sale order")
@@ -695,9 +791,10 @@ class QuotationGeneratorWizard(models.TransientModel):
         # ============================================
         # STEP 6: RETURN ACTION TO OPEN SALE ORDER
         # ============================================
+        window_name = f'Quotation: {sale_order.name}'
         return {
             'type': 'ir.actions.act_window',
-            'name': f'Quotation: {sale_order.name}',
+            'name': window_name,
             'res_model': 'sale.order',
             'res_id': sale_order.id,
             'view_mode': 'form',

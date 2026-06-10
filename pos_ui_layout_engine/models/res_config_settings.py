@@ -45,6 +45,18 @@ class ResConfigSettings(models.TransientModel):
         related="pos_config_id.ui_sales_ranking_scope",
         readonly=False,
     )
+    ui_navbar_search_mode = fields.Selection(
+        related="pos_config_id.ui_navbar_search_mode",
+        readonly=False,
+    )
+    ui_hide_odoo_logo = fields.Boolean(
+        related="pos_config_id.ui_hide_odoo_logo",
+        readonly=False,
+    )
+    ui_background_color = fields.Char(
+        related="pos_config_id.ui_background_color",
+        readonly=False,
+    )
 
     def set_values(self):
         for settings in self:
@@ -52,7 +64,8 @@ class ResConfigSettings(models.TransientModel):
                 _logger.info(
                     "[POS UI Layout][settings] Saving layout settings for POS config '%s' (id=%s): "
                     "layout=%s density=%s weight=%s product_flex=%s order_flex=%s "
-                    "action_buttons=%s sort_by_sales=%s ranking_days=%s ranking_scope=%s",
+                    "action_buttons=%s sort_by_sales=%s ranking_days=%s ranking_scope=%s "
+                    "navbar_search=%s hide_logo=%s background_color=%s",
                     settings.pos_config_id.name,
                     settings.pos_config_id.id,
                     settings.ui_layout_mode,
@@ -64,5 +77,8 @@ class ResConfigSettings(models.TransientModel):
                     settings.ui_sort_products_by_sales,
                     settings.ui_sales_ranking_days,
                     settings.ui_sales_ranking_scope,
+                    settings.ui_navbar_search_mode,
+                    settings.ui_hide_odoo_logo,
+                    settings.ui_background_color,
                 )
         return super().set_values()

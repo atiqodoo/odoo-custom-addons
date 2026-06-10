@@ -43,7 +43,7 @@ Dependencies:
 import math
 import logging
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -88,6 +88,30 @@ class PosOrderLine(models.Model):
             "For refund lines (qty < 0): this field is ignored entirely — "
             "no commission or profit is computed on returns."
         )
+    )
+
+    pricelist_config_status = fields.Selection([
+        ('missing', 'Missing Pricelist'),
+        ('configured', 'Configured'),
+        ('not_applicable', 'Not Applicable'),
+    ], string='Pricelist Status',
+       compute='_compute_extra_and_profit',
+       store=True,
+       help="Shows whether this product has an explicit product/template rule on the order pricelist.")
+
+    pricelist_item_id = fields.Many2one(
+        'product.pricelist.item',
+        string='Applied Pricelist Rule',
+        compute='_compute_extra_and_profit',
+        store=True,
+        help="Explicit product/template pricelist rule used for extra/base profit calculation."
+    )
+
+    is_extra_discount_line = fields.Boolean(
+        string='Extra Discount Line',
+        compute='_compute_extra_and_profit',
+        store=True,
+        help="True when this POS line is a discount/reward adjustment that deducts from total extra."
     )
 
     # =========================================================================
@@ -311,6 +335,90 @@ class PosOrderLine(models.Model):
         )
         self._compute_extra_and_profit()
 
+    def action_open_pricelist_item_wizard(self):
+        """Open a post-sale wizard to add the line product to the order pricelist."""
+        self.ensure_one()
+        _logger.info(
+            "[PosOrderLine][Pricelist Wizard] Requested | line_id=%s | "
+            "order=%s | product=%s | pricelist=%s | status=%s",
+            self.id,
+            self.order_id.name if self.order_id else 'N/A',
+            self.product_id.display_name if self.product_id else 'N/A',
+            self.order_id.pricelist_id.display_name if self.order_id.pricelist_id else 'N/A',
+            self.pricelist_config_status,
+        )
+
+        if not self.product_id:
+            raise UserError('This order line has no product.')
+        if not self.order_id.pricelist_id:
+            raise UserError('This POS order has no pricelist.')
+        if self.qty and self.qty < 0:
+            raise UserError('Refund lines do not need pricelist configuration for commission.')
+
+        return {
+            'name': 'Add Product to Pricelist',
+            'type': 'ir.actions.act_window',
+            'res_model': 'pos.pricelist.item.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': self.env.context | {
+                'default_pos_order_line_id': self.id,
+            },
+        }
+
+    def _is_extra_discount_adjustment_line(self):
+        """Detect discount/reward lines that should reduce total extra.
+
+        These lines should not require a product pricelist rule. They are not
+        products earning commission; they are adjustments against the order.
+        """
+        self.ensure_one()
+        product = self.product_id
+        product_name = (product.display_name or '').lower() if product else ''
+        default_code = (product.default_code or '').lower() if product else ''
+        line_total = self.price_subtotal_incl or 0.0
+        paid_price = line_total / self.qty if self.qty else 0.0
+
+        is_reward = bool(
+            getattr(self, 'is_reward_line', False)
+            or getattr(self, 'reward_id', False)
+            or getattr(self, 'coupon_id', False)
+            or (getattr(self, 'points_cost', 0.0) or 0.0) > 0
+        )
+        is_named_discount = (
+            'discount' in product_name
+            or default_code in {'disc', 'discount'}
+            or '1 ksh per point' in product_name
+        )
+        is_adjustment_amount = bool(line_total) and (not self.qty or self.qty >= 0)
+        is_negative_adjustment = line_total < 0 or paid_price < 0
+        is_service_discount = (
+            product
+            and product.type == 'service'
+            and is_negative_adjustment
+            and (is_named_discount or (product.standard_price or 0.0) == 0.0)
+        )
+
+        result = bool(
+            (is_adjustment_amount and (is_reward or is_named_discount))
+            or is_service_discount
+        )
+        _logger.debug(
+            "[PosOrderLine][_is_extra_discount_adjustment_line] line_id=%s | "
+            "product=%s | default_code=%s | line_total=%.4f | paid_price=%.4f | "
+            "is_reward=%s | is_named_discount=%s | is_service_discount=%s | result=%s",
+            self.id,
+            product.display_name if product else 'N/A',
+            default_code,
+            line_total,
+            paid_price,
+            is_reward,
+            is_named_discount,
+            is_service_discount,
+            result,
+        )
+        return result
+
     # =========================================================================
     # UNIFIED COMPUTATION: Both Extra AND Base Profit
     # =========================================================================
@@ -376,6 +484,42 @@ class PosOrderLine(models.Model):
                 line._reset_all_fields()
                 continue
 
+            # --- Guard: discount/reward adjustment lines ---
+            # These lines reduce the order's distributable extra amount, but
+            # should never ask the user to add a discount product to pricelist.
+            if line._is_extra_discount_adjustment_line():
+                discount_total = -abs(line.price_subtotal_incl)
+                line.paid_price_per_unit = discount_total / abs(line.qty) if line.qty else discount_total
+                line.pricelist_price_incl = 0.0
+                line.extra_amount_per_unit = line.paid_price_per_unit
+
+                ordered_qty = int(abs(line.qty)) or 1
+                effective_qty = min(line.calc_qty or 1, ordered_qty)
+                line.total_extra_amount = discount_total
+
+                line.product_cost = 0.0
+                line.pricelist_price_excl_vat = 0.0
+                line.base_profit_per_unit = 0.0
+                line.total_base_profit = 0.0
+                line.pricelist_config_status = 'not_applicable'
+                line.pricelist_item_id = False
+                line.is_extra_discount_line = True
+
+                _logger.info(
+                    "[PosOrderLine][_compute_extra_and_profit] DISCOUNT LINE | "
+                    "line_id=%s | product=%s | qty=%.4f | effective_qty=%d | "
+                    "line_total=%.4f | deduction_from_extra=%.4f",
+                    line.id,
+                    line.product_id.display_name,
+                    line.qty,
+                    effective_qty,
+                    line.price_subtotal_incl,
+                    line.total_extra_amount,
+                )
+                continue
+
+            line.is_extra_discount_line = False
+
             # --- Guard: refund / return lines ---
             # Returning a product is not a revenue event.
             # No extra amount or base profit should be computed, distributed,
@@ -408,17 +552,49 @@ class PosOrderLine(models.Model):
             # 2. Pricelist price (incl VAT) at qty=1
             pricelist = line.order_id.pricelist_id
             if pricelist and line.product_id:
-                line.pricelist_price_incl = pricelist._get_product_price(
+                rule = pricelist._pos_extra_find_product_rule(
+                    product=line.product_id,
+                    quantity=1.0,
+                    date=line.order_id.date_order,
+                )
+
+                if not rule:
+                    line.pricelist_item_id = False
+                    line.pricelist_config_status = 'missing'
+                    line.pricelist_price_incl = 0.0
+                    line.extra_amount_per_unit = 0.0
+                    line.total_extra_amount = 0.0
+                    line.product_cost = 0.0
+                    line.pricelist_price_excl_vat = 0.0
+                    line.base_profit_per_unit = 0.0
+                    line.total_base_profit = 0.0
+
+                    _logger.warning(
+                        "[PosOrderLine][_compute_extra_and_profit] line_id=%s | "
+                        "MISSING PRICELIST RULE. Product '%s' is not explicitly "
+                        "configured on pricelist '%s'. Extra/base profit set to 0 "
+                        "until user adds a product pricelist rule.",
+                        line.id,
+                        line.product_id.display_name,
+                        pricelist.display_name,
+                    )
+                    continue
+
+                line.pricelist_item_id = rule.id
+                line.pricelist_config_status = 'configured'
+                line.pricelist_price_incl = rule._compute_price(
                     product=line.product_id,
                     quantity=1.0,
                     uom=line.product_id.uom_id,
                     date=line.order_id.date_order,
+                    currency=pricelist.currency_id,
                 )
                 _logger.debug(
                     "[PosOrderLine][_compute_extra_and_profit] line_id=%s | "
-                    "pricelist='%s' | pricelist_price_incl=%.4f",
+                    "pricelist='%s' | rule_id=%s | pricelist_price_incl=%.4f",
                     line.id,
                     pricelist.name,
+                    rule.id,
                     line.pricelist_price_incl,
                 )
             else:
@@ -429,6 +605,8 @@ class PosOrderLine(models.Model):
                     line.id,
                     line.order_id.name if line.order_id else 'N/A',
                 )
+                line.pricelist_item_id = False
+                line.pricelist_config_status = 'missing'
                 line.pricelist_price_incl = 0.0
 
             # 3. Extra per unit
@@ -578,6 +756,10 @@ class PosOrderLine(models.Model):
         self.pricelist_price_excl_vat = 0.0
         self.base_profit_per_unit = 0.0
         self.total_base_profit = 0.0
+
+        self.pricelist_config_status = 'not_applicable'
+        self.pricelist_item_id = False
+        self.is_extra_discount_line = False
 
         # Reset qty picker to default
         self.calc_qty = 1

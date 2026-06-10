@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_lpo_signature" model="ir.ui.view">
+        <field name="name">res.users.form.lpo.signature</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='preferences']/group[@name='messaging']" position="after">
+                <group name="lpo_signature" string="LPO Signature">
+                    <field name="lpo_signature_filename" invisible="1"/>
+                    <field name="lpo_signature_png"
+                           widget="image"
+                           filename="lpo_signature_filename"
+                           options="{'accepted_file_extensions': '.png'}"
+                           class="oe_avatar"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_users_preferences_form_lpo_signature" model="ir.ui.view">
+        <field name="name">res.users.preferences.form.lpo.signature</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form_simple_modif"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='signature']" position="after">
+                <group name="lpo_signature" string="LPO Signature">
+                    <field name="lpo_signature_filename" invisible="1" readonly="0"/>
+                    <field name="lpo_signature_png"
+                           readonly="0"
+                           widget="image"
+                           filename="lpo_signature_filename"
+                           options="{'accepted_file_extensions': '.png'}"
+                           class="oe_avatar"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

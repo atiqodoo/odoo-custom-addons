@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    stock_picking_type_views.xml
+    Injects receipt label popup config into the Hardware tab of
+    stock.picking.type form view (view_picking_type_form).
+
+    XPath target: page[@name='hardware']/group[@name='auto_print']
+    position: inside (appends at the end of the auto_print group)
+
+    This places our "Receipt Label Popup" group after the existing
+    "Print on Validation" and 'Print on Put in Pack' groups.
+-->
+<odoo>
+
+    <record id="view_picking_type_form_receipt_label_popup" model="ir.ui.view">
+        <field name="name">stock.picking.type.form.receipt.label.popup</field>
+        <field name="model">stock.picking.type</field>
+        <field name="inherit_id" ref="stock.view_picking_type_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Append inside the auto_print group on the Hardware tab -->
+            <xpath expr="//page[@name='hardware']/group[@name='auto_print']"
+                   position="inside">
+
+                <group name="receipt_label_popup_group"
+                       invisible="code != 'incoming'">
+
+                    <!-- Visible heading so it aligns with the other groups -->
+                    <field name="auto_label_popup_on_receipt"
+                           string="Label Popup on Receipt"/>
+
+                    <label for="receipt_label_format"
+                           string="Default Format"
+                           invisible="not auto_label_popup_on_receipt"/>
+                    <div class="o_row" invisible="not auto_label_popup_on_receipt">
+                        <field name="receipt_label_format" nolabel="1"/>
+                    </div>
+
+                    <label for="receipt_label_scope"
+                           string="Default Scope"
+                           invisible="not auto_label_popup_on_receipt"/>
+                    <div class="o_row" invisible="not auto_label_popup_on_receipt">
+                        <field name="receipt_label_scope" nolabel="1"/>
+                    </div>
+
+                    <field name="receipt_direct_windows_print"
+                           string="Direct Windows Print"
+                           invisible="not auto_label_popup_on_receipt"/>
+
+                    <label for="receipt_windows_printer_name"
+                           string="Windows Printer"
+                           invisible="not auto_label_popup_on_receipt or not receipt_direct_windows_print"/>
+                    <div class="o_row"
+                         invisible="not auto_label_popup_on_receipt or not receipt_direct_windows_print">
+                        <field name="receipt_windows_printer_name" nolabel="1"
+                               placeholder="BIXOLON SLP-DX420 - BPL-Z"/>
+                    </div>
+
+                </group>
+
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

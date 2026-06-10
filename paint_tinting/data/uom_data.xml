@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="0">
+        <!-- Mark Volume category as POS-groupable so the lot-split block in
+             settleSO works correctly.  Without this, the UoM-split block
+             (lines 165-175 of pos_store.js) also runs for volume products,
+             deleting newLine before the lot-split block can, leaving a
+             no-lot line alongside the lot-bearing line (duplicate). -->
+        <record id="uom.product_uom_categ_vol" model="uom.category">
+            <field name="is_pos_groupable" eval="True"/>
+        </record>
+
         <!-- Custom Volume UoMs based on existing Litre (uom.product_uom_litre) -->
         <!-- Note: Litre already exists as the reference unit in Odoo -->
         

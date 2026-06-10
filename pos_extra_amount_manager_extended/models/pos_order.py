@@ -151,6 +151,19 @@ class PosOrder(models.Model):
     def action_calculate_extra_amount(self):
         self.ensure_one()
         self.lines._compute_extra_and_profit()
+        missing_lines = self.lines.filtered(lambda line: line.pricelist_config_status == 'missing')
+        if missing_lines:
+            first_line = missing_lines[0]
+            return {
+                'name': 'Add Product to Pricelist',
+                'type': 'ir.actions.act_window',
+                'res_model': 'pos.pricelist.item.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': self.env.context | {
+                    'default_pos_order_line_id': first_line.id,
+                },
+            }
         self.extra_state = 'calculated'
         return self._notify_success('Extra amounts calculated.')
 
@@ -171,6 +184,7 @@ class PosOrder(models.Model):
                 'default_total_extra_amount': self.total_extra_amount,
                 'default_remaining_extra_amount': self.remaining_extra_amount,
                 'default_total_extra_cogs': self.total_extra_cogs,
+                'default_partner_id': self.partner_id.id,
             }
         }
 
@@ -241,6 +255,7 @@ class PosOrder(models.Model):
                 'default_pos_order_id': self.id,
                 'default_total_base_profit': self.total_base_profit,
                 'default_remaining_base_profit': self.remaining_base_profit,
+                'default_partner_id': self.partner_id.id,
             }
         }
 

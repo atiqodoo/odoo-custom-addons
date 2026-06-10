@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Extend pos.order LIST view (view_pos_order_tree uses <list>) with COD columns -->
+    <!-- Extend pos.order LIST view with COD columns -->
     <record id="view_pos_order_tree_inherit_cod" model="ir.ui.view">
         <field name="name">pos.order.tree.inherit.cod</field>
         <field name="model">pos.order</field>
         <field name="inherit_id" ref="point_of_sale.view_pos_order_tree"/>
         <field name="arch" type="xml">
-            <!-- Append after the state badge column -->
             <xpath expr="//field[@name='state']" position="after">
                 <field name="is_cod" optional="show" string="COD"/>
                 <field name="cod_state" optional="show" string="COD State"
@@ -16,8 +15,7 @@
         </field>
     </record>
 
-    <!-- Extend pos.order FORM view (view_pos_pos_form) with COD section.
-         Anchors to partner_id which is in the sheet body (line 58 of pos_order_view.xml). -->
+    <!-- Extend pos.order FORM view with COD section -->
     <record id="view_pos_order_form_inherit_cod" model="ir.ui.view">
         <field name="name">pos.order.form.inherit.cod</field>
         <field name="model">pos.order</field>
@@ -34,18 +32,107 @@
         </field>
     </record>
 
-    <!-- Backend action: list of pending COD orders -->
-    <record id="action_pos_cod_pending_orders" model="ir.actions.act_window">
-        <field name="name">Pending COD Orders</field>
-        <field name="res_model">pos.order</field>
-        <field name="view_mode">list,form</field>
-        <field name="domain">[('is_cod', '=', True), ('cod_state', 'not in', ['paid', 'returned'])]</field>
+    <!-- Dedicated list view for COD Orders with colour-coded rows -->
+    <record id="view_pos_cod_orders_list" model="ir.ui.view">
+        <field name="name">pos.order.cod.list</field>
+        <field name="model">pos.order</field>
+        <field name="arch" type="xml">
+            <list string="COD Orders"
+                  decoration-warning="cod_state == 'pending'"
+                  decoration-info="cod_state == 'out_for_delivery'"
+                  decoration-primary="cod_state == 'partial'"
+                  decoration-success="cod_state in ('delivered', 'paid')"
+                  decoration-danger="cod_state == 'returned'"
+                  default_order="date_order desc">
+                <field name="name" string="Order Ref"/>
+                <field name="session_id" string="Session"/>
+                <field name="date_order" string="Date"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="delivery_employee_id" string="Driver" optional="show"/>
+                <field name="delivery_address" string="Delivery Address" optional="show"/>
+                <field name="amount_total" string="Total" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="cod_amount_paid" string="Paid" widget="monetary"
+                       options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="cod_amount_open" string="Open Balance" widget="monetary"
+                       options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="state" string="POS State" widget="badge"
+                       decoration-success="state == 'paid'"
+                       decoration-warning="state == 'draft'"
+                       decoration-info="state == 'invoiced'"/>
+                <field name="cod_state" string="COD State" widget="badge"
+                       decoration-warning="cod_state == 'pending'"
+                       decoration-info="cod_state == 'out_for_delivery'"
+                       decoration-primary="cod_state == 'partial'"
+                       decoration-success="cod_state in ('delivered', 'paid')"
+                       decoration-danger="cod_state == 'returned'"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="is_cod" column_invisible="1"/>
+            </list>
+        </field>
     </record>
 
-    <!-- Menu item under Point of Sale → Orders -->
+    <!-- Search view for COD Orders with filters per state -->
+    <record id="view_pos_cod_orders_search" model="ir.ui.view">
+        <field name="name">pos.order.cod.search</field>
+        <field name="model">pos.order</field>
+        <field name="arch" type="xml">
+            <search string="COD Orders">
+                <field name="name" string="Order Ref"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="delivery_employee_id" string="Driver"/>
+                <field name="delivery_address" string="Delivery Address"/>
+                <field name="session_id" string="Session"/>
+                <filter string="Pending" name="filter_pending"
+                        domain="[('cod_state', '=', 'pending')]"/>
+                <filter string="Out for Delivery" name="filter_out_for_delivery"
+                        domain="[('cod_state', '=', 'out_for_delivery')]"/>
+                <filter string="Partially Paid" name="filter_partial"
+                        domain="[('cod_state', '=', 'partial')]"/>
+                <filter string="Delivered" name="filter_delivered"
+                        domain="[('cod_state', '=', 'delivered')]"/>
+                <filter string="Returned" name="filter_returned"
+                        domain="[('cod_state', '=', 'returned')]"/>
+                <filter string="Paid" name="filter_paid"
+                        domain="[('cod_state', '=', 'paid')]"/>
+                <separator/>
+                <filter string="Open (Pending + Partial)" name="filter_open"
+                        domain="[('cod_state', 'in', ['pending', 'partial'])]"/>
+                <separator/>
+                <filter string="Order Date" name="filter_date" date="date_order"/>
+                <group expand="0" string="Group By">
+                    <filter string="COD State" name="group_cod_state"
+                            context="{'group_by': 'cod_state'}"/>
+                    <filter string="Session" name="group_session"
+                            context="{'group_by': 'session_id'}"/>
+                    <filter string="Driver" name="group_driver"
+                            context="{'group_by': 'delivery_employee_id'}"/>
+                    <filter string="Customer" name="group_customer"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter string="Order Date" name="group_date"
+                            context="{'group_by': 'date_order:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Backend action: ALL COD orders, all states -->
+    <record id="action_pos_cod_pending_orders" model="ir.actions.act_window">
+        <field name="name">COD Orders</field>
+        <field name="res_model">pos.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_cod', '=', True)]</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_pos_cod_orders_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('point_of_sale.view_pos_pos_form')})]"/>
+        <field name="search_view_id" ref="view_pos_cod_orders_search"/>
+        <field name="context">{'search_default_filter_open': 0}</field>
+    </record>
+
+    <!-- Menu item under Point of Sale -->
     <menuitem
         id="menu_pos_cod_pending_orders"
-        name="Pending COD Orders"
+        name="COD Orders"
         parent="point_of_sale.menu_point_root"
         action="action_pos_cod_pending_orders"
         sequence="25"/>

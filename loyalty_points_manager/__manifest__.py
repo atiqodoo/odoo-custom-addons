@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Loyalty Points Manager',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.0.1',
     'category': 'Sales',
     'summary': 'Manual management of customer loyalty points with accounting integration',
     'description': """
@@ -24,6 +24,8 @@
         'account',
         'point_of_sale',
         'pos_loyalty',
+        'pos_cod',
+        'sensible_pos_offline_sale_order',
     ],
     'data': [
         'security/ir.model.access.csv',
@@ -36,6 +38,8 @@
             'loyalty_points_manager/static/src/app/loyalty_earning_engine.js',
             # 2. Order earning patch (uses engine, patches PosOrder.pointsForPrograms)
             'loyalty_points_manager/static/src/app/order_model_patch.js',
+            # 2b. Refresh cached loyalty cards so backend/manual changes reach open POS sessions
+            'loyalty_points_manager/static/src/app/loyalty_card_refresh_patch.js',
             # 3. Orderline redemption patch (uses engine, patches PosOrderline + OrderSummary._setValue)
             'loyalty_points_manager/static/src/app/orderline_redemption_patch.js',
             # 3b. Unpaid-invoice guard (blocks redemption if customer has outstanding invoices)

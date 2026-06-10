@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_upg_hold_viewer,pos.uncleared.payment.hold viewer,model_pos_uncleared_payment_hold,pos_uncleared_payment_guard.group_pos_uncleared_payment_viewer,1,0,0,0
+access_upg_hold_manager,pos.uncleared.payment.hold manager,model_pos_uncleared_payment_hold,pos_uncleared_payment_guard.group_pos_uncleared_payment_manager,1,1,1,0
+access_upg_clear_wizard_manager,pos.uncleared.payment.clear.wizard manager,model_pos_uncleared_payment_clear_wizard,pos_uncleared_payment_guard.group_pos_uncleared_payment_manager,1,1,1,1

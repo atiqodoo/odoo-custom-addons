@@ -19,6 +19,10 @@
                         <field name="ui_font_weight" widget="radio"/>
                     </setting>
 
+                    <setting string="POS Background Color" help="Background color for this POS shop UI.">
+                        <field name="ui_background_color" widget="pos_ui_color_picker"/>
+                    </setting>
+
                     <setting string="Panel Flex Ratios" help="Desktop layout ratios. Product panel maps to the right pane; order panel maps to the left pane.">
                         <div class="content-group">
                             <div class="row mt8">
@@ -38,6 +42,13 @@
 
                     <setting string="Action Button Placement" help="Move buttons from the Actions popup into the bottom POS control bar next to Customer, Internal Note, and Clear All.">
                         <field name="ui_action_button_placement" widget="radio"/>
+                    </setting>
+
+                    <setting string="Navbar Search" help="Controls product search width in the POS top bar and can hide the Odoo logo to free space.">
+                        <field name="ui_navbar_search_mode" widget="radio"/>
+                        <div class="content-group mt8">
+                            <field name="ui_hide_odoo_logo"/>
+                        </div>
                     </setting>
 
                     <setting string="Best-Seller Product Sorting" help="Show the most sold products first in the product pane, both during normal browsing and search.">
@@ -80,6 +91,10 @@
                     <field name="ui_font_weight" widget="radio"/>
                 </setting>
 
+                <setting string="POS Background Color" help="Background color for the selected POS shop UI.">
+                    <field name="ui_background_color" widget="pos_ui_color_picker"/>
+                </setting>
+
                 <setting string="Panel Flex Ratios" help="Desktop layout ratios. Product panel maps to the right pane; order panel maps to the left pane.">
                     <div class="content-group">
                         <div class="row mt8">
@@ -99,6 +114,13 @@
 
                 <setting string="Action Button Placement" help="Move buttons from the Actions popup into the bottom POS control bar next to Customer, Internal Note, and Clear All.">
                     <field name="ui_action_button_placement" widget="radio"/>
+                </setting>
+
+                <setting string="Navbar Search" help="Controls product search width in the POS top bar and can hide the Odoo logo to free space.">
+                    <field name="ui_navbar_search_mode" widget="radio"/>
+                    <div class="content-group mt8">
+                        <field name="ui_hide_odoo_logo"/>
+                    </div>
                 </setting>
 
                 <setting string="Best-Seller Product Sorting" help="Show the most sold products first in the product pane, both during normal browsing and search.">

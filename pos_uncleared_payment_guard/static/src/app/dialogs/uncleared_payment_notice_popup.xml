@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_uncleared_payment_guard.UnclearedPaymentNoticePopup">
+        <Dialog title="props.title">
+            <div class="upg-uncleared-payment-notice p-3">
+                <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                    <i class="fa fa-hourglass-half fa-lg me-2"/>
+                    <strong>Payment received, pending clearance</strong>
+                </div>
+                <p class="mb-2" t-esc="props.body"/>
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted">Payment Method</td>
+                            <td class="text-end fw-bold" t-esc="props.methodName"/>
+                        </tr>
+                        <tr t-if="props.amountText">
+                            <td class="text-muted">Amount</td>
+                            <td class="text-end fw-bold" t-esc="props.amountText"/>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary btn-lg" t-on-click="props.close">OK</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

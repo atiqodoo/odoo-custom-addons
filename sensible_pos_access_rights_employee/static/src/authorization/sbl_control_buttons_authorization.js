@@ -26,6 +26,12 @@ patch(ControlButtons.prototype, {
         });
     },
 
+    async clickRewards() {
+        return await this.pos.sblGuardedAction("reward", () => super.clickRewards(), {
+            label: "Reward",
+        });
+    },
+
     async clickDiscount() {
         const allowed = await this.pos.sblAuthorizeAction("global_discount", {
             label: "Global Discount",

@@ -2,8 +2,12 @@
 """
 Wizard: Distribute extra amount (percent or fixed) - TIER 1
 """
+import logging
+
 from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 class PosExtraDistributionWizard(models.TransientModel):
@@ -39,6 +43,23 @@ class PosExtraDistributionWizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
+
+        order_id = res.get('pos_order_id') or self.env.context.get('default_pos_order_id')
+        order = self.env['pos.order'].browse(order_id).exists()
+
+        if order and 'partner_id' in fields_list and order.partner_id and not res.get('partner_id'):
+            res['partner_id'] = order.partner_id.id
+            _logger.info(
+                "[Tier1 Wizard][default_get] Partner defaulted from POS order | "
+                "order=%s | partner=%s",
+                order.name,
+                order.partner_id.display_name,
+            )
+        elif order and 'partner_id' in fields_list and not order.partner_id:
+            _logger.warning(
+                "[Tier1 Wizard][default_get] POS order has no customer to default | order=%s",
+                order.name,
+            )
         
         # Load COGS Commission Account from settings
         cogs_account_id = self.env['ir.config_parameter'].sudo().get_param('pos_extra_amount_manager.cogs_commission_account_id')
@@ -84,6 +105,14 @@ class PosExtraDistributionWizard(models.TransientModel):
         self.ensure_one()
         if not self.distribution_amount:
             raise UserError('Enter valid amount.')
+
+        _logger.info(
+            "[Tier1 Wizard][action_distribute] Creating distribution | "
+            "order=%s | partner=%s | amount=%.4f",
+            self.pos_order_id.name,
+            self.partner_id.display_name,
+            self.distribution_amount,
+        )
         
         dist = self.env['pos.extra.distribution'].create({
             'pos_order_id': self.pos_order_id.id,

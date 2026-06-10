@@ -14,25 +14,33 @@ wizard = env['vendor.price.wizard'].create({
 })
 
 # Create wizard lines from PO lines
+line_count = 0
 for po_line in record.order_line.filtered(lambda l: not l.display_type):
+    received_qty = max((po_line.qty_received or 0.0) - (po_line.qty_invoiced or 0.0), 0.0)
+    if received_qty <= 0.0:
+        continue
     env['vendor.price.wizard.line'].create({
         'wizard_id': wizard.id,
         'purchase_line_id': po_line.id,
         'product_id': po_line.product_id.id,
-        'product_qty': po_line.product_qty,
+        'product_qty': received_qty,
         'price_unit': po_line.price_unit,
         'vendor_price': po_line.price_unit,
     })
+    line_count += 1
 
 # Return action to open wizard
-action = {
-    'type': 'ir.actions.act_window',
-    'name': 'Enter Vendor Bill Prices',
-    'res_model': 'vendor.price.wizard',
-    'res_id': wizard.id,
-    'view_mode': 'form',
-    'target': 'new',
-}
+if line_count:
+    action = {
+        'type': 'ir.actions.act_window',
+        'name': 'Enter Vendor Bill Prices',
+        'res_model': 'vendor.price.wizard',
+        'res_id': wizard.id,
+        'view_mode': 'form',
+        'target': 'new',
+    }
+else:
+    action = {'type': 'ir.actions.do_nothing'}
 ]]></field>
     </record>
 </odoo>

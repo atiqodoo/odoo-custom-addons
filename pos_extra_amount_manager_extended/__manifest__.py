@@ -65,6 +65,7 @@ Both POS and accounting staff benefit from clear separation.
         'views/res_config_settings_views.xml',
         'wizard/pos_extra_distribution_wizard_views.xml',
         'wizard/pos_base_profit_distribution_wizard_views.xml',
+        'wizard/pos_pricelist_item_wizard_views.xml',
     ],
     'demo': [],
     'installable': True,

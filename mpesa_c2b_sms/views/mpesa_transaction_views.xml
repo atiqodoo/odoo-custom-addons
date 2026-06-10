@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List view -->
+    <record id="view_mpesa_transaction_list" model="ir.ui.view">
+        <field name="name">mpesa.transaction.list</field>
+        <field name="model">mpesa.transaction</field>
+        <field name="arch" type="xml">
+            <list string="M-Pesa Transactions" decoration-success="state=='reconciled_pos' or state=='reconciled_invoice'"
+                  decoration-warning="state=='unmatched'" decoration-muted="state=='cancelled'">
+                <field name="mpesa_ref"/>
+                <field name="entry_source"/>
+                <field name="transaction_date"/>
+                <field name="sender_name"/>
+                <field name="display_phone"/>
+                <field name="amount"/>
+                <field name="amount_used"/>
+                <field name="amount_remaining"/>
+                <field name="partner_id"/>
+                <field name="pos_order_ids" widget="many2many_tags"/>
+                <field name="state" widget="badge"
+                       decoration-success="state in ('reconciled_pos','reconciled_invoice')"
+                       decoration-warning="state=='unmatched'"
+                       decoration-info="state in ('pending_pos','partial_pos')"
+                       decoration-muted="state=='cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form view -->
+    <record id="view_mpesa_transaction_form" model="ir.ui.view">
+        <field name="name">mpesa.transaction.form</field>
+        <field name="model">mpesa.transaction</field>
+        <field name="arch" type="xml">
+            <form string="M-Pesa Transaction">
+                <header>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="new,pending_pos,partial_pos,reconciled_pos"/>
+                    <button name="action_cancel" string="Cancel" type="object"
+                            groups="mpesa_c2b_sms.group_mpesa_manager"
+                            invisible="state not in ('new','unmatched')"/>
+                    <button name="action_reset_to_new" string="Reset to New" type="object"
+                            groups="mpesa_c2b_sms.group_mpesa_manager"
+                            invisible="state != 'cancelled'"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Safaricom Details">
+                            <field name="mpesa_ref"/>
+                            <field name="entry_source"/>
+                            <field name="amount"/>
+                            <field name="amount_used"/>
+                            <field name="amount_remaining"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="transaction_date"/>
+                            <field name="transaction_cost"/>
+                            <field name="utility_balance"/>
+                        </group>
+                        <group string="Sender">
+                            <field name="sender_name"/>
+                            <field name="display_phone" string="Phone"/>
+                            <field name="partner_id"/>
+                        </group>
+                    </group>
+                    <group string="Linkages" groups="mpesa_c2b_sms.group_mpesa_manager">
+                        <field name="raw_log_id"/>
+                        <field name="invoice_id"/>
+                        <field name="pos_order_id"/>
+                        <field name="pos_order_ids" widget="many2many_tags"/>
+                    </group>
+                    <group string="POS Usage" groups="mpesa_c2b_sms.group_mpesa_manager">
+                        <field name="pos_usage_ids" nolabel="1" readonly="1">
+                            <list>
+                                <field name="pos_order_id"/>
+                                <field name="pos_payment_id"/>
+                                <field name="amount"/>
+                                <field name="session_id"/>
+                                <field name="cashier_id"/>
+                                <field name="create_date"/>
+                            </list>
+                        </field>
+                    </group>
+                    <group string="Manual Entry Audit" invisible="entry_source != 'manual'">
+                        <field name="manual_created_by_id"/>
+                        <field name="manual_created_at"/>
+                        <field name="manual_reason" widget="text"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search view -->
+    <record id="view_mpesa_transaction_search" model="ir.ui.view">
+        <field name="name">mpesa.transaction.search</field>
+        <field name="model">mpesa.transaction</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="mpesa_ref"/>
+                <field name="sender_name"/>
+                <field name="sender_phone"/>
+                <field name="partner_id"/>
+                <filter name="manual" string="Manual Entries" domain="[('entry_source','=','manual')]"/>
+                <filter name="new"         string="New"         domain="[('state','=','new')]"/>
+                <filter name="unmatched"   string="Unmatched"   domain="[('state','=','unmatched')]"/>
+                <filter name="pending_pos" string="Held by POS" domain="[('state','=','pending_pos')]"/>
+                <filter name="partial_pos" string="Partially Used" domain="[('state','=','partial_pos')]"/>
+                <filter name="reconciled"  string="Reconciled"
+                        domain="[('state','in',('reconciled_pos','reconciled_invoice'))]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_date" string="Date" context="{'group_by':'transaction_date:day'}"/>
+                    <filter name="group_state" string="State" context="{'group_by':'state'}"/>
+                    <filter name="group_partner" string="Customer" context="{'group_by':'partner_id'}"/>
+                    <filter name="group_source" string="Source" context="{'group_by':'entry_source'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_mpesa_transaction" model="ir.actions.act_window">
+        <field name="name">M-Pesa Transactions</field>
+        <field name="res_model">mpesa.transaction</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_new': 1}</field>
+    </record>
+
+</odoo>

@@ -139,6 +139,7 @@
                                     <!-- ========================================== -->
                                     <field name="colorant_id" column_invisible="1"/>
                                     <field name="stock_warning" column_invisible="1"/>
+                                    <field name="shots_history_total" column_invisible="1"/>
 
                                     <!-- ========================================== -->
                                     <!-- VISIBLE BY DEFAULT                         -->
@@ -158,6 +159,13 @@
                                            string="Total Shots"
                                            sum="Total Shots"
                                            optional="show"/>
+
+                                    <!-- Shots History: editable so Odoo tracks value between onchange calls -->
+                                    <field name="shots_history"
+                                           string="Shots History"
+                                           optional="show"
+                                           placeholder="—"
+                                           help="Each shots entry step, e.g. 30 + 15 + 5 — cleared when Total Shots is edited directly"/>
 
                                     <!-- Add Shots: type value then Tab to auto-accumulate -->
                                     <field name="shots_to_add"
@@ -283,11 +291,9 @@
                                            class="fw-bold"/>
                                     <div class="o_row">
                                         <field name="selling_price_incl_vat"
-                                               class="oe_inline fw-bold"/>
+                                               class="oe_inline fw-bold"
+                                               placeholder="Enter selling price..."/>
                                         <span class="oe_inline fw-bold"> KES</span>
-                                    </div>
-                                    <div class="text-muted" style="font-size: 0.8em; margin-top: 5px;">
-                                        <i>Auto-calculated with 30% markup when empty</i>
                                     </div>
                                 </group>
 

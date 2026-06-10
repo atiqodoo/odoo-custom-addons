@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_config_form_upg" model="ir.ui.view">
+        <field name="name">pos.config.form.upg</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//setting[@id='other_devices']" position="after">
+                <setting id="upg_uncleared_payment_guard"
+                         string="Uncleared Deposit/Due Payments"
+                         help="Mapped payment methods are accepted for deposits and due settlement, but their amounts are not usable in POS customer balance until accounting reconciliation or manual clearance.">
+                    <field name="upg_uncleared_payment_method_ids" widget="many2many_tags"/>
+                    <field name="upg_deposit_bank_journal_ids" widget="many2many_tags"/>
+                    <field name="upg_debug_logging"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

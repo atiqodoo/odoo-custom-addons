@@ -12,6 +12,7 @@ class ResConfigSettings(models.TransientModel):
     price_check_approver_id = fields.Many2one(
         'res.users',
         string='Price Discrepancy Approver',
+        config_parameter='vendor_price_check.price_check_approver_id',
         help='User who must approve bills with price discrepancies.'
     )
 
@@ -21,7 +22,7 @@ class ResConfigSettings(models.TransientModel):
         params = self.env['ir.config_parameter'].sudo()
         approver_id = params.get_param('vendor_price_check.price_check_approver_id', default=False)
         res.update(
-            price_check_approver_id=int(approver_id) if approver_id else False,
+            price_check_approver_id=int(approver_id) if approver_id and str(approver_id).isdigit() else False,
         )
         return res
 

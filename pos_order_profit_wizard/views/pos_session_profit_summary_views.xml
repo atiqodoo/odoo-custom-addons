@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_session_form_profit_summary" model="ir.ui.view">
+        <field name="name">pos.session.form.profit.summary</field>
+        <field name="model">pos.session</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//chatter" position="before">
+
+                <separator string="Session Profit Summary"/>
+
+                <group name="session_profit_summary_outer" col="2">
+
+                    <group string="Revenue &amp; Cost" name="session_revenue_cost_group">
+                        <field name="session_total_selling_price"
+                               widget="monetary"
+                               options="{'currency_field': 'currency_id'}"
+                               string="Total Selling Price"/>
+                        <field name="session_total_cost_incl_vat"
+                               widget="monetary"
+                               options="{'currency_field': 'currency_id'}"
+                               string="Total Cost (incl. VAT + Landed Costs)"/>
+                    </group>
+
+                    <group string="Profit" name="session_profit_group">
+                        <field name="session_total_profit"
+                               widget="monetary"
+                               options="{'currency_field': 'currency_id'}"
+                               string="Total Profit"
+                               decoration-success="session_total_profit &gt; 0"
+                               decoration-danger="session_total_profit &lt; 0"/>
+                        <field name="session_profit_margin_pct"
+                               string="Profit Margin (%)"
+                               decoration-success="session_profit_margin_pct &gt; 0"
+                               decoration-danger="session_profit_margin_pct &lt; 0"/>
+                    </group>
+
+                </group>
+
+                <div class="alert alert-info" role="alert" style="margin-bottom: 16px;">
+                    <strong>Notes:</strong>
+                    <ul class="mb-0">
+                        <li>Cost per unit = Standard Price × (1 + VAT%). Standard Price reflects AVCO/landed costs already applied to inventory.</li>
+                        <li>Selling Price = sum of line unit prices × quantities (before session-level discounts).</li>
+                        <li>Values refresh automatically on page reload. For in-progress sessions, reload to see the latest figures.</li>
+                    </ul>
+                </div>
+
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

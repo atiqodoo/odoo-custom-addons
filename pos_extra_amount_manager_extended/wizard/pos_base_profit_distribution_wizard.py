@@ -2,8 +2,12 @@
 """
 Wizard: Distribute base profit (percent or fixed) - TIER 2
 """
+import logging
+
 from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 class PosBaseProfitDistributionWizard(models.TransientModel):
@@ -97,6 +101,23 @@ class PosBaseProfitDistributionWizard(models.TransientModel):
     def default_get(self, fields_list):
         """Load default base commission COGS account from settings."""
         res = super().default_get(fields_list)
+
+        order_id = res.get('pos_order_id') or self.env.context.get('default_pos_order_id')
+        order = self.env['pos.order'].browse(order_id).exists()
+
+        if order and 'partner_id' in fields_list and order.partner_id and not res.get('partner_id'):
+            res['partner_id'] = order.partner_id.id
+            _logger.info(
+                "[Tier2 Wizard][default_get] Partner defaulted from POS order | "
+                "order=%s | partner=%s",
+                order.name,
+                order.partner_id.display_name,
+            )
+        elif order and 'partner_id' in fields_list and not order.partner_id:
+            _logger.warning(
+                "[Tier2 Wizard][default_get] POS order has no customer to default | order=%s",
+                order.name,
+            )
         
         # Get default account from config (TIER 2 account)
         account_id = self.env['ir.config_parameter'].sudo().get_param(
@@ -148,6 +169,14 @@ class PosBaseProfitDistributionWizard(models.TransientModel):
         
         if not self.distribution_amount:
             raise UserError('Please enter a valid distribution amount.')
+
+        _logger.info(
+            "[Tier2 Wizard][action_distribute] Creating distribution | "
+            "order=%s | partner=%s | amount=%.4f",
+            self.pos_order_id.name,
+            self.partner_id.display_name,
+            self.distribution_amount,
+        )
         
         # Create distribution record
         dist = self.env['pos.base.profit.distribution'].create({
