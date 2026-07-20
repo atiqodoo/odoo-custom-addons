@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_move_form_inherit_cod_transaction_log" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.cod.transaction.log</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/notebook" position="before">
+                <field name="is_cod_entry" invisible="1"/>
+                <field name="cod_origin_order_id" invisible="1"/>
+            </xpath>
+
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="COD Transactions"
+                      name="cod_transaction_log"
+                      invisible="not is_cod_entry or not cod_origin_order_id">
+                    <group>
+                        <group string="COD Source">
+                            <field name="cod_origin_order_id" readonly="1"/>
+                            <field name="cod_order_session_id" readonly="1"/>
+                            <field name="cod_order_session_user_id" readonly="1"/>
+                            <field name="cod_order_total" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="cod_open_receivable_amount" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="cod_transaction_total" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="cod_remaining_profit_amount" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="cod_days_elapsed" readonly="1"/>
+                            <field name="cod_collection_log_count" readonly="1"/>
+                        </group>
+                        <group string="Audit Note">
+                            <div class="text-muted">
+                                Timestamps are stored in UTC and displayed in the user's timezone.
+                            </div>
+                        </group>
+                    </group>
+
+                    <field name="cod_collection_log_ids"
+                           nolabel="1"
+                           readonly="1"
+                           mode="list,form"
+                           context="{'create': False, 'edit': False, 'delete': False}">
+                        <list string="COD Transactions"
+                              create="false"
+                              edit="false"
+                              delete="false"
+                              default_order="create_date desc, id desc"
+                              decoration-success="kind == 'payment'"
+                              decoration-warning="kind == 'return'"
+                              decoration-info="kind == 'discount'">
+                            <field name="create_date" string="Date/Time" widget="datetime"/>
+                            <field name="kind" string="Type" widget="badge"/>
+                            <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="session_id"/>
+                            <field name="cod_session_user_id"/>
+                            <field name="cod_order_delivery_employee_id"/>
+                            <field name="payment_method_id"/>
+                            <field name="mpesa_ref" optional="show"/>
+                            <field name="move_id" string="Journal Entry"/>
+                            <field name="cod_return_line_summary" optional="show"/>
+                            <field name="create_uid" string="Created By"/>
+                            <field name="note" optional="show"/>
+                        </list>
+                        <form string="COD Transaction" create="false" edit="false" delete="false">
+                            <sheet>
+                                <group>
+                                    <group>
+                                        <field name="order_id" readonly="1"/>
+                                        <field name="kind" readonly="1"/>
+                                        <field name="amount" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        <field name="currency_id" invisible="1"/>
+                                        <field name="create_date" readonly="1" widget="datetime"/>
+                                        <field name="create_uid" readonly="1"/>
+                                    </group>
+                                    <group>
+                                        <field name="session_id" readonly="1"/>
+                                        <field name="cod_session_user_id" readonly="1"/>
+                                        <field name="cod_order_delivery_employee_id" readonly="1"/>
+                                        <field name="payment_method_id" readonly="1"/>
+                                        <field name="mpesa_ref" readonly="1"/>
+                                        <field name="move_id" readonly="1"/>
+                                    </group>
+                                </group>
+                                <group>
+                                    <field name="cod_return_line_summary" readonly="1"/>
+                                    <field name="return_line_qtys" readonly="1"/>
+                                    <field name="note" readonly="1"/>
+                                </group>
+                            </sheet>
+                        </form>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

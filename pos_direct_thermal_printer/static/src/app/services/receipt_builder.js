@@ -1,5 +1,7 @@
 /** @odoo-module */
 
+import { parseUTCString } from "@point_of_sale/utils";
+
 function clean(value) {
     if (value === undefined || value === null || value === false) {
         return "";
@@ -39,6 +41,17 @@ function points(value) {
 function partnerName(order) {
     const partner = order.get_partner?.();
     return clean(partner?.name);
+}
+
+function kenyanDateTime(value) {
+    if (!value) {
+        return "";
+    }
+    try {
+        return parseUTCString(value).setZone("default").toFormat("dd/MM/yyyy HH:mm:ss");
+    } catch {
+        return clean(value);
+    }
 }
 
 function productId(product) {
@@ -134,7 +147,7 @@ function metadataContext(pos, order, printable, company) {
         vat: clean(company.vat),
         pos_name: clean(pos.config?.name),
         order_name: clean(printable.name || order.name || order.pos_reference),
-        date: clean(printable.date),
+        date: kenyanDateTime(order?.date_order) || clean(printable.date),
         cashier: clean(printable.cashier || order.getCashierName?.()),
         customer: partnerName(order),
     };

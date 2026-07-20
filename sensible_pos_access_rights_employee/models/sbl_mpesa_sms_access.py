@@ -30,6 +30,26 @@ class HrEmployee(models.Model):
     _inherit = 'hr.employee'
 
     @api.model
+    def sbl_mpesa_sms_has_session_access(self):
+        session = _sbl_mpesa_sms_session()
+        employee_id = session.get('sbl_mpesa_sms_employee_id')
+        if not employee_id:
+            return {'authorized': False}
+
+        employee = self.sudo().browse(employee_id).exists()
+        if not employee:
+            return {'authorized': False}
+
+        return {
+            'authorized': bool(
+                not employee.sbl_block_mpesa_sms_app
+                or session.get('sbl_mpesa_sms_supervisor_ok')
+            ),
+            'employee_id': employee.id,
+            'employee_name': employee.name,
+        }
+
+    @api.model
     def sbl_mpesa_sms_employee_login(self, pin):
         employee = self.sudo().search([('pin', '=', pin)], limit=1)
         if not employee:

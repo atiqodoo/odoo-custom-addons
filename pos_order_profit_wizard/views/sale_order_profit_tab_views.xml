@@ -56,10 +56,10 @@
                     <div class="alert alert-info" role="alert" style="margin-top: 15px;">
                         <p><strong>Profit Calculation (Cost incl. VAT vs Selling Price):</strong></p>
                         <ul>
-                            <li>Cost Price (incl. VAT) = Standard Cost × (1 + VAT Rate%)</li>
-                            <li>Profit / Unit = Selling Price − Cost Price (incl. VAT)</li>
-                            <li>Total Profit = Profit / Unit × Quantity</li>
-                            <li>Standard cost sourced from product AVCO/Standard Price</li>
+                            <li>Cost Price (incl. VAT) = Order Line Cost Price (excl. VAT) plus configured VAT</li>
+                            <li>Profit / Unit = Selling Price - Cost Price (incl. VAT)</li>
+                            <li>Total Profit = Profit / Unit x Quantity</li>
+                            <li>Order line cost is sourced from the Sales Cost column when available</li>
                         </ul>
                     </div>
 

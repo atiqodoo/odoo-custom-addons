@@ -1,0 +1,172 @@
+{
+  "version": 21,
+  "sheets": [
+    {
+      "id": "movement-volume-overview",
+      "name": "Movement Volume",
+      "colNumber": 12,
+      "rowNumber": 60,
+      "rows": {},
+      "cols": {
+        "0": {"size": 210},
+        "1": {"size": 150},
+        "2": {"size": 150},
+        "3": {"size": 150}
+      },
+      "merges": ["A1:D2"],
+      "cells": {
+        "A1": {"style": 1, "content": "Product Movement Volume"},
+        "A4": {"style": 2, "content": "Reference UoM"},
+        "B4": {"style": 2, "content": "Gross Movement"},
+        "C4": {"style": 2, "content": "Net Sales"},
+        "D4": {"style": 2, "content": "Net Received"},
+        "A5": {"content": "=PIVOT.HEADER(1,\"#reference_uom_id\",1)"},
+        "B5": {"style": 3, "content": "=PIVOT.VALUE(1,\"gross_movement_qty\",\"#reference_uom_id\",1)"},
+        "C5": {"style": 3, "content": "=PIVOT.VALUE(1,\"sales_net_qty\",\"#reference_uom_id\",1)"},
+        "D5": {"style": 3, "content": "=PIVOT.VALUE(1,\"receipt_net_qty\",\"#reference_uom_id\",1)"},
+        "A6": {"content": "=PIVOT.HEADER(1,\"#reference_uom_id\",2)"},
+        "B6": {"style": 3, "content": "=PIVOT.VALUE(1,\"gross_movement_qty\",\"#reference_uom_id\",2)"},
+        "C6": {"style": 3, "content": "=PIVOT.VALUE(1,\"sales_net_qty\",\"#reference_uom_id\",2)"},
+        "D6": {"style": 3, "content": "=PIVOT.VALUE(1,\"receipt_net_qty\",\"#reference_uom_id\",2)"},
+        "A7": {"content": "=PIVOT.HEADER(1,\"#reference_uom_id\",3)"},
+        "B7": {"style": 3, "content": "=PIVOT.VALUE(1,\"gross_movement_qty\",\"#reference_uom_id\",3)"},
+        "C7": {"style": 3, "content": "=PIVOT.VALUE(1,\"sales_net_qty\",\"#reference_uom_id\",3)"},
+        "D7": {"style": 3, "content": "=PIVOT.VALUE(1,\"receipt_net_qty\",\"#reference_uom_id\",3)"},
+        "A12": {"style": 4, "content": "Volume by Grade"},
+        "A13": {"style": 2, "content": "Grade"},
+        "B13": {"style": 2, "content": "Gross Movement"},
+        "C13": {"style": 2, "content": "Net Sales"},
+        "A14": {"content": "=PIVOT.HEADER(2,\"#grade_id\",1)"},
+        "B14": {"style": 3, "content": "=PIVOT.VALUE(2,\"gross_movement_qty\",\"#grade_id\",1)"},
+        "C14": {"style": 3, "content": "=PIVOT.VALUE(2,\"sales_net_qty\",\"#grade_id\",1)"},
+        "A15": {"content": "=PIVOT.HEADER(2,\"#grade_id\",2)"},
+        "B15": {"style": 3, "content": "=PIVOT.VALUE(2,\"gross_movement_qty\",\"#grade_id\",2)"},
+        "C15": {"style": 3, "content": "=PIVOT.VALUE(2,\"sales_net_qty\",\"#grade_id\",2)"},
+        "A16": {"content": "=PIVOT.HEADER(2,\"#grade_id\",3)"},
+        "B16": {"style": 3, "content": "=PIVOT.VALUE(2,\"gross_movement_qty\",\"#grade_id\",3)"},
+        "C16": {"style": 3, "content": "=PIVOT.VALUE(2,\"sales_net_qty\",\"#grade_id\",3)"},
+        "A20": {"style": 4, "content": "Volume by Operation"},
+        "A21": {"style": 2, "content": "Operation"},
+        "B21": {"style": 2, "content": "Gross Movement"},
+        "A22": {"content": "=PIVOT.HEADER(3,\"#operation_family\",1)"},
+        "B22": {"style": 3, "content": "=PIVOT.VALUE(3,\"gross_movement_qty\",\"#operation_family\",1)"},
+        "A23": {"content": "=PIVOT.HEADER(3,\"#operation_family\",2)"},
+        "B23": {"style": 3, "content": "=PIVOT.VALUE(3,\"gross_movement_qty\",\"#operation_family\",2)"},
+        "A24": {"content": "=PIVOT.HEADER(3,\"#operation_family\",3)"},
+        "B24": {"style": 3, "content": "=PIVOT.VALUE(3,\"gross_movement_qty\",\"#operation_family\",3)"},
+        "A25": {"content": "=PIVOT.HEADER(3,\"#operation_family\",4)"},
+        "B25": {"style": 3, "content": "=PIVOT.VALUE(3,\"gross_movement_qty\",\"#operation_family\",4)"},
+        "A26": {"content": "=PIVOT.HEADER(3,\"#operation_family\",5)"},
+        "B26": {"style": 3, "content": "=PIVOT.VALUE(3,\"gross_movement_qty\",\"#operation_family\",5)"}
+      },
+      "styles": {},
+      "formats": {},
+      "borders": {},
+      "conditionalFormats": [],
+      "figures": [],
+      "tables": [],
+      "areGridLinesVisible": true,
+      "isVisible": true,
+      "headerGroups": {"ROW": [], "COL": []},
+      "dataValidationRules": [],
+      "comments": {}
+    }
+  ],
+  "styles": {
+    "1": {"fillColor": "#01666b", "textColor": "#ffffff", "bold": true, "fontSize": 18, "verticalAlign": "middle"},
+    "2": {"fillColor": "#e8f3f3", "textColor": "#123b3d", "bold": true},
+    "3": {"format": "#,##0.00"},
+    "4": {"textColor": "#01666b", "bold": true, "fontSize": 14}
+  },
+  "formats": {},
+  "borders": {},
+  "revisionId": "START_REVISION",
+  "uniqueFigureIds": true,
+  "settings": {"locale": "en_US"},
+  "pivots": {
+    "1": {
+      "type": "ODOO",
+      "fieldMatching": {
+        "filter-date": {"chain": "date", "type": "datetime", "offset": 0},
+        "filter-company": {"chain": "company_id", "type": "many2one"},
+        "filter-product": {"chain": "product_id", "type": "many2one"},
+        "filter-grade": {"chain": "grade_id", "type": "many2one"},
+        "filter-reference-uom": {"chain": "reference_uom_id", "type": "many2one"},
+        "filter-source-warehouse": {"chain": "source_warehouse_id", "type": "many2one"}
+      },
+      "context": {"group_by": []},
+      "domain": [],
+      "id": "1",
+      "measures": [
+        {"id": "gross_movement_qty", "fieldName": "gross_movement_qty"},
+        {"id": "sales_net_qty", "fieldName": "sales_net_qty"},
+        {"id": "receipt_net_qty", "fieldName": "receipt_net_qty"},
+        {"id": "production_output_qty", "fieldName": "production_output_qty"},
+        {"id": "production_consumption_qty", "fieldName": "production_consumption_qty"},
+        {"id": "return_qty", "fieldName": "return_qty"}
+      ],
+      "model": "product.movement.volume",
+      "name": "Movement Volume KPIs",
+      "formulaId": "1",
+      "columns": [],
+      "rows": [{"fieldName": "reference_uom_id"}]
+    },
+    "2": {
+      "type": "ODOO",
+      "fieldMatching": {
+        "filter-date": {"chain": "date", "type": "datetime", "offset": 0},
+        "filter-company": {"chain": "company_id", "type": "many2one"},
+        "filter-product": {"chain": "product_id", "type": "many2one"},
+        "filter-grade": {"chain": "grade_id", "type": "many2one"},
+        "filter-reference-uom": {"chain": "reference_uom_id", "type": "many2one"},
+        "filter-source-warehouse": {"chain": "source_warehouse_id", "type": "many2one"}
+      },
+      "context": {"group_by": []},
+      "domain": [],
+      "id": "2",
+      "measures": [
+        {"id": "gross_movement_qty", "fieldName": "gross_movement_qty"},
+        {"id": "sales_net_qty", "fieldName": "sales_net_qty"}
+      ],
+      "model": "product.movement.volume",
+      "name": "Movement Volume by Grade",
+      "formulaId": "2",
+      "columns": [],
+      "rows": [{"fieldName": "grade_id"}]
+    },
+    "3": {
+      "type": "ODOO",
+      "fieldMatching": {
+        "filter-date": {"chain": "date", "type": "datetime", "offset": 0},
+        "filter-company": {"chain": "company_id", "type": "many2one"},
+        "filter-product": {"chain": "product_id", "type": "many2one"},
+        "filter-grade": {"chain": "grade_id", "type": "many2one"},
+        "filter-reference-uom": {"chain": "reference_uom_id", "type": "many2one"},
+        "filter-source-warehouse": {"chain": "source_warehouse_id", "type": "many2one"}
+      },
+      "context": {"group_by": []},
+      "domain": [],
+      "id": "3",
+      "measures": [{"id": "gross_movement_qty", "fieldName": "gross_movement_qty"}],
+      "model": "product.movement.volume",
+      "name": "Movement Volume by Operation",
+      "formulaId": "3",
+      "columns": [],
+      "rows": [{"fieldName": "operation_family"}]
+    }
+  },
+  "pivotNextId": 4,
+  "customTableStyles": {},
+  "odooVersion": 12,
+  "globalFilters": [
+    {"id": "filter-date", "type": "date", "label": "Period", "defaultValue": "this_year", "rangeType": "relative"},
+    {"id": "filter-company", "type": "relation", "label": "Company", "modelName": "res.company", "defaultValue": [], "defaultValueDisplayNames": []},
+    {"id": "filter-product", "type": "relation", "label": "Product", "modelName": "product.product", "defaultValue": [], "defaultValueDisplayNames": []},
+    {"id": "filter-grade", "type": "relation", "label": "Grade", "modelName": "product.tag", "defaultValue": [], "defaultValueDisplayNames": []},
+    {"id": "filter-reference-uom", "type": "relation", "label": "Reference UoM", "modelName": "uom.uom", "defaultValue": [], "defaultValueDisplayNames": []},
+    {"id": "filter-source-warehouse", "type": "relation", "label": "Source Warehouse", "modelName": "stock.warehouse", "defaultValue": [], "defaultValueDisplayNames": []}
+  ],
+  "lists": {},
+  "listNextId": 1,
+  "chartOdooMenusReferences": {}
+}

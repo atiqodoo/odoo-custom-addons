@@ -17,7 +17,6 @@ class ResCompany(models.Model):
         help='Transparent PNG company rubber stamp printed on LPO reports.',
     )
     lpo_rubber_stamp_filename = fields.Char(string='LPO Rubber Stamp Filename', copy=False)
-
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:

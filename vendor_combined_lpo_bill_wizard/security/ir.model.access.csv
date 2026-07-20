@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_combined_lpo_bill_wizard_user,combined.lpo.bill.wizard.user,model_combined_lpo_bill_wizard,purchase.group_purchase_user,1,1,1,1
+access_combined_lpo_bill_wizard_line_user,combined.lpo.bill.wizard.line.user,model_combined_lpo_bill_wizard_line,purchase.group_purchase_user,1,1,1,1

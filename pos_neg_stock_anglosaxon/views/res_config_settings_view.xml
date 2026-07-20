@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_tinted_pos_oversell" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.tinted.pos.oversell</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="mrp.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='mrp']" position="inside">
+                <block title="Tinted Product POS Oversell" name="tinted_product_pos_oversell_settings">
+                    <setting id="block_tinted_oversell_without_normal_lot"
+                             string="Block Tinted POS Oversell Without a Normal Lot"
+                             help="Control whether tinted products may be oversold when no normal manufactured lot is available.">
+                        <field name="block_tinted_oversell_without_normal_lot"/>
+                        <div class="text-muted">
+                            Off (default): hide existing POS-* temporary lots and continue the sale without reusing them. The backend creates a fresh temporary lot after POS completion.
+                        </div>
+                        <div class="text-muted">
+                            On: block the tinted-product sale until a normal lot from a completed duplicated Manufacturing Order is available.
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -44,6 +45,32 @@ class VendorPriceWizardLine(models.TransientModel):
     purchase_line_id = fields.Many2one('purchase.order.line', string='Purchase Order Line', readonly=True)
     currency_id = fields.Many2one('res.currency', string='Currency', readonly=True)
 
+    def _validate_for_bill(self):
+        """Profile extension hook for line-level validation."""
+        self.ensure_one()
+        if not self.vendor_price:
+            raise ValidationError(_(
+                'Vendor Price is required and must be a non-zero value for %(product)s.'
+            ) % {'product': self.product_id.display_name})
+
+    def _get_effective_bill_unit_price(self):
+        """Profile extension hook returning the tax-exclusive bill unit price."""
+        self.ensure_one()
+        return self.calculated_subtotal
+
+    def _get_effective_bill_discount(self):
+        self.ensure_one()
+        return self.applied_discount
+
+    def _get_promised_comparison_unit_vat_incl(self):
+        self.ensure_one()
+        return self.unit_price_vat_incl
+
+    def _prepare_profile_bill_line_vals(self):
+        """Profile extension hook for persistent audit values."""
+        self.ensure_one()
+        return {}
+
     @api.depends('vendor_price', 'applied_discount', 'applied_freight')
     def _compute_calculated_subtotal(self):
         for line in self:
@@ -83,8 +110,9 @@ class VendorPriceWizardLine(models.TransientModel):
     @api.depends('vendor_promised_cost_vat_incl', 'unit_price_vat_incl')
     def _compute_promised_cost_difference_vat_incl(self):
         for line in self:
+            actual_unit_price = line._get_promised_comparison_unit_vat_incl()
             line.promised_cost_difference_vat_incl = (
-                line.unit_price_vat_incl - line.vendor_promised_cost_vat_incl
+                actual_unit_price - line.vendor_promised_cost_vat_incl
                 if line.vendor_promised_cost_vat_incl
                 else 0.0
             )

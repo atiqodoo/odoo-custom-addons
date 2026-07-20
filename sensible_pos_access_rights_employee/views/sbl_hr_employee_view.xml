@@ -70,6 +70,7 @@
                         <group>
                             <field name="sbl_require_auth_cod_return_all" widget="boolean_toggle"/>
                             <field name="sbl_require_auth_cod_return_partial" widget="boolean_toggle"/>
+                            <field name="sbl_require_auth_cod_discount" widget="boolean_toggle"/>
                         </group>
                     </group>
                     <group name="sbl_pos_navigation_menu" string="Navigation Menu">

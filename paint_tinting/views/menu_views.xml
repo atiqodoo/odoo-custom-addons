@@ -97,4 +97,35 @@
               parent="menu_paint_tinting_config"
               action="action_colorant_mapping_wizard"
               sequence="10"/>
+
+    <menuitem id="menu_formula_management"
+              name="Formula Management"
+              parent="menu_paint_tinting_config"
+              sequence="20"/>
+
+    <menuitem id="menu_formula_families"
+              name="Formula Families"
+              parent="menu_formula_management"
+              action="action_tinting_formula"
+              sequence="10"/>
+
+    <menuitem id="menu_formula_versions"
+              name="Formula Versions"
+              parent="menu_formula_management"
+              action="action_tinting_formula_versions"
+              sequence="20"/>
+
+    <menuitem id="menu_formula_import"
+              name="Import Formula Drafts"
+              parent="menu_formula_management"
+              action="action_formula_import_wizard"
+              groups="paint_tinting.group_tint_formula_manager"
+              sequence="30"/>
+
+    <menuitem id="menu_formula_import_batches"
+              name="Formula Import Batches"
+              parent="menu_formula_management"
+              action="action_formula_import_batches"
+              groups="paint_tinting.group_tint_formula_manager"
+              sequence="40"/>
 </odoo>

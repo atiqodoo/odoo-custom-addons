@@ -15,17 +15,21 @@ class PurchaseOrder(models.Model):
     def action_create_invoice_wizard(self):
         """Open wizard to enter vendor bill prices"""
         self.ensure_one()
-        
-        _logger.info("=" * 80)
-        _logger.info(f"Opening vendor price wizard for PO: {self.name}")
-        _logger.info("=" * 80)
+        profile = self.partner_id.get_vendor_invoice_profile()
+        _logger.info(
+            '[VPC_OPEN] wizard_open_start po_id=%s po=%s vendor_id=%s profile=%s',
+            self.id,
+            self.name,
+            self.partner_id.id,
+            profile,
+        )
         
         # Create wizard
         wizard = self.env['vendor.price.wizard'].create({
             'purchase_id': self.id,
         })
         
-        _logger.info(f"Wizard created: ID {wizard.id}")
+        _logger.info('[VPC_OPEN] wizard_created wizard_id=%s po_id=%s', wizard.id, self.id)
         
         # Create wizard lines from PO lines
         line_count = 0
@@ -53,10 +57,27 @@ class PurchaseOrder(models.Model):
                 'currency_id': self.currency_id.id,
             })
             line_count += 1
-            _logger.info(f"  Line {line_count}: {po_line.product_id.display_name} - Received Qty To Bill: {received_qty} - Price: {po_line.price_unit} - Discount: {po_line.applied_discount}% - Freight: {po_line.applied_freight}% - Vendor Price: {wizard_line.vendor_price}")
+            _logger.info(
+                '[VPC_OPEN] line_created wizard_id=%s wizard_line_id=%s purchase_line_id=%s '
+                'product_id=%s received_to_bill=%s po_price=%s discount=%s freight=%s tax_ids=%s',
+                wizard.id,
+                wizard_line.id,
+                po_line.id,
+                po_line.product_id.id,
+                received_qty,
+                po_line.price_unit,
+                po_line.applied_discount,
+                po_line.applied_freight,
+                po_line.taxes_id.ids,
+            )
         
-        _logger.info(f"Created {line_count} wizard lines")
-        _logger.info("=" * 80)
+        _logger.info(
+            '[VPC_OPEN] wizard_ready wizard_id=%s po_id=%s profile=%s line_count=%s',
+            wizard.id,
+            self.id,
+            profile,
+            line_count,
+        )
 
         if not line_count:
             _logger.warning("No validated received quantities to invoice for PO %s", self.name)

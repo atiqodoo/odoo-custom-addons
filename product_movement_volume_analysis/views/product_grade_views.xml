@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_tag_form_volume_grade" model="ir.ui.view">
+        <field name="name">product.tag.form.volume.grade</field>
+        <field name="model">product.tag</field>
+        <field name="inherit_id" ref="product.product_tag_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="is_volume_reporting_grade"/>
+                <field name="volume_grade_parent_id"
+                       invisible="not is_volume_reporting_grade"
+                       context="{'default_is_volume_reporting_grade': True}"/>
+                <field name="volume_grade_path"
+                       readonly="1"
+                       invisible="not is_volume_reporting_grade"/>
+                <field name="volume_grade_root_id"
+                       readonly="1"
+                       invisible="not is_volume_reporting_grade"/>
+                <field name="volume_grade_level"
+                       readonly="1"
+                       invisible="not is_volume_reporting_grade"/>
+                <field name="is_volume_grade_leaf"
+                       readonly="1"
+                       invisible="not is_volume_reporting_grade"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Volume Grade Children" invisible="not is_volume_reporting_grade">
+                    <field name="volume_grade_child_ids"
+                           context="{'default_is_volume_reporting_grade': True}">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="is_volume_reporting_grade"/>
+                            <field name="volume_grade_path" readonly="1"/>
+                            <field name="is_volume_grade_leaf" readonly="1"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_tag_list_volume_grade" model="ir.ui.view">
+        <field name="name">product.tag.list.volume.grade</field>
+        <field name="model">product.tag</field>
+        <field name="inherit_id" ref="product.product_tag_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="is_volume_reporting_grade" optional="show"/>
+                <field name="volume_grade_parent_id" optional="show"/>
+                <field name="volume_grade_path" optional="show"/>
+                <field name="is_volume_grade_leaf" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_template_form_volume_grade" model="ir.ui.view">
+        <field name="name">product.template.form.volume.grade</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='general_information']//field[@name='categ_id']" position="after">
+                <field name="volume_reporting_grade_id" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

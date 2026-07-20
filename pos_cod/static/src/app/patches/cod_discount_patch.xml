@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_cod.CodOrdersScreen.CodDiscountPatch"
+       t-inherit="pos_cod.CodOrdersScreen"
+       t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('cod-actions')]" position="inside">
+            <button class="btn btn-light"
+                    t-att-disabled="state.collecting or openAmount(order) &lt;= 0"
+                    t-on-click.stop="() => this.onCodDiscount(order)">
+                <i class="fa fa-tag me-1"/>
+                Discount
+            </button>
+        </xpath>
+    </t>
+</templates>

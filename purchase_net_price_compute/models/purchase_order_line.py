@@ -44,9 +44,137 @@ class PurchaseOrderLine(models.Model):
         currency_field='currency_id',
         store=True,
         index=True,
-        tracking=True,
         help="VAT-inclusive cost promised by the vendor for this purchase line.",
     )
+
+    volume_reporting_grade_id = fields.Many2one(
+        'product.tag',
+        string='Grade',
+        compute='_compute_lpo_grade_volume_fields',
+        store=True,
+        readonly=True,
+        index=True,
+        help='Movement-volume reporting grade mapped from the product tags.',
+    )
+    volume_reference_uom_id = fields.Many2one(
+        'uom.uom',
+        string='Volume UoM',
+        compute='_compute_lpo_grade_volume_fields',
+        store=True,
+        readonly=True,
+    )
+    volume_conversion_ratio = fields.Float(
+        string='Volume Ratio',
+        compute='_compute_lpo_grade_volume_fields',
+        store=True,
+        readonly=True,
+        digits=(16, 8),
+    )
+    order_line_grade_volume = fields.Float(
+        string='Grade Volume',
+        compute='_compute_lpo_grade_volume_fields',
+        store=True,
+        readonly=True,
+        digits='Product Unit of Measure',
+        help='Order line quantity converted to the reference UoM used by movement-volume analysis.',
+    )
+    order_line_grade_volume_label = fields.Char(
+        string='Grade Volume',
+        compute='_compute_lpo_grade_volume_fields',
+        store=True,
+        readonly=True,
+    )
+    order_line_grade_amount_vat_incl = fields.Monetary(
+        string='Grade Value (VAT Incl.)',
+        compute='_compute_order_line_grade_amount_vat_incl',
+        store=True,
+        readonly=True,
+        currency_field='currency_id',
+        help='VAT-inclusive purchase line value used in grade-wise RFQ/LPO comparisons.',
+    )
+
+    @api.depends('price_total')
+    def _compute_order_line_grade_amount_vat_incl(self):
+        for line in self:
+            line.order_line_grade_amount_vat_incl = line.price_total or 0.0
+
+    def _get_lpo_volume_reference_uom(self):
+        self.ensure_one()
+        if not self.product_uom:
+            return self.env['uom.uom']
+        return self.env['product.movement.volume.builder']._get_category_reference_uom(
+            self.product_uom
+        )
+
+    def _get_lpo_volume_reporting_grade(self):
+        self.ensure_one()
+        if not self.product_id:
+            return self.env['product.tag']
+        grades = self.product_id.all_product_tag_ids.filtered(
+            'is_volume_reporting_grade'
+        ).sorted(key=lambda tag: (tag.sequence, tag.id))
+        if len(grades) > 1:
+            _logger.warning(
+                "LPO_GRADE_AMBIGUOUS line_id=%s product_id=%s grade_ids=%s; using grade_id=%s",
+                self.id,
+                self.product_id.id,
+                grades.ids,
+                grades[0].id,
+            )
+        return grades[:1]
+
+    @api.depends(
+        'product_id',
+        'product_id.all_product_tag_ids',
+        'product_id.all_product_tag_ids.is_volume_reporting_grade',
+        'product_qty',
+        'product_uom',
+        'display_type',
+    )
+    def _compute_lpo_grade_volume_fields(self):
+        for line in self:
+            if line.display_type or not line.product_id or not line.product_uom:
+                line.volume_reporting_grade_id = False
+                line.volume_reference_uom_id = False
+                line.volume_conversion_ratio = 0.0
+                line.order_line_grade_volume = 0.0
+                line.order_line_grade_volume_label = False
+                continue
+
+            grade = line._get_lpo_volume_reporting_grade()
+            try:
+                reference_uom = line._get_lpo_volume_reference_uom()
+                grade_volume = line.product_uom._compute_quantity(
+                    line.product_qty or 0.0,
+                    reference_uom,
+                    round=False,
+                )
+            except Exception as error:
+                _logger.warning(
+                    "LPO_GRADE_VOLUME_FAILED line_id=%s product_id=%s uom_id=%s error=%s",
+                    line.id,
+                    line.product_id.id,
+                    line.product_uom.id,
+                    error,
+                )
+                reference_uom = self.env['uom.uom']
+                grade_volume = 0.0
+
+            line.volume_reporting_grade_id = grade
+            line.volume_reference_uom_id = reference_uom
+            line.volume_conversion_ratio = (
+                grade_volume / line.product_qty if line.product_qty else 0.0
+            )
+            line.order_line_grade_volume = grade_volume
+            line.order_line_grade_volume_label = (
+                f"{line.order_id._lpo_report_format_float(grade_volume, 2)} {reference_uom.name}"
+                if reference_uom
+                else line.order_id._lpo_report_format_float(grade_volume, 2)
+            )
+
+    @api.onchange('product_id', 'product_qty', 'product_uom')
+    def _onchange_lpo_grade_volume_fields(self):
+        self._compute_lpo_grade_volume_fields()
 
     def _get_rfq_bill_price_check_count(self):
         value = self.env['ir.config_parameter'].sudo().get_param(
@@ -369,9 +497,35 @@ class PurchaseOrderLine(models.Model):
             )
             rfq_lines._apply_lowest_recent_bill_price()
             rfq_lines._compute_net_price()
+        if not self.env.context.get('skip_lpo_grade_volume_line_chatter'):
+            lines.mapped('order_id')._post_lpo_grade_volume_summary_change({})
         return lines
 
     def write(self, vals):
+        grade_volume_trigger_fields = {
+            'product_id',
+            'product_qty',
+            'product_uom',
+            'display_type',
+            'order_id',
+            'price_unit',
+            'discount',
+            'taxes_id',
+            'net_price',
+            'price_subtotal',
+            'price_tax',
+            'price_total',
+        }
+        previous_summaries = {}
+        if (
+            not self.env.context.get('skip_lpo_grade_volume_line_chatter')
+            and grade_volume_trigger_fields.intersection(vals)
+        ):
+            previous_summaries = {
+                order.id: order.lpo_grade_volume_summary
+                for order in self.mapped('order_id')
+            }
+
         res = super().write(vals)
         trigger_fields = {
             'product_id',
@@ -390,7 +544,22 @@ class PurchaseOrderLine(models.Model):
             )
             rfq_lines._apply_lowest_recent_bill_price()
             rfq_lines._compute_net_price()
+        if previous_summaries:
+            self.mapped('order_id')._post_lpo_grade_volume_summary_change(previous_summaries)
         return res
+
+    def unlink(self):
+        previous_summaries = {}
+        if not self.env.context.get('skip_lpo_grade_volume_line_chatter'):
+            previous_summaries = {
+                order.id: order.lpo_grade_volume_summary
+                for order in self.mapped('order_id')
+            }
+        orders = self.mapped('order_id')
+        result = super().unlink()
+        if previous_summaries:
+            orders._post_lpo_grade_volume_summary_change(previous_summaries)
+        return result
 
     def _prepare_invoice_line(self, **optional_values):
         """

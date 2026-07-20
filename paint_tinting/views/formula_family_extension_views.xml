@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tinting_formula_form_versioning" model="ir.ui.view">
+        <field name="name">tinting.formula.form.versioning</field>
+        <field name="model">tinting.formula</field>
+        <field name="inherit_id" ref="paint_tinting.view_tinting_formula_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_create_draft_version" string="Create Draft Version" type="object"
+                        class="btn-primary" groups="paint_tinting.group_tint_formula_manager"/>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_view_versions" type="object" class="oe_stat_button" icon="fa-code-fork">
+                        <field name="version_count" widget="statinfo" string="Versions"/>
+                    </button>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='times_used']/.." position="inside">
+                <field name="latest_version_id" readonly="1"/>
+                <field name="default_version_id" readonly="1"/>
+                <field name="approved_version_count" readonly="1"/>
+            </xpath>
+            <xpath expr="//page[@name='formula_lines']" position="attributes">
+                <attribute name="string">Legacy Recipe Snapshot</attribute>
+                <attribute name="invisible">version_count &gt; 0</attribute>
+            </xpath>
+            <xpath expr="//page[@name='formula_lines']/field[@name='formula_line_ids']" position="attributes">
+                <attribute name="readonly">1</attribute>
+            </xpath>
+            <xpath expr="//page[@name='formula_lines']" position="before">
+                <page string="Current Version Recipe" name="current_version_recipe"
+                      invisible="version_count == 0">
+                    <group>
+                        <group>
+                            <field name="displayed_version_id" readonly="1"/>
+                            <field name="displayed_version_state" readonly="1" widget="badge"/>
+                        </group>
+                    </group>
+                    <field name="displayed_version_line_ids" readonly="1" nolabel="1">
+                        <list create="0" delete="0">
+                            <field name="sequence" widget="handle"/>
+                            <field name="colorant_id"/>
+                            <field name="colorant_code"/>
+                            <field name="shots"/>
+                            <field name="ml_volume"/>
+                            <field name="qty_litres"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+            <xpath expr="//page[@name='formula_lines']" position="after">
+                <page string="Version History" name="version_history">
+                    <field name="version_ids" readonly="1">
+                        <list>
+                            <field name="version_number"/>
+                            <field name="name"/>
+                            <field name="state" widget="badge"/>
+                            <field name="is_default"/>
+                            <field name="origin"/>
+                            <field name="total_shots"/>
+                            <field name="change_summary"/>
+                            <field name="created_date"/>
+                            <field name="approved_date"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_tinting_formula_list_versioning" model="ir.ui.view">
+        <field name="name">tinting.formula.list.versioning</field>
+        <field name="model">tinting.formula</field>
+        <field name="inherit_id" ref="paint_tinting.view_tinting_formula_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="before">
+                <field name="version_count"/>
+                <field name="latest_version_id" optional="show"/>
+                <field name="default_version_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

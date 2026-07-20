@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_res_config_settings_direct_thermal_printer" model="ir.ui.view">
+        <field name="name">res.config.settings.direct.thermal.printer</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@id='pos_interface_section']" position="inside">
+                <setting string="Direct Thermal Printer"
+                         help="Print ESC/POS receipts directly after payment validation without the IoT Box.">
+                    <field name="dtrp_enabled"/>
+                    <div class="content-group mt8" invisible="not dtrp_enabled">
+                        <div class="row mt8">
+                            <label for="dtrp_connection_mode" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_connection_mode"/></div>
+                        </div>
+                        <div class="row mt8" invisible="dtrp_connection_mode != 'local_bridge'">
+                            <label for="dtrp_bridge_url" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_bridge_url"/></div>
+                        </div>
+                        <div class="row mt8" invisible="dtrp_connection_mode != 'local_bridge'">
+                            <label for="dtrp_bridge_token" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_bridge_token" password="True"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_printer_identifier" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_printer_identifier"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_paper_width" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_paper_width"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_receipt_profile" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_receipt_profile"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_codepage" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_codepage"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_receipt_copies" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_receipt_copies"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_auto_print_on_validate" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_auto_print_on_validate"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_skip_receipt_screen" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_skip_receipt_screen"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_cut_paper" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_cut_paper"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_open_cash_drawer" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_open_cash_drawer"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_print_customer" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_print_customer"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_move_negative_adjustments_to_payments" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_move_negative_adjustments_to_payments"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_print_loyalty_transaction" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_print_loyalty_transaction"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_receipt_metadata_template" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7">
+                                <field name="dtrp_receipt_metadata_template"
+                                       placeholder="{company_name}&#10;{street}&#10;{phone}&#10;VAT: {vat}"/>
+                            </div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_terms_conditions" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_terms_conditions"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_bottom_feed_lines" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_bottom_feed_lines"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_timeout_ms" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_timeout_ms"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_retry_count" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_retry_count"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_show_error_popup" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_show_error_popup"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_fallback_to_receipt_screen" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_fallback_to_receipt_screen"/></div>
+                        </div>
+                        <div class="row mt8">
+                            <label for="dtrp_debug_logging" class="col-lg-5 o_light_label"/>
+                            <div class="col-lg-7"><field name="dtrp_debug_logging"/></div>
+                        </div>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

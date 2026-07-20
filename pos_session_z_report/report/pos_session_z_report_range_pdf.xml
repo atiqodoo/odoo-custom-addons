@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_pos_session_z_report_range_pdf" model="ir.actions.report">
+        <field name="name">Z-Report Summary PDF</field>
+        <field name="model">pos.session.z.report.range.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">pos_session_z_report.pos_session_z_report_range_pdf</field>
+        <field name="report_file">pos_session_z_report.pos_session_z_report_range_pdf</field>
+        <field name="print_report_name">'Z-Report_Summary_%s_to_%s' % (object.date_from, object.date_to)</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <template id="pos_session_z_report_range_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="o" t-value="doc['wizard']"/>
+                <t t-set="s" t-value="doc['summary']"/>
+                <t t-set="sym" t-value="doc['sym']"/>
+                <t t-call="web.internal_layout">
+                    <div class="page zrs-page">
+                        <style>
+                            .zrs-page {
+                                font-family: Arial, sans-serif;
+                                font-size: 10px;
+                                color: #1f2933;
+                            }
+                            .zrs-title {
+                                background: #12343b;
+                                color: #fff;
+                                padding: 10px 12px;
+                                text-align: center;
+                                letter-spacing: 1px;
+                                border-bottom: 4px solid #2d8f85;
+                            }
+                            .zrs-title h2 {
+                                margin: 0;
+                                font-size: 18px;
+                            }
+                            .zrs-subtitle {
+                                color: #d5f3ef;
+                                font-size: 10px;
+                                margin-top: 2px;
+                            }
+                            .zrs-band {
+                                background: #e7f4f2;
+                                color: #12343b;
+                                font-weight: bold;
+                                padding: 5px 7px;
+                                margin: 8px 0 4px 0;
+                                border-left: 4px solid #2d8f85;
+                            }
+                            .zrs-table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-bottom: 8px;
+                            }
+                            .zrs-table th {
+                                background: #2d8f85;
+                                color: #fff;
+                                padding: 4px 5px;
+                                text-align: left;
+                                border: 1px solid #1c6b64;
+                            }
+                            .zrs-table td {
+                                padding: 4px 5px;
+                                border: 1px solid #bddbd7;
+                            }
+                            .zrs-soft {
+                                background: #f5fbfa;
+                            }
+                            .zrs-money {
+                                text-align: right;
+                                white-space: nowrap;
+                            }
+                            .zrs-good {
+                                color: #137547;
+                                font-weight: bold;
+                            }
+                            .zrs-bad {
+                                color: #b42318;
+                                font-weight: bold;
+                            }
+                            .zrs-kpi {
+                                width: 24%;
+                                display: inline-block;
+                                vertical-align: top;
+                                margin-right: 1%;
+                                border: 1px solid #bddbd7;
+                                background: #f5fbfa;
+                                min-height: 44px;
+                            }
+                            .zrs-kpi-label {
+                                background: #d8eee9;
+                                color: #12343b;
+                                font-weight: bold;
+                                padding: 4px 6px;
+                            }
+                            .zrs-kpi-value {
+                                padding: 7px 6px;
+                                font-size: 14px;
+                                font-weight: bold;
+                                text-align: right;
+                            }
+                            .zrs-note {
+                                color: #6b7280;
+                                font-size: 8px;
+                                margin-top: 4px;
+                            }
+                            .zrs-control-band {
+                                background: #eaf2ff;
+                                color: #17345f;
+                                font-weight: bold;
+                                padding: 5px 7px;
+                                margin: 8px 0 4px 0;
+                                border-left: 4px solid #3563a8;
+                            }
+                            .zrs-control-table th {
+                                background: #3563a8;
+                                border-color: #244a82;
+                            }
+                            .zrs-control-table td {
+                                border-color: #b9c9e5;
+                            }
+                            .zrs-receipts-title {
+                                background: #155e35;
+                                color: #fff;
+                                padding: 10px 12px;
+                                text-align: center;
+                                letter-spacing: 1px;
+                                border-bottom: 4px solid #86c58d;
+                            }
+                            .zrs-receipts-title h2 {
+                                margin: 0;
+                                font-size: 18px;
+                            }
+                            .zrs-receipts-subtitle {
+                                color: #e7f8e9;
+                                font-size: 10px;
+                                margin-top: 2px;
+                            }
+                            .zrs-receipts-band {
+                                background: #e6f4e8;
+                                color: #155e35;
+                                font-weight: bold;
+                                padding: 5px 7px;
+                                margin: 10px 0 3px 0;
+                                border-left: 4px solid #3f9a4b;
+                            }
+                            .zrs-receipts-hint {
+                                color: #48644f;
+                                font-style: italic;
+                                margin: 0 0 4px 0;
+                            }
+                            .zrs-receipts-table th {
+                                background: #3f9a4b;
+                                border-color: #2f7338;
+                            }
+                            .zrs-receipts-table td {
+                                border-color: #bad9be;
+                            }
+                            .zrs-receipts-soft {
+                                background: #f5fbf5;
+                            }
+                            .zrs-receipts-total td {
+                                background: #d8efd9;
+                                color: #155e35;
+                                font-weight: bold;
+                            }
+                            .zrs-sessions-title {
+                                background: #2e335f;
+                                color: #fff;
+                                padding: 10px 12px;
+                                text-align: center;
+                                letter-spacing: 1px;
+                                border-bottom: 4px solid #8890d0;
+                            }
+                            .zrs-sessions-title h2 {
+                                margin: 0;
+                                font-size: 18px;
+                            }
+                            .zrs-sessions-subtitle {
+                                color: #e4e7ff;
+                                font-size: 10px;
+                                margin-top: 2px;
+                            }
+                            .zrs-sessions-table th {
+                                background: #5961aa;
+                                border-color: #3e467f;
+                            }
+                            .zrs-sessions-table td {
+                                border-color: #c3c7e8;
+                            }
+                            .zrs-sessions-soft {
+                                background: #f6f7ff;
+                            }
+                        </style>
+
+                        <div class="zrs-title">
+                            <h2>Z - REPORT SUMMARY</h2>
+                            <div class="zrs-subtitle">
+                                <t t-esc="doc['period_label']"/> |
+                                <t t-esc="o.date_from"/> to <t t-esc="o.date_to"/>
+                            </div>
+                        </div>
+
+                        <div class="zrs-band">Report Filters</div>
+                        <table class="zrs-table">
+                            <tbody>
+                                <tr>
+                                    <td style="font-weight:bold;">Period</td>
+                                    <td><t t-esc="doc['period_label']"/></td>
+                                    <td style="font-weight:bold;">Sessions</td>
+                                    <td><t t-esc="len(doc['sessions'])"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight:bold;">Shops</td>
+                                    <td>
+                                        <t t-if="o.config_ids"><t t-esc="', '.join(o.config_ids.mapped('name'))"/></t>
+                                        <t t-else="">All</t>
+                                    </td>
+                                    <td style="font-weight:bold;">Include In-Progress</td>
+                                    <td><t t-esc="'Yes' if o.include_in_progress else 'No'"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="zrs-band">Totals</div>
+                        <div>
+                            <div class="zrs-kpi">
+                                <div class="zrs-kpi-label">Total Sales</div>
+                                <div class="zrs-kpi-value"><t t-esc="'{:,.2f}'.format(s['sales_total'])"/> <t t-esc="sym"/></div>
+                            </div>
+                            <div class="zrs-kpi">
+                                <div class="zrs-kpi-label">Transactions</div>
+                                <div class="zrs-kpi-value"><t t-esc="s['transactions']"/></div>
+                            </div>
+                            <div class="zrs-kpi">
+                                <div class="zrs-kpi-label">Total Profit</div>
+                                <div class="zrs-kpi-value zrs-good"><t t-esc="'{:,.2f}'.format(s['profit_total'])"/> <t t-esc="sym"/></div>
+                            </div>
+                            <div class="zrs-kpi" style="margin-right:0;">
+                                <div class="zrs-kpi-label">Profit Margin</div>
+                                <div class="zrs-kpi-value"><t t-esc="'{:.2f}%'.format(s['margin_pct'])"/></div>
+                            </div>
+                        </div>
+
+                        <table class="zrs-table" style="margin-top:8px;">
+                            <tbody>
+                                <tr class="zrs-soft">
+                                    <td style="font-weight:bold;">Total Cost</td>
+                                    <td class="zrs-money"><t t-esc="'{:,.2f}'.format(s['cost_total'])"/> <t t-esc="sym"/></td>
+                                    <td style="font-weight:bold;">Cash Expected</td>
+                                    <td class="zrs-money"><t t-esc="'{:,.2f}'.format(s['cash_expected'])"/> <t t-esc="sym"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight:bold;">Cash Counted</td>
+                                    <td class="zrs-money"><t t-esc="'{:,.2f}'.format(s['cash_counted'])"/> <t t-esc="sym"/></td>
+                                    <td style="font-weight:bold;">Cash Difference</td>
+                                    <td t-attf-class="zrs-money {{ 'zrs-bad' if s['cash_difference'] &lt; 0 else 'zrs-good' }}">
+                                        <t t-esc="'{:,.2f}'.format(s['cash_difference'])"/> <t t-esc="sym"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="zrs-control-band">Session Control Cash Movement Sums</div>
+                        <table class="zrs-table zrs-control-table">
+                            <thead>
+                                <tr>
+                                    <th>Cash Opening</th>
+                                    <th>Blind Audit Cash Out</th>
+                                    <th>COD Cash Collections</th>
+                                    <th>POS Cash Sales</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="zrs-soft">
+                                    <td class="zrs-money"><t t-esc="'{:,.2f}'.format(s['cash_opening'])"/> <t t-esc="sym"/></td>
+                                    <td class="zrs-money"><t t-esc="'{:,.2f}'.format(s['blind_audit_cashout'])"/> <t t-esc="sym"/></td>
+                                    <td class="zrs-money"><t t-esc="'{:,.2f}'.format(s['cod_cash_collections'])"/> <t t-esc="sym"/></td>
+                                    <td class="zrs-money"><t t-esc="'{:,.2f}'.format(s['pos_cash_sales'])"/> <t t-esc="sym"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="zrs-band">Other Payment Methods</div>
+                        <table class="zrs-table">
+                            <thead>
+                                <tr>
+                                    <th>Payment Method</th>
+                                    <th style="text-align:right;">Amount</th>
+                                    <th style="text-align:right;">Currency</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="doc['noncash_rows']">
+                                    <t t-foreach="doc['noncash_rows']" t-as="pm">
+                                        <tr t-attf-class="{{ 'zrs-soft' if pm_index % 2 == 0 else '' }}">
+                                            <td><t t-esc="pm[0]"/></td>
+                                            <td class="zrs-money"><t t-esc="'{:,.2f}'.format(pm[1])"/></td>
+                                            <td class="zrs-money"><t t-esc="sym"/></td>
+                                        </tr>
+                                    </t>
+                                </t>
+                                <t t-else="">
+                                    <tr><td colspan="3" style="color:#6b7280; font-style:italic;">No other payment methods in this period.</td></tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <div class="zrs-band">Session Activity Summary</div>
+                        <table class="zrs-table">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Created / Issued / Reg.</th>
+                                    <th style="text-align:right;">Amount</th>
+                                    <th>Used / Redeemed / Rec.</th>
+                                    <th style="text-align:right;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc['activity_rows']" t-as="activity">
+                                    <tr t-attf-class="{{ 'zrs-soft' if activity_index % 2 == 0 else '' }}">
+                                        <td style="font-weight:bold;"><t t-esc="activity[0]"/></td>
+                                        <td><t t-esc="activity[1]['left_label']"/></td>
+                                        <td class="zrs-money"><t t-esc="'{:,.2f}'.format(activity[1]['left_val'])"/></td>
+                                        <td><t t-esc="activity[1]['right_label']"/></td>
+                                        <td class="zrs-money"><t t-esc="'{:,.2f}'.format(activity[1]['right_val'])"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <div style="page-break-before: always;"></div>
+
+                        <div class="zrs-receipts-title">
+                            <h2>RECEIPTS DETAIL</h2>
+                            <div class="zrs-receipts-subtitle">
+                                <t t-esc="doc['period_label']"/> |
+                                <t t-esc="o.date_from"/> to <t t-esc="o.date_to"/>
+                            </div>
+                        </div>
+
+                        <t t-foreach="doc['receipt_sections']" t-as="section">
+                            <div class="zrs-receipts-band"><t t-esc="section['title']"/></div>
+                            <p class="zrs-receipts-hint"><t t-esc="section['subtitle']"/></p>
+                            <table class="zrs-table zrs-receipts-table">
+                                <thead>
+                                    <tr>
+                                        <th>Payment Method</th>
+                                        <th style="text-align:right;">Transactions</th>
+                                        <th style="text-align:right;">Amount</th>
+                                        <th style="text-align:right;">Currency</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-if="section['rows']">
+                                        <t t-foreach="section['rows']" t-as="receipt">
+                                            <tr t-attf-class="{{ 'zrs-receipts-soft' if receipt_index % 2 == 0 else '' }}">
+                                                <td><t t-esc="receipt['name']"/></td>
+                                                <td class="zrs-money"><t t-esc="receipt['count']"/></td>
+                                                <td class="zrs-money"><t t-esc="'{:,.2f}'.format(receipt['amount'])"/></td>
+                                                <td class="zrs-money"><t t-esc="sym"/></td>
+                                            </tr>
+                                        </t>
+                                        <tr class="zrs-receipts-total">
+                                            <td>TOTAL</td>
+                                            <td class="zrs-money"><t t-esc="section['total_count']"/></td>
+                                            <td class="zrs-money"><t t-esc="'{:,.2f}'.format(section['total_amount'])"/></td>
+                                            <td class="zrs-money"><t t-esc="sym"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-else="">
+                                        <tr>
+                                            <td colspan="4" style="color:#6b7280; font-style:italic;">
+                                                <t t-esc="section['empty']"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+
+                        <p class="zrs-note">
+                            Deposit / settle split is based on partner account balance at report generation time. COD payments are sourced from COD collection records.
+                        </p>
+
+                        <div style="page-break-before: always;"></div>
+
+                        <div class="zrs-sessions-title">
+                            <h2>INCLUDED SESSIONS</h2>
+                            <div class="zrs-sessions-subtitle"><t t-esc="doc['period_label']"/></div>
+                        </div>
+
+                        <table class="zrs-table zrs-sessions-table" style="font-size:8px; margin-top:8px;">
+                            <thead>
+                                <tr>
+                                    <th>Session</th>
+                                    <th>Shop</th>
+                                    <th>Opened</th>
+                                    <th>Closed</th>
+                                    <th>Status</th>
+                                    <th style="text-align:right;">Txns</th>
+                                    <th style="text-align:right;">Sales</th>
+                                    <th style="text-align:right;">Cash Diff</th>
+                                    <th style="text-align:right;">Profit</th>
+                                    <th style="text-align:right;">Margin</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc['session_rows']" t-as="row">
+                                    <tr t-attf-class="{{ 'zrs-sessions-soft' if row_index % 2 == 0 else '' }}">
+                                        <td style="font-weight:bold;"><t t-esc="row['name']"/></td>
+                                        <td><t t-esc="row['shop']"/></td>
+                                        <td><t t-esc="row['start_eat']"/></td>
+                                        <td><t t-esc="row['stop_eat']"/></td>
+                                        <td><t t-esc="row['state']"/></td>
+                                        <td class="zrs-money"><t t-esc="row['transactions']"/></td>
+                                        <td class="zrs-money"><t t-esc="'{:,.2f}'.format(row['sales_total'])"/></td>
+                                        <td t-attf-class="zrs-money {{ 'zrs-bad' if row['cash_difference'] &lt; 0 else 'zrs-good' }}">
+                                            <t t-esc="'{:,.2f}'.format(row['cash_difference'])"/>
+                                        </td>
+                                        <td class="zrs-money zrs-good"><t t-esc="'{:,.2f}'.format(row['profit_total'])"/></td>
+                                        <td class="zrs-money"><t t-esc="'{:.2f}%'.format(row['margin_pct'])"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <p class="zrs-note">
+                            Generated from live POS session records at print time. Dates are shown in EAT.
+                        </p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_purchase_order_form_vendor_promotions" model="ir.ui.view">
+        <field name="name">purchase.order.form.vendor.promotions</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="vendor_invoice_profile" invisible="1"/>
+            </xpath>
+            <xpath expr="//header/button[@name='button_confirm'][1]" position="before">
+                <button name="action_apply_vendor_promotions"
+                        type="object"
+                        string="Apply Promotions"
+                        class="btn-secondary"
+                        invisible="state not in ('draft', 'sent')"/>
+            </xpath>
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_promotion_applications"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-gift"
+                        invisible="promotion_application_count == 0">
+                    <field name="promotion_application_count" widget="statinfo" string="Promotions"/>
+                </button>
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/list" position="attributes">
+                <attribute name="decoration-info">is_promotion_foc</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_qty']" position="after">
+                <field name="vendor_invoice_profile" column_invisible="1"/>
+                <field name="is_promotion_foc" optional="show" readonly="1"/>
+                <field name="promotion_parent_line_id" column_invisible="1"/>
+                <field name="promotion_id" optional="show" readonly="state not in ('draft', 'sent')"/>
+                <field name="promotion_foc_qty"
+                       string="Promised FOC"
+                       optional="show"
+                       readonly="1"
+                       column_invisible="parent.partner_id == False"/>
+                <field name="promotion_total_expected_qty"
+                       string="Total Expected"
+                       optional="show"
+                       readonly="1"/>
+                <field name="gamma_list_unit_price"
+                       optional="show"
+                       column_invisible="parent.vendor_invoice_profile != 'gamma_paints'"
+                       readonly="is_promotion_foc or parent.state not in ('draft', 'sent')"/>
+                <field name="gamma_discount_percentage"
+                       optional="show"
+                       column_invisible="parent.vendor_invoice_profile != 'gamma_paints'"
+                       readonly="is_promotion_foc or parent.state not in ('draft', 'sent')"/>
+                <field name="gamma_tint_type"
+                       optional="show"
+                       column_invisible="parent.vendor_invoice_profile != 'gamma_paints'"
+                       readonly="is_promotion_foc or parent.state not in ('draft', 'sent')"/>
+                <field name="gamma_tint_percentage"
+                       optional="show"
+                       column_invisible="parent.vendor_invoice_profile != 'gamma_paints'"
+                       readonly="is_promotion_foc or parent.state not in ('draft', 'sent')"/>
+                <field name="gamma_tint_charge"
+                       optional="show"
+                       column_invisible="parent.vendor_invoice_profile != 'gamma_paints'"
+                       readonly="1"/>
+                <field name="gamma_unit_cost_excl_vat"
+                       optional="show"
+                       column_invisible="parent.vendor_invoice_profile != 'gamma_paints'"
+                       readonly="1"/>
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="attributes">
+                <attribute name="readonly">is_promotion_foc or parent.state not in ('draft', 'sent')</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

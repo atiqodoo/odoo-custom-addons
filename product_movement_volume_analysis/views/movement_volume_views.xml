@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_product_movement_volume_list" model="ir.ui.view">
+        <field name="name">product.movement.volume.list</field>
+        <field name="model">product.movement.volume</field>
+        <field name="arch" type="xml">
+            <list string="Product Movement Volume" create="0" edit="0" delete="0">
+                <field name="date"/>
+                <field name="reference"/>
+                <field name="operation_family"/>
+                <field name="business_channel"/>
+                <field name="product_id"/>
+                <field name="grade_id" optional="show"/>
+                <field name="grade_source" optional="show"/>
+                <field name="tint_mapping_status" optional="show"/>
+                <field name="tint_mapping_reason" optional="hide"/>
+                <field name="manufacturing_component_role" optional="hide"/>
+                <field name="tint_base_product_id" optional="hide"/>
+                <field name="transaction_qty"/>
+                <field name="transaction_uom_id"/>
+                <field name="conversion_ratio" optional="show"/>
+                <field name="normalized_qty"/>
+                <field name="reference_uom_id"/>
+                <field name="uom_category_id" optional="show"/>
+                <field name="physical_volume" optional="hide"/>
+                <field name="physical_volume_uom_name" optional="hide"/>
+                <field name="source_warehouse_id" optional="show"/>
+                <field name="destination_warehouse_id" optional="show"/>
+                <field name="source_location_id" optional="hide"/>
+                <field name="destination_location_id" optional="hide"/>
+                <field name="lot_id" optional="hide"/>
+                <field name="pos_order_id" optional="hide"/>
+                <field name="pos_session_id" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_product_movement_volume_form" model="ir.ui.view">
+        <field name="name">product.movement.volume.form</field>
+        <field name="model">product.movement.volume</field>
+        <field name="arch" type="xml">
+            <form string="Product Movement Volume" create="0" edit="0" delete="0">
+                <header>
+                    <button name="action_remap_tinting_lineage"
+                            string="Remap Tinting Lineage"
+                            type="object"
+                            class="btn-secondary"
+                            groups="stock.group_stock_manager"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Movement">
+                            <field name="reference"/>
+                            <field name="date"/>
+                            <field name="operation_family"/>
+                            <field name="business_channel"/>
+                            <field name="is_return"/>
+                            <field name="company_id"/>
+                        </group>
+                        <group string="Source">
+                            <field name="move_line_id"/>
+                            <field name="move_id"/>
+                            <field name="picking_id"/>
+                            <field name="origin"/>
+                            <field name="partner_id"/>
+                            <field name="responsible_user_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Product Classification">
+                            <field name="product_id"/>
+                            <field name="product_tmpl_id"/>
+                            <field name="categ_id"/>
+                            <field name="grade_id"/>
+                            <field name="grade_source"/>
+                            <field name="tags_snapshot"/>
+                        </group>
+                        <group string="Tinting Lineage">
+                            <field name="is_tinted_lineage_movement"/>
+                            <field name="tint_mapping_status"/>
+                            <field name="tint_mapping_reason"/>
+                            <field name="tint_mapping_attempt_date"/>
+                            <field name="manufacturing_component_role"/>
+                            <field name="tint_base_product_id"/>
+                            <field name="tint_base_categ_id"/>
+                        </group>
+                        <group string="UoM Normalization">
+                            <field name="transaction_qty"/>
+                            <field name="transaction_uom_id"/>
+                            <field name="conversion_ratio"/>
+                            <field name="normalized_qty"/>
+                            <field name="reference_uom_id"/>
+                            <field name="uom_category_id"/>
+                            <field name="unit_physical_volume"/>
+                            <field name="physical_volume"/>
+                            <field name="physical_volume_uom_name"/>
+                        </group>
+                    </group>
+                    <group string="Analytical Measures" col="4">
+                        <field name="gross_movement_qty"/>
+                        <field name="inventory_signed_qty"/>
+                        <field name="sales_net_qty"/>
+                        <field name="receipt_net_qty"/>
+                        <field name="production_output_qty"/>
+                        <field name="production_consumption_qty"/>
+                        <field name="return_qty"/>
+                    </group>
+                    <group>
+                        <group string="Route">
+                            <field name="source_location_id"/>
+                            <field name="destination_location_id"/>
+                            <field name="source_warehouse_id"/>
+                            <field name="destination_warehouse_id"/>
+                            <field name="picking_type_id"/>
+                            <field name="pos_order_id"/>
+                            <field name="pos_session_id"/>
+                        </group>
+                        <group string="Traceability">
+                            <field name="lot_id"/>
+                            <field name="package_id"/>
+                            <field name="result_package_id"/>
+                            <field name="owner_id"/>
+                            <field name="build_source"/>
+                            <field name="source_write_date"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_product_movement_volume_pivot" model="ir.ui.view">
+        <field name="name">product.movement.volume.pivot</field>
+        <field name="model">product.movement.volume</field>
+        <field name="arch" type="xml">
+            <pivot string="Product Movement Volume" sample="1" disable_linking="0">
+                <field name="date" type="col" interval="month"/>
+                <field name="reference_uom_id" type="row"/>
+                <field name="operation_family" type="row"/>
+                <field name="grade_id" type="row"/>
+                <field name="gross_movement_qty" type="measure"/>
+                <field name="sales_net_qty" type="measure"/>
+                <field name="receipt_net_qty" type="measure"/>
+                <field name="production_output_qty" type="measure"/>
+                <field name="production_consumption_qty" type="measure"/>
+                <field name="return_qty" type="measure"/>
+                <field name="physical_volume" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_product_movement_volume_graph" model="ir.ui.view">
+        <field name="name">product.movement.volume.graph</field>
+        <field name="model">product.movement.volume</field>
+        <field name="arch" type="xml">
+            <graph string="Movement Volume Trend" type="bar" sample="1">
+                <field name="date" interval="month"/>
+                <field name="reference_uom_id"/>
+                <field name="gross_movement_qty" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_product_movement_volume_search" model="ir.ui.view">
+        <field name="name">product.movement.volume.search</field>
+        <field name="model">product.movement.volume</field>
+        <field name="arch" type="xml">
+            <search string="Movement Volume">
+                <field name="reference"/>
+                <field name="product_id"/>
+                <field name="categ_id"/>
+                <field name="grade_id"/>
+                <field name="grade_source"/>
+                <field name="tint_mapping_status"/>
+                <field name="manufacturing_component_role"/>
+                <field name="tint_base_product_id"/>
+                <field name="tint_base_categ_id"/>
+                <field name="reference_uom_id"/>
+                <field name="uom_category_id"/>
+                <field name="operation_family"/>
+                <field name="business_channel"/>
+                <field name="source_warehouse_id"/>
+                <field name="destination_warehouse_id"/>
+                <field name="source_location_id"/>
+                <field name="destination_location_id"/>
+                <field name="partner_id"/>
+                <field name="lot_id"/>
+                <field name="pos_order_id"/>
+                <field name="pos_session_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <filter name="customer_returns" string="Customer Returns" domain="[('operation_family', '=', 'customer_return')]"/>
+                <filter name="vendor_returns" string="Vendor Returns" domain="[('operation_family', '=', 'vendor_return')]"/>
+                <filter name="pos" string="POS" domain="[('business_channel', '=', 'pos')]"/>
+                <filter name="sales" string="Sales" domain="[('business_channel', '=', 'sales')]"/>
+                <filter name="purchase" string="Purchase" domain="[('business_channel', '=', 'purchase')]"/>
+                <filter name="manufacturing" string="Manufacturing" domain="[('business_channel', '=', 'manufacturing')]"/>
+                <filter name="unclassified" string="Unclassified Grade" domain="[('grade_id', '=', False)]"/>
+                <filter name="tinting_lineage" string="Tinting Lineage" domain="[('is_tinted_lineage_movement', '=', True)]"/>
+                <filter name="tinting_mapping_issues" string="Tinting Mapping Issues" domain="[('tint_mapping_status', 'in', ['missing_base_product', 'missing_grade', 'ambiguous_bom', 'failed'])]"/>
+                <separator/>
+                <filter name="date" string="Date" date="date"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_date" string="Month" context="{'group_by': 'date:month'}"/>
+                    <filter name="group_operation" string="Operation" context="{'group_by': 'operation_family'}"/>
+                    <filter name="group_channel" string="Channel" context="{'group_by': 'business_channel'}"/>
+                    <filter name="group_product" string="Product" context="{'group_by': 'product_id'}"/>
+                    <filter name="group_category" string="Product Category" context="{'group_by': 'categ_id'}"/>
+                    <filter name="group_grade" string="Grade" context="{'group_by': 'grade_id'}"/>
+                    <filter name="group_grade_source" string="Grade Source" context="{'group_by': 'grade_source'}"/>
+                    <filter name="group_tint_mapping_status" string="Tint Mapping Status" context="{'group_by': 'tint_mapping_status'}"/>
+                    <filter name="group_tint_base_product" string="Tint Base Product" context="{'group_by': 'tint_base_product_id'}"/>
+                    <filter name="group_tint_base_category" string="Tint Base Category" context="{'group_by': 'tint_base_categ_id'}"/>
+                    <filter name="group_manufacturing_component_role" string="Component Role" context="{'group_by': 'manufacturing_component_role'}"/>
+                    <filter name="group_reference_uom" string="Reference UoM" context="{'group_by': 'reference_uom_id'}"/>
+                    <filter name="group_uom_category" string="UoM Category" context="{'group_by': 'uom_category_id'}"/>
+                    <filter name="group_source_warehouse" string="Source Warehouse" context="{'group_by': 'source_warehouse_id'}"/>
+                    <filter name="group_destination_warehouse" string="Destination Warehouse" context="{'group_by': 'destination_warehouse_id'}"/>
+                    <filter name="group_company" string="Company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_product_movement_volume" model="ir.actions.act_window">
+        <field name="name">Product Movement Volume</field>
+        <field name="res_model">product.movement.volume</field>
+        <field name="view_mode">pivot,graph,list,form</field>
+        <field name="search_view_id" ref="view_product_movement_volume_search"/>
+        <field name="context">{'search_default_group_date': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No completed movement volume facts yet.</p>
+            <p>Validate a stock operation or run the manager backfill wizard.</p>
+        </field>
+    </record>
+
+    <record id="action_product_movement_volume_tinting_issues" model="ir.actions.act_window">
+        <field name="name">Tinting Mapping Issues</field>
+        <field name="res_model">product.movement.volume</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="search_view_id" ref="view_product_movement_volume_search"/>
+        <field name="domain">[('tint_mapping_status', 'in', ['missing_base_product', 'missing_grade', 'ambiguous_bom', 'failed'])]</field>
+        <field name="context">{'search_default_tinting_mapping_issues': 1, 'search_default_group_tint_mapping_status': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No tinting mapping issues found.</p>
+            <p>Failed or incomplete tint lineage mappings will appear here for manager review and remapping.</p>
+        </field>
+    </record>
+
+    <record id="action_server_remap_tinting_lineage" model="ir.actions.server">
+        <field name="name">Remap Tinting Lineage</field>
+        <field name="model_id" ref="model_product_movement_volume"/>
+        <field name="binding_model_id" ref="model_product_movement_volume"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="groups_id" eval="[(4, ref('stock.group_stock_manager'))]"/>
+        <field name="code">action = records.action_remap_tinting_lineage()</field>
+    </record>
+</odoo>

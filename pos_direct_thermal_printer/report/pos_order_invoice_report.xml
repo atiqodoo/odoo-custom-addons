@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_pos_order_invoice_pdf" model="ir.actions.report">
+        <field name="name">POS Invoice PDF</field>
+        <field name="model">pos.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">pos_direct_thermal_printer.report_pos_order_invoice_document</field>
+        <field name="report_file">pos_direct_thermal_printer.report_pos_order_invoice_document</field>
+        <field name="print_report_name">'POS_Invoice_%s' % (object.name or object.pos_reference or object.id)</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <record id="action_server_download_pos_order_invoice_pdf" model="ir.actions.server">
+        <field name="name">Download POS Invoice PDF</field>
+        <field name="model_id" ref="point_of_sale.model_pos_order"/>
+        <field name="binding_model_id" ref="point_of_sale.model_pos_order"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">action = env.ref("pos_direct_thermal_printer.action_report_pos_order_invoice_pdf").report_action(records)</field>
+    </record>
+
+    <template id="report_pos_order_invoice_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="order">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="row mb-4">
+                            <div class="col-7">
+                                <h2 class="mb-1">POS Invoice</h2>
+                                <div class="text-muted">
+                                    <span t-esc="order.name or order.pos_reference"/>
+                                </div>
+                            </div>
+                            <div class="col-5 text-end">
+                                <h4 class="mb-1" t-esc="order.company_id.name"/>
+                                <div t-if="order.company_id.street" t-esc="order.company_id.street"/>
+                                <div t-if="order.company_id.street2" t-esc="order.company_id.street2"/>
+                                <div t-if="order.company_id.city" t-esc="order.company_id.city"/>
+                                <div t-if="order.company_id.phone">Tel: <span t-esc="order.company_id.phone"/></div>
+                                <div t-if="order.company_id.email" t-esc="order.company_id.email"/>
+                                <div t-if="order.company_id.vat">VAT: <span t-esc="order.company_id.vat"/></div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <table class="table table-sm table-borderless mb-0">
+                                    <tr>
+                                        <td class="fw-bold" style="width: 35%;">Customer</td>
+                                        <td><span t-esc="order.partner_id.display_name or 'Walk-in Customer'"/></td>
+                                    </tr>
+                                    <tr t-if="order.partner_id.phone or order.partner_id.mobile">
+                                        <td class="fw-bold">Phone</td>
+                                        <td><span t-esc="order.partner_id.mobile or order.partner_id.phone"/></td>
+                                    </tr>
+                                    <tr t-if="order.partner_id.vat">
+                                        <td class="fw-bold">Customer VAT</td>
+                                        <td><span t-esc="order.partner_id.vat"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-6">
+                                <table class="table table-sm table-borderless mb-0">
+                                    <tr>
+                                        <td class="fw-bold" style="width: 35%;">Receipt No.</td>
+                                        <td><span t-esc="order.pos_reference or order.name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Date</td>
+                                        <td><span t-esc="context_timestamp(order.date_order).strftime('%d/%m/%Y %H:%M:%S') if order.date_order else ''"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Session</td>
+                                        <td><span t-esc="order.session_id.name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Cashier</td>
+                                        <td><span t-esc="order.employee_id.name or order.user_id.name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Status</td>
+                                        <td><span t-esc="dict(order._fields['state'].selection).get(order.state, order.state)"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <table class="table table-sm o_main_table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Disc.</th>
+                                    <th>Taxes</th>
+                                    <th class="text-end">Tax Excl.</th>
+                                    <th class="text-end">Tax Incl.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="order.lines" t-as="line">
+                                    <td>
+                                        <span t-esc="line.full_product_name or line.product_id.display_name"/>
+                                        <div t-if="line.customer_note" class="text-muted small">
+                                            <span t-esc="line.customer_note"/>
+                                        </div>
+                                    </td>
+                                    <td class="text-end"><span t-esc="'%.4f' % line.qty"/></td>
+                                    <td class="text-end">
+                                        <span t-field="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                    </td>
+                                    <td class="text-end"><span t-esc="('%.2f' % line.discount) + '%'"/></td>
+                                    <td><span t-esc="', '.join(line.tax_ids.mapped('name'))"/></td>
+                                    <td class="text-end">
+                                        <span t-field="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-field="line.price_subtotal_incl" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="row mt-4">
+                            <div class="col-6">
+                                <h5>Payments</h5>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr t-foreach="order.payment_ids" t-as="payment">
+                                            <td>
+                                                <span t-esc="payment.payment_method_id.name"/>
+                                                <span t-if="payment.payment_date" class="text-muted">
+                                                    (<span t-esc="context_timestamp(payment.payment_date).strftime('%d/%m/%Y %H:%M:%S')"/>)
+                                                </span>
+                                            </td>
+                                            <td class="text-end">
+                                                <span t-field="payment.amount" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                            </td>
+                                        </tr>
+                                        <tr t-if="not order.payment_ids">
+                                            <td colspan="2" class="text-muted">No payments recorded.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-6">
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <td class="text-end fw-bold">Untaxed Amount</td>
+                                        <td class="text-end" style="width: 35%;">
+                                            <span t-esc="'%s %.2f' % (order.currency_id.symbol or '', order.amount_total - order.amount_tax)"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-end fw-bold">Tax</td>
+                                        <td class="text-end">
+                                            <span t-field="order.amount_tax" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-top">
+                                        <td class="text-end fw-bold fs-5">Total</td>
+                                        <td class="text-end fw-bold fs-5">
+                                            <span t-field="order.amount_total" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-end fw-bold">Paid</td>
+                                        <td class="text-end">
+                                            <span t-field="order.amount_paid" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="order.amount_return">
+                                        <td class="text-end fw-bold">Returned</td>
+                                        <td class="text-end">
+                                            <span t-field="order.amount_return" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div t-if="order.general_note" class="mt-4">
+                            <h5>Notes</h5>
+                            <p t-esc="order.general_note"/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -11,6 +11,9 @@
             <!-- Position the smart button inside the header -->
             <xpath expr="//header" position="inside">
 
+                <field name="has_tinted_stock_shortage" invisible="1"/>
+                <field name="tinted_stock_shortage_product_count" invisible="1"/>
+
                 <button name="action_create_tinted_product_from_line"
                         string="Create Tinted Product &amp; MO"
                         type="object"
@@ -18,6 +21,14 @@
                         groups="sales_team.group_sale_salesman"
                         invisible="not has_pending_tinted_lines"
                         title="Process the next unprocessed tinted product line"/>
+
+                <button name="action_produce_next_missing_tinted_qty"
+                        string="Produce Missing Tinted Qty"
+                        type="object"
+                        class="btn-warning"
+                        groups="sales_team.group_sale_salesman"
+                        invisible="not has_tinted_stock_shortage"
+                        title="Open production for the first tinted product whose live warehouse stock is below the quoted quantity"/>
 
             </xpath>
 
@@ -56,6 +67,16 @@
                 <!-- Load flags as invisible columns so they can drive visibility conditions -->
                 <field name="is_tinted_product_line" column_invisible="1"/>
                 <field name="tinted_product_created" column_invisible="1"/>
+                <field name="tinted_stock_available_qty"
+                       string="Tinted Available"
+                       readonly="1"
+                       optional="show"/>
+                <field name="tinted_stock_shortage_qty"
+                       string="Tinted Missing"
+                       readonly="1"
+                       optional="show"
+                       decoration-danger="tinted_stock_shortage_qty &gt; 0"
+                       decoration-success="tinted_product_created and tinted_stock_shortage_qty &lt;= 0"/>
 
                 <!-- Per-line create button — visible only on unprocessed tinted lines -->
                 <button name="action_create_tinted_product_for_line"
@@ -73,6 +94,13 @@
                         invisible="not is_tinted_product_line or not tinted_product_created"
                         disabled="1"
                         title="Tinted product and MO already created for this line"/>
+
+                <button name="action_produce_missing_tinted_qty"
+                        string="Produce Missing Qty"
+                        type="object"
+                        class="btn-warning btn-sm"
+                        invisible="not is_tinted_product_line or not tinted_product_created or tinted_stock_shortage_qty &lt;= 0"
+                        title="Duplicate and complete enough one-unit tinting MOs to cover the live warehouse shortage"/>
             </xpath>
 
         </field>

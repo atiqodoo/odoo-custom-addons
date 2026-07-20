@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_product_movement_volume"
+              name="Product Movement Volume"
+              parent="stock.menu_warehouse_report"
+              action="action_product_movement_volume"
+              sequence="55"
+              groups="stock.group_stock_user"/>
+
+    <menuitem id="menu_product_movement_volume_tinting_issues"
+              name="Tinting Mapping Issues"
+              parent="stock.menu_warehouse_report"
+              action="action_product_movement_volume_tinting_issues"
+              sequence="56"
+              groups="stock.group_stock_user"/>
+
+    <menuitem id="menu_product_movement_volume_backfill"
+              name="Backfill Movement Volume"
+              parent="stock.menu_stock_config_settings"
+              action="action_product_movement_volume_backfill"
+              sequence="90"
+              groups="stock.group_stock_manager"/>
+</odoo>

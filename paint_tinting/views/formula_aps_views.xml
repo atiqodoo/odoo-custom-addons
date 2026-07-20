@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tint_formula_change_decision_form" model="ir.ui.view">
+        <field name="name">tint.formula.change.decision.form</field>
+        <field name="model">tint.formula.change.decision</field>
+        <field name="arch" type="xml">
+            <form string="Formula Change Detected">
+                <sheet>
+                    <div class="alert alert-warning" role="alert">
+                        The colorant recipe differs from the saved formula. Choose how this
+                        new recipe should be handled before creating the tinted product and MO.
+                    </div>
+                    <group>
+                        <field name="tint_wizard_id" invisible="1"/>
+                        <field name="baseline_version_id"/>
+                        <field name="continuation" invisible="1"/>
+                    </group>
+                    <group string="Formula Classification">
+                        <field name="aps_selected" widget="boolean_toggle"/>
+                        <field name="updated_formula_selected" widget="boolean_toggle"/>
+                        <field name="customer_id"
+                               invisible="not aps_selected"
+                               required="aps_selected"
+                               placeholder="Search or create a customer..."
+                               context="{'default_customer_rank': 1}"/>
+                    </group>
+                    <group string="Detected Changes">
+                        <field name="change_summary" nolabel="1" readonly="1"/>
+                    </group>
+                    <field name="requested_recipe_json" invisible="1"/>
+                    <field name="requested_signature" invisible="1"/>
+                </sheet>
+                <footer>
+                    <button name="action_confirm" string="Save &amp; Continue"
+                            type="object" class="oe_highlight"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_tinting_formula_version_list_aps" model="ir.ui.view">
+        <field name="name">tinting.formula.version.list.aps</field>
+        <field name="model">tinting.formula.version</field>
+        <field name="inherit_id" ref="paint_tinting.view_tinting_formula_version_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="is_aps" optional="show"/>
+                <field name="aps_customer_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_tinting_formula_version_form_aps" model="ir.ui.view">
+        <field name="name">tinting.formula.version.form.aps</field>
+        <field name="model">tinting.formula.version</field>
+        <field name="inherit_id" ref="paint_tinting.view_tinting_formula_version_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="is_aps" readonly="1"/>
+                <field name="aps_customer_id" readonly="1" invisible="not is_aps"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_tinting_formula_version_search_aps" model="ir.ui.view">
+        <field name="name">tinting.formula.version.search.aps</field>
+        <field name="model">tinting.formula.version</field>
+        <field name="inherit_id" ref="paint_tinting.view_tinting_formula_version_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='formula_id']" position="after">
+                <field name="aps_customer_id"/>
+            </xpath>
+            <xpath expr="//filter[@name='superseded']" position="after">
+                <filter name="aps" string="APS" domain="[('is_aps', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_tint_wizard_aps_information" model="ir.ui.view">
+        <field name="name">tint.wizard.aps.information</field>
+        <field name="model">tint.wizard</field>
+        <field name="inherit_id" ref="paint_tinting.view_tint_wizard_formula_version"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='formula_version_id']" position="after">
+                <field name="selected_formula_is_aps" readonly="1"
+                       widget="boolean_toggle" invisible="not formula_applied"/>
+                <field name="selected_formula_aps_customer_id" readonly="1"
+                       invisible="not selected_formula_is_aps"/>
+            </xpath>
+            <xpath expr="//button[@name='action_view_available_formulas']" position="attributes">
+                <attribute name="string">Search &amp; Apply Formula</attribute>
+                <attribute name="help">Search usable approved formula versions and apply one to this tint.</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

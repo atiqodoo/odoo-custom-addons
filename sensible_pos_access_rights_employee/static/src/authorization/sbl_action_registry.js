@@ -69,6 +69,10 @@ export const SBL_POS_ACTIONS = {
         label: "COD Partial Return",
         field: "sbl_require_auth_cod_return_partial",
     },
+    cod_discount: {
+        label: "COD Discount",
+        field: "sbl_require_auth_cod_discount",
+    },
     change_price: {
         label: "Change Price",
         field: "sbl_disable_pos_change_price",

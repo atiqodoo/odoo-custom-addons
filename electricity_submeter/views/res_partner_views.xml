@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Action helper to list meters associated with partner -->
+        <record id="action_partner_electricity_meters" model="ir.actions.act_window">
+            <field name="name">Sub-Meters</field>
+            <field name="res_model">electricity.meter</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('partner_id', '=', active_id)]</field>
+            <field name="context">{'default_partner_id': active_id}</field>
+        </record>
+
+        <!-- Partner form view inheritance -->
+        <record id="view_partner_form_inherit_electricity" model="ir.ui.view">
+            <field name="name">res.partner.form.inherit.electricity</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <div name="button_box" position="inside">
+                    <button class="oe_stat_button" 
+                            type="action" 
+                            name="%(action_partner_electricity_meters)d" 
+                            icon="fa-bolt"
+                            invisible="customer_rank == 0">
+                        <field string="Sub-Meters" name="electricity_meter_count" widget="statinfo"/>
+                    </button>
+                </div>
+            </field>
+        </record>
+    </data>
+</odoo>

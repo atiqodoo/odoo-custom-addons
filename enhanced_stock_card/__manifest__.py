@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Enhanced Stock Card Report (All Product Types)',
-    'version': '18.0.1.1.2',
+    'version': '18.0.1.2.0',
     'category': 'Inventory/Inventory',
     'summary': 'Comprehensive stock card - ACCEPTS ALL PRODUCT TYPES (storable, consumable, service)',
     'description': """
@@ -17,6 +17,7 @@ Complete stock movement report with:
 - All move types: Purchase, Sales, POS, Manufacturing, Transfers, Adjustments
 - Opening balance calculation
 - PDF and Excel export
+- Contact transaction report mode with POS, Sales, Stock Move, and Manufacturing sources
 - 100% reconciliation with stock and accounting
 - Debug features for troubleshooting
 

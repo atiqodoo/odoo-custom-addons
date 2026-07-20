@@ -9,8 +9,16 @@
     'data': [
         'security/ir.model.access.csv',
         'report/pos_session_z_report_pdf.xml',
+        'report/pos_session_z_report_range_pdf.xml',
         'views/pos_session_z_report_wizard_views.xml',
+        'views/pos_session_z_report_range_wizard_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'pos_session_z_report/static/src/cog_menu/z_report_summary_cog_item.js',
+            'pos_session_z_report/static/src/cog_menu/z_report_summary_cog_item.xml',
+        ],
+    },
     'installable': True,
     'application': False,
     'license': 'LGPL-3',

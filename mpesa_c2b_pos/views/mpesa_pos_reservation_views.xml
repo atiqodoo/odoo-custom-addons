@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_mpesa_pos_reservation_list" model="ir.ui.view">
+        <field name="name">mpesa.pos.reservation.list</field>
+        <field name="model">mpesa.pos.reservation</field>
+        <field name="arch" type="xml">
+            <list decoration-success="state == 'linked'" decoration-warning="state == 'reserved'" decoration-danger="state == 'conflict'">
+                <field name="create_date"/>
+                <field name="mpesa_ref"/>
+                <field name="order_uuid"/>
+                <field name="amount"/>
+                <field name="session_id"/>
+                <field name="cashier_id"/>
+                <field name="state"/>
+                <field name="expires_at"/>
+                <field name="linked_order_id"/>
+                <field name="release_reason"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_mpesa_pos_reservation_form" model="ir.ui.view">
+        <field name="name">mpesa.pos.reservation.form</field>
+        <field name="model">mpesa.pos.reservation</field>
+        <field name="arch" type="xml">
+            <form string="M-Pesa POS Reservation">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="mpesa_ref"/>
+                            <field name="transaction_id"/>
+                            <field name="amount"/>
+                            <field name="state"/>
+                        </group>
+                        <group>
+                            <field name="order_uuid"/>
+                            <field name="session_id"/>
+                            <field name="cashier_id"/>
+                            <field name="linked_order_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="expires_at"/>
+                        <field name="last_heartbeat_at"/>
+                        <field name="linked_at"/>
+                        <field name="released_at"/>
+                        <field name="release_reason"/>
+                    </group>
+                    <field name="event_ids" readonly="1">
+                        <list>
+                            <field name="create_date"/>
+                            <field name="event"/>
+                            <field name="source"/>
+                            <field name="user_id"/>
+                            <field name="detail"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_mpesa_pos_reservation" model="ir.actions.act_window">
+        <field name="name">POS Reservations</field>
+        <field name="res_model">mpesa.pos.reservation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_mpesa_pos_reservation"
+              name="POS Reservations"
+              parent="mpesa_c2b_sms.menu_mpesa_root"
+              action="action_mpesa_pos_reservation"
+              sequence="35"
+              groups="mpesa_c2b_sms.group_mpesa_user"/>
+</odoo>

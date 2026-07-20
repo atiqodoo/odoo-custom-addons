@@ -34,12 +34,23 @@
                         <field name="mo_qty" readonly="1" string="Quantity" digits="[16, 4]"/>
                     </group>
 
+                    <div class="alert alert-success" role="alert"
+                         invisible="not has_recipe_override">
+                        <strong>Revised colorant recipe detected.</strong>
+                        <p class="mb-1">
+                            The duplicate flow will use these changes and register a new formula version when the MO is completed.
+                        </p>
+                        <field name="recipe_change_summary" readonly="1" nolabel="1"/>
+                    </div>
+
                     <div class="alert alert-info" invisible="mo_id" role="alert">
                         No Manufacturing Order found for this product.
                     </div>
 
                     <!-- Hidden SO field needed for button visibility -->
                     <field name="source_sale_order_id" invisible="1"/>
+                    <field name="has_recipe_override" invisible="1"/>
+                    <field name="recipe_override_json" invisible="1"/>
 
                     <div class="o_row mt-3">
                         <button name="action_open_mo"

@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_local_document_watch_path_manager,local.document.watch.path.manager,model_local_document_watch_path,documents.group_documents_manager,1,1,1,1
+access_local_document_import_log_manager,local.document.import.log.manager,model_local_document_import_log,documents.group_documents_manager,1,1,1,0

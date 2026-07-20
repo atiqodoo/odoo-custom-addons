@@ -17,6 +17,12 @@
                             type="object"
                             class="oe_highlight"
                             invisible="not can_generate_quotation"/>
+
+                    <button name="action_add_another_tint"
+                            string="Add Another Tint"
+                            type="object"
+                            class="btn-secondary"
+                            help="Open a fresh tint wizard and append another cost-comparison batch here"/>
                     
                     <button string="Cancel" special="cancel" class="btn-secondary"/>
                 </header>
@@ -159,6 +165,12 @@
                     <field name="line_ids" nolabel="1">
                         <list editable="bottom" create="0" delete="0">
                             <field name="comparison_line_id" column_invisible="1" force_save="1"/>
+                            <field name="source_wizard_id" column_invisible="1" force_save="1"/>
+                            <field name="line_colour_code_id" column_invisible="1" force_save="1"/>
+                            <field name="line_fandeck_id" column_invisible="1" force_save="1"/>
+                            <field name="line_base_category_id" column_invisible="1" force_save="1"/>
+                            <field name="formula_json" column_invisible="1" force_save="1"/>
+                            <field name="formula_version_id" column_invisible="1" force_save="1"/>
 
                             <!-- ======================================== -->
                             <!-- SELECTION CHECKBOX -->
@@ -228,6 +240,7 @@
                     </field>
                     
                     <!-- Hidden fields -->
+                    <field name="active_tint_wizard_id" invisible="1"/>
                     <field name="comparison_line_ids_json" invisible="1" force_save="1"/>
                     
                 </sheet>

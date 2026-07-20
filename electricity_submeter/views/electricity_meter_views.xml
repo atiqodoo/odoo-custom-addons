@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Tree View -->
+        <record id="view_electricity_meter_tree" model="ir.ui.view">
+            <field name="name">electricity.meter.list</field>
+            <field name="model">electricity.meter</field>
+            <field name="arch" type="xml">
+                <list string="Sub-Meters">
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <field name="default_unit_rate"/>
+                    <field name="last_reading"/>
+                    <field name="product_id"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_electricity_meter_form" model="ir.ui.view">
+            <field name="name">electricity.meter.form</field>
+            <field name="model">electricity.meter</field>
+            <field name="arch" type="xml">
+                <form string="Sub-Meter">
+                    <sheet>
+                        <div class="oe_title">
+                            <label for="name" class="oe_edit_only"/>
+                            <h1>
+                                <field name="name" placeholder="e.g. Sub-Meter East Wing"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="partner_id"/>
+                                <field name="default_unit_rate"/>
+                            </group>
+                            <group>
+                                <field name="product_id"/>
+                                <field name="last_reading" readonly="1"/>
+                                <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Readings History" name="readings_history">
+                                <field name="reading_ids" readonly="1">
+                                    <list string="Readings History" decoration-muted="state == 'cancelled'" decoration-success="state == 'invoiced'">
+                                        <field name="date"/>
+                                        <field name="previous_reading"/>
+                                        <field name="current_reading"/>
+                                        <field name="units_consumed"/>
+                                        <field name="unit_rate"/>
+                                        <field name="total_amount" sum="Total Invoiced"/>
+                                        <field name="invoice_id"/>
+                                        <field name="state" widget="badge" decoration-info="state == 'measured'" decoration-success="state == 'invoiced'"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Search View -->
+        <record id="view_electricity_meter_search" model="ir.ui.view">
+            <field name="name">electricity.meter.search</field>
+            <field name="model">electricity.meter</field>
+            <field name="arch" type="xml">
+                <search string="Search Sub-Meters">
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Customer" name="group_by_partner" context="{'group_by': 'partner_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_electricity_meter" model="ir.actions.act_window">
+            <field name="name">Sub-Meters</field>
+            <field name="res_model">electricity.meter</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_electricity_meter_search"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Register a new Electricity Sub-Meter
+                </p>
+                <p>
+                    Associate a sub-meter with a neighbor (customer) to track their electricity consumption.
+                </p>
+            </field>
+        </record>
+
+        <!-- Menu Items -->
+        <menuitem id="menu_electricity_meter"
+                  name="Sub-Meters"
+                  parent="account.menu_finance_receivables"
+                  action="action_electricity_meter"
+                  sequence="110"/>
+    </data>
+</odoo>

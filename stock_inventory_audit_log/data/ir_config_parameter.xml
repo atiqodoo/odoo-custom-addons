@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="param_stock_inventory_audit_debug_logging" model="ir.config_parameter">
+        <field name="key">stock_inventory_audit_log.debug_logging</field>
+        <field name="value">False</field>
+    </record>
+</odoo>

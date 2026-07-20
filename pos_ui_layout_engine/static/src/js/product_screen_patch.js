@@ -2,7 +2,11 @@
 
 import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
+import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
 import { patch } from "@web/core/utils/patch";
+import { parseUTCString } from "@point_of_sale/utils";
+import { dtrpReprintOrder } from "@pos_direct_thermal_printer/app/services/direct_printer_service";
+import { dtrpLogger } from "@pos_direct_thermal_printer/app/logger";
 
 const PREFIX = "[POS UI Layout Engine]";
 const VALID_LAYOUTS = new Set(["default", "wide", "split"]);
@@ -45,6 +49,31 @@ function sanitizeConfig(config = {}) {
         orderFlex: clampFlex(config.order_flex, 2),
         backgroundColor: sanitizeBackgroundColor(config.ui_background_color),
     };
+}
+
+function newestOrder(orders = []) {
+    return orders.reduce((latest, current) => {
+        if (!latest) {
+            return current;
+        }
+        const latestDate = Date.parse(latest.write_date || latest.date_order || latest.create_date || 0);
+        const currentDate = Date.parse(current.write_date || current.date_order || current.create_date || 0);
+        if (Number.isFinite(currentDate) && currentDate !== latestDate) {
+            return currentDate > latestDate ? current : latest;
+        }
+        return (current.id || 0) > (latest.id || 0) ? current : latest;
+    }, null);
+}
+
+function kenyanDateTime(value) {
+    if (!value) {
+        return "";
+    }
+    try {
+        return parseUTCString(value).setZone("default").toFormat("dd/MM/yyyy HH:mm:ss");
+    } catch {
+        return String(value || "");
+    }
 }
 
 patch(ProductScreen.prototype, {
@@ -119,6 +148,12 @@ patch(ProductScreen.prototype, {
     },
 });
 
+patch(TicketScreen.prototype, {
+    getDate(order) {
+        return kenyanDateTime(order?.date_order);
+    },
+});
+
 patch(ControlButtons.prototype, {
     get uiActionButtonPlacement() {
         return this.pos?.config?.ui_action_button_placement || "popup";
@@ -145,5 +180,61 @@ patch(ControlButtons.prototype, {
             actionName,
             placement: this.uiActionButtonPlacement,
         });
+    },
+
+    async clickPrint() {
+        const allOrders = this.pos.models?.["pos.order"]?.getAll?.() || [];
+        const completedOrders = allOrders.filter((order) => order.state && !["draft", "cancel"].includes(order.state));
+        let latestOrder = newestOrder(completedOrders);
+
+        if (!latestOrder) {
+            dtrpLogger.warn(this.pos, `${PREFIX} no completed orders in local cache; loading latest synced order`, {
+                configId: this.pos.config.id,
+            });
+            const response = await this.pos.data.call(
+                "pos.order",
+                "search_paid_order_ids",
+                [],
+                {
+                    config_id: this.pos.config.id,
+                    domain: [],
+                    limit: 1,
+                    offset: 0,
+                }
+            );
+            const latestOrderId = response?.ordersInfo?.[0]?.[0];
+            if (latestOrderId) {
+                await this.pos.data.read("pos.order", [latestOrderId]);
+                latestOrder = this.pos.models?.["pos.order"]?.get?.(latestOrderId) || null;
+            }
+        }
+
+        if (!latestOrder) {
+            dtrpLogger.warn(this.pos, `${PREFIX} could not determine latest order to print`);
+            return;
+        }
+
+        dtrpLogger.info(this.pos, `${PREFIX} reprintReceipt triggered for latest order`, {
+            orderId: latestOrder.id,
+            orderName: latestOrder.name,
+            state: latestOrder.state,
+        });
+
+        try {
+            const result = await dtrpReprintOrder(this.pos, latestOrder);
+            if (typeof latestOrder.id === "number" && result?.ok) {
+                await this.pos.data.write("pos.order", [latestOrder.id], { nb_print: latestOrder.nb_print });
+            }
+            dtrpLogger.info(this.pos, `${PREFIX} reprint completed successfully`, {
+                orderId: latestOrder.id,
+                orderName: latestOrder.name,
+                nbPrint: latestOrder.nb_print,
+            });
+        } catch (error) {
+            dtrpLogger.error(this.pos, `${PREFIX} reprint failed`, {
+                message: error?.message || String(error),
+                stack: error?.stack || "",
+            });
+        }
     },
 });

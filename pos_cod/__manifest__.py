@@ -26,16 +26,20 @@
         'account',
         'stock',
         'hr',
+        'pos_fixed_discount',
     ],
     'data': [
         'security/ir.model.access.csv',
         'views/pos_config_views.xml',
         'views/pos_order_views.xml',
+        'views/account_move_cod_log_views.xml',
+        'views/pos_cod_transaction_log_views.xml',
     ],
     'assets': {
         'point_of_sale._assets_pos': [
             # Layer 0 — Logger utility (no dependencies)
             'pos_cod/static/src/app/utils/cod_logger.js',
+            'pos_cod/static/src/app/utils/cod_quantity_guard.js',
             # Layer 1 — Store patch (RPC methods on PosStore)
             'pos_cod/static/src/app/patches/pos_store_patch.js',
             # Layer 2 — UI components (depend on logger + store)
@@ -51,6 +55,8 @@
             'pos_cod/static/src/app/screens/cod_orders_screen/cod_orders_screen.scss',
             'pos_cod/static/src/app/screens/cod_orders_screen/CodOrdersScreen.xml',
             'pos_cod/static/src/app/screens/cod_orders_screen/CodOrdersScreen.js',
+            'pos_cod/static/src/app/patches/cod_discount_patch.xml',
+            'pos_cod/static/src/app/patches/cod_discount_patch.js',
             # Layer 4 — Product screen patch (COD button)
             'pos_cod/static/src/app/components/cod_button/CodButton.xml',
             'pos_cod/static/src/app/components/cod_button/CodButton.js',

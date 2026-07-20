@@ -26,6 +26,7 @@ SBL_ACTION_RESTRICTION_FIELDS = {
     'cod_pay_partial': 'sbl_require_auth_cod_pay_partial',
     'cod_return_all': 'sbl_require_auth_cod_return_all',
     'cod_return_partial': 'sbl_require_auth_cod_return_partial',
+    'cod_discount': 'sbl_require_auth_cod_discount',
     'change_price': 'sbl_disable_pos_change_price',
     'product_info': 'sbl_hide_pos_action_product_info',
     'product_info_financials': 'sbl_hide_pos_finance_from_product_info',

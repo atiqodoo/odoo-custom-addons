@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tint_wizard_formula_version" model="ir.ui.view">
+        <field name="name">tint.wizard.formula.version</field>
+        <field name="model">tint.wizard</field>
+        <field name="inherit_id" ref="paint_tinting.view_tint_wizard_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='formula_id']" position="after">
+                <field name="available_formula_version_ids" invisible="1"/>
+                <field name="last_counted_formula_version_id" invisible="1"/>
+                <field name="formula_version_id" invisible="not formula_applied"
+                       options="{'no_create': True, 'no_open': False}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_mrp_production_formula_version" model="ir.ui.view">
+        <field name="name">mrp.production.formula.version</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="paint_tinting.view_mrp_production_form_tinting"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='tinting_pricing']//group[1]" position="before">
+                <group string="Formula Traceability">
+                    <field name="formula_id" readonly="1"/>
+                    <field name="formula_version_id" readonly="1"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

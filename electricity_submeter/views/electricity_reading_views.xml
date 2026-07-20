@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Tree View -->
+        <record id="view_electricity_reading_tree" model="ir.ui.view">
+            <field name="name">electricity.reading.list</field>
+            <field name="model">electricity.reading</field>
+            <field name="arch" type="xml">
+                <list string="Sub-Meter Readings" decoration-success="state == 'invoiced'" decoration-muted="state == 'cancelled'">
+                    <field name="date"/>
+                    <field name="meter_id"/>
+                    <field name="partner_id"/>
+                    <field name="previous_reading"/>
+                    <field name="current_reading"/>
+                    <field name="units_consumed"/>
+                    <field name="unit_rate"/>
+                    <field name="receivable_amount" sum="Subtotal (Untaxed)"/>
+                    <field name="vat_amount" sum="Total VAT"/>
+                    <field name="total_amount" sum="Total Billed"/>
+                    <field name="invoice_id"/>
+                    <field name="state" widget="badge" decoration-info="state == 'measured'" decoration-success="state == 'invoiced'"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_electricity_reading_form" model="ir.ui.view">
+            <field name="name">electricity.reading.form</field>
+            <field name="model">electricity.reading</field>
+            <field name="arch" type="xml">
+                <form string="Sub-Meter Reading Log">
+                    <header>
+                        <button name="action_confirm_reading" string="Confirm Reading" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                        <button name="action_generate_invoice" string="Create Invoice" type="object" class="oe_highlight" invisible="state != 'measured'"/>
+                        <button name="action_reset_draft" string="Reset to Draft" type="object" invisible="state not in ('measured', 'cancelled')"/>
+                        <button name="action_cancel" string="Cancel" type="object" invisible="state not in ('draft', 'measured')"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,measured,invoiced"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_generate_invoice" type="object" class="oe_stat_button" icon="fa-pencil-square-o" invisible="state != 'invoiced' or not invoice_id">
+                                <div class="o_stat_info">
+                                    <span class="o_stat_text">View Invoice</span>
+                                </div>
+                            </button>
+                        </div>
+                        <group>
+                            <group string="Meter &amp; Period">
+                                <field name="meter_id" readonly="state != 'draft'"/>
+                                <field name="partner_id"/>
+                                <field name="date" readonly="state != 'draft'"/>
+                            </group>
+                            <group string="Measurements">
+                                <field name="previous_reading" readonly="state != 'draft'"/>
+                                <field name="current_reading" readonly="state != 'draft'"/>
+                                <field name="units_consumed"/>
+                                <field name="unit_rate" readonly="state != 'draft'"/>
+                            </group>
+                        </group>
+                        <group string="Financial Estimates">
+                            <group>
+                                <field name="currency_id" invisible="1"/>
+                                <field name="receivable_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="vat_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="total_amount" widget="monetary" options="{'currency_field': 'currency_id'}" class="oe_subtotal_footer_separator"/>
+                            </group>
+                            <group string="Billing References">
+                                <field name="invoice_id" readonly="1" options="{'no_create': True}"/>
+                                <field name="create_uid" string="Logged By"/>
+                                <field name="create_date" string="Logged Date"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Search View -->
+        <record id="view_electricity_reading_search" model="ir.ui.view">
+            <field name="name">electricity.reading.search</field>
+            <field name="model">electricity.reading</field>
+            <field name="arch" type="xml">
+                <search string="Search Readings">
+                    <field name="meter_id"/>
+                    <field name="partner_id"/>
+                    <filter string="Draft" name="draft_filter" domain="[('state', '=', 'draft')]"/>
+                    <filter string="Measured" name="measured_filter" domain="[('state', '=', 'measured')]"/>
+                    <filter string="Invoiced" name="invoiced_filter" domain="[('state', '=', 'invoiced')]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Sub-Meter" name="group_by_meter" context="{'group_by': 'meter_id'}"/>
+                        <filter string="Customer" name="group_by_partner" context="{'group_by': 'partner_id'}"/>
+                        <filter string="Date" name="group_by_date" context="{'group_by': 'date'}"/>
+                        <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_electricity_reading" model="ir.actions.act_window">
+            <field name="name">Sub-Meter Readings</field>
+            <field name="res_model">electricity.reading</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_electricity_reading_search"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Log a new Electricity Sub-Meter Reading
+                </p>
+                <p>
+                    Enter the current reading to calculate consumption and generate billing invoices for the neighbor.
+                </p>
+            </field>
+        </record>
+
+        <!-- Menu Items -->
+        <menuitem id="menu_electricity_reading"
+                  name="Sub-Meter Readings"
+                  parent="account.menu_finance_receivables"
+                  action="action_electricity_reading"
+                  sequence="115"/>
+    </data>
+</odoo>

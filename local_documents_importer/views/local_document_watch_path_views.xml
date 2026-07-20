@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="local_document_watch_path_view_list" model="ir.ui.view">
+        <field name="name">local.document.watch.path.list</field>
+        <field name="model">local.document.watch.path</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="active"/>
+                <field name="name"/>
+                <field name="source_path"/>
+                <field name="target_folder_id"/>
+                <field name="recursive"/>
+                <field name="auto_create_folders"/>
+                <field name="last_scan_date"/>
+                <field name="pending_count"/>
+                <field name="imported_count"/>
+                <field name="error_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="local_document_watch_path_view_form" model="ir.ui.view">
+        <field name="name">local.document.watch.path.form</field>
+        <field name="model">local.document.watch.path</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_scan_now" type="object" string="Scan Now" class="btn-primary"/>
+                    <button name="action_view_logs" type="object" string="Logs"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_logs" type="object" class="oe_stat_button" icon="fa-list">
+                            <field name="log_count" widget="statinfo" string="Logs"/>
+                        </button>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="active"/>
+                            <field name="source_path" placeholder="C:\Scans\Epson\PUSCHASES"/>
+                            <field name="target_folder_id" widget="documents_folder_many2one"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="owner_id"/>
+                        </group>
+                        <group>
+                            <field name="recursive"/>
+                            <field name="auto_create_folders"/>
+                            <field name="allowed_extensions"/>
+                            <field name="duplicate_policy"/>
+                            <field name="last_scan_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Processing">
+                            <group>
+                                <group>
+                                    <field name="batch_limit"/>
+                                    <field name="min_age_seconds"/>
+                                    <field name="max_file_size_mb"/>
+                                </group>
+                                <group>
+                                    <field name="post_import_action"/>
+                                    <field name="archive_path" invisible="post_import_action != 'archive'" required="post_import_action == 'archive'" placeholder="C:\Scans\Archive"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Import Logs">
+                            <field name="log_ids" readonly="1">
+                                <list decoration-success="state == 'imported'" decoration-danger="state == 'error'" decoration-muted="state == 'skipped'">
+                                    <field name="last_seen_date"/>
+                                    <field name="state"/>
+                                    <field name="original_filename"/>
+                                    <field name="relative_folder"/>
+                                    <field name="file_size"/>
+                                    <field name="document_id"/>
+                                    <field name="error_message"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="local_document_watch_path_view_search" model="ir.ui.view">
+        <field name="name">local.document.watch.path.search</field>
+        <field name="model">local.document.watch.path</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="source_path"/>
+                <field name="target_folder_id"/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="local_document_watch_path_action" model="ir.actions.act_window">
+        <field name="name">Local Folder Imports</field>
+        <field name="res_model">local.document.watch.path</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="local_document_watch_path_view_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+    </record>
+</odoo>

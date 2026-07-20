@@ -16,6 +16,93 @@
     <!-- Report Template -->
     <template id="report_stock_card_document">
         <t t-call="web.html_container">
+            <t t-if="data.get('report_mode') == 'contact_transactions'">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-size: 9pt;">
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h3 class="text-center mb-3">Contact Transactions Report</h3>
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <td style="width: 25%;"><strong>Contact:</strong></td>
+                                        <td style="width: 75%;"><span t-out="data['partner'].display_name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Commercial Partner:</strong></td>
+                                        <td><span t-out="data['commercial_partner'].display_name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Period:</strong></td>
+                                        <td><span t-esc="data['date_from']"/> to <span t-esc="data['date_to']"/></td>
+                                    </tr>
+                                    <tr t-if="data.get('locations')">
+                                        <td><strong>Locations:</strong></td>
+                                        <td><span t-esc="', '.join(data['locations'].mapped('complete_name'))"/></td>
+                                    </tr>
+                                    <tr t-if="data.get('products')">
+                                        <td><strong>Products:</strong></td>
+                                        <td><span t-esc="', '.join(data['products'].mapped('display_name'))"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <table class="table table-sm table-bordered" style="font-size: 7pt;">
+                            <thead>
+                                <tr style="background-color: #e9ecef;">
+                                    <th>Date</th>
+                                    <th>Source</th>
+                                    <th>Document</th>
+                                    <th>State</th>
+                                    <th>Type</th>
+                                    <th>Product</th>
+                                    <th class="text-right">In</th>
+                                    <th class="text-right">Out</th>
+                                    <th class="text-right">Balance</th>
+                                    <th class="text-right">Unit Price Incl VAT</th>
+                                    <th class="text-right">Inventory Value</th>
+                                    <th class="text-right">Selling Price Incl VAT</th>
+                                    <th class="text-right">Amount Incl VAT</th>
+                                    <th class="text-right">VAT Amount</th>
+                                    <th>Location</th>
+                                    <th>Debug Source</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="data.get('rows', [])" t-as="row">
+                                    <td><span t-esc="row['date'].strftime('%Y-%m-%d %H:%M') if row['date'] else ''"/></td>
+                                    <td><span t-esc="row['source_app']"/></td>
+                                    <td><span t-esc="row['source_document']"/></td>
+                                    <td><span t-esc="row['document_state']"/></td>
+                                    <td><span t-esc="row['transaction_type']"/></td>
+                                    <td><span t-esc="row['product']"/></td>
+                                    <td class="text-right"><span t-if="row['qty_in']" t-esc="'%.3f' % row['qty_in']"/></td>
+                                    <td class="text-right"><span t-if="row['qty_out']" t-esc="'%.3f' % row['qty_out']"/></td>
+                                    <td class="text-right"><span t-esc="'%.3f' % row['balance_qty']"/></td>
+                                    <td class="text-right"><span t-esc="'%.2f' % row['unit_price_incl_vat']"/></td>
+                                    <td class="text-right"><span t-esc="'%.2f' % row['inventory_value']"/></td>
+                                    <td class="text-right"><span t-esc="'%.2f' % row['selling_price_incl_vat']"/></td>
+                                    <td class="text-right"><span t-esc="'%.2f' % row['amount_incl_vat']"/></td>
+                                    <td class="text-right"><span t-esc="'%.2f' % row['vat_amount']"/></td>
+                                    <td><span t-esc="row['location']"/></td>
+                                    <td><span t-esc="row['debug_source']"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <p style="font-size: 8pt; font-style: italic;">
+                                    <strong>Note:</strong> Amount Incl VAT comes from POS, Sales, or Purchase tax-inclusive transaction lines where available.
+                                    In Contact Transactions mode, Inventory Value displays Odoo product cost plus configured VAT.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+
+            <t t-if="data.get('report_mode') != 'contact_transactions'">
             <t t-foreach="data.get('products_data', [])" t-as="product_data">
                 <t t-call="web.external_layout">
                     <div class="page" style="font-size: 10pt;">
@@ -191,6 +278,7 @@
                         </div>
                     </div>
                 </t>
+            </t>
             </t>
         </t>
     </template>

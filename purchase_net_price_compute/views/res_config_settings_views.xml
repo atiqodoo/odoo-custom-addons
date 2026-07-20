@@ -10,6 +10,44 @@
                          help="Use the lowest price from the last posted vendor bills for the selected product variant on RFQ lines. Set to 0 to disable.">
                     <field name="rfq_bill_price_check_count"/>
                 </setting>
+                <setting id="rfq_vendor_contact_usage_months"
+                         help="Prioritize vendor contacts used on RFQs within the configured number of previous months. Set to 0 to use primary contacts first.">
+                    <field name="rfq_vendor_contact_usage_months"/>
+                </setting>
+                <setting id="lpo_report_display_settings"
+                         string="LPO/RFQ PDF Display"
+                         help="Control which commercial fields are printed on downloaded LPO/RFQ PDF reports.">
+                    <div class="content-group">
+                        <div class="row mt8">
+                            <field name="lpo_report_show_cost"/>
+                            <label for="lpo_report_show_cost"/>
+                        </div>
+                        <div class="row mt8">
+                            <field name="lpo_report_show_discount"/>
+                            <label for="lpo_report_show_discount"/>
+                        </div>
+                        <div class="row mt8">
+                            <field name="lpo_report_show_tax"/>
+                            <label for="lpo_report_show_tax"/>
+                        </div>
+                        <div class="row mt8">
+                            <field name="lpo_report_show_subtotal"/>
+                            <label for="lpo_report_show_subtotal"/>
+                        </div>
+                        <div class="row mt8">
+                            <field name="lpo_report_show_total"/>
+                            <label for="lpo_report_show_total"/>
+                        </div>
+                        <div class="row mt8">
+                            <field name="lpo_report_show_promotion"/>
+                            <label for="lpo_report_show_promotion"/>
+                        </div>
+                        <div class="row mt8">
+                            <field name="lpo_report_show_grade_volume"/>
+                            <label for="lpo_report_show_grade_volume"/>
+                        </div>
+                    </div>
+                </setting>
             </xpath>
         </field>
     </record>

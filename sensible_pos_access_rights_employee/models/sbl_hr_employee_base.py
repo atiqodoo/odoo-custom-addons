@@ -76,6 +76,11 @@ class HrEmployeeBase(models.AbstractModel):
         help='If checked, this employee needs supervisor authorization before returning part of a COD order.',
         default=False,
     )
+    sbl_require_auth_cod_discount = fields.Boolean(
+        string='Require Authorization for COD Discount',
+        help='If checked, this employee needs supervisor authorization before applying a discount on a pending COD order.',
+        default=False,
+    )
     sbl_hide_pos_payment = fields.Boolean(
         string='Require Authorization for Payment',
         help='If checked, this employee needs supervisor authorization before opening payment.',

@@ -352,10 +352,7 @@ class SaleOrderLine(models.Model):
             raise UserError(_("Invalid tinting formula JSON: %s") % str(e))
 
         # ── STEP 3: PRODUCT NAME & DUPLICATE CHECK ─────────────────────────
-        clean_name = (
-            f"{line.base_product_id.display_name} – "
-            f"{line.colour_code_id.name} [{line.colour_code_id.code}]"
-        ).strip()
+        clean_name = line._get_tinted_product_name_from_sale()
         _logger.info("  Product name: '%s'", clean_name)
 
         existing = self.env['product.template'].search(

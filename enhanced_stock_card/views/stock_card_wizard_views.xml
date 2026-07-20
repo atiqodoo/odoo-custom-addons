@@ -6,15 +6,23 @@
         <field name="model">stock.card.wizard</field>
         <field name="arch" type="xml">
             <form string="Stock Card Report">
+                <group>
+                    <field name="report_mode" widget="radio"/>
+                </group>
+
                 <!-- DEBUG: Show notification banner -->
-                <div class="alert alert-info" role="alert" style="margin-bottom: 10px;">
+                <div class="alert alert-info" role="alert" style="margin-bottom: 10px;" invisible="report_mode != 'product_stock_card'">
                     <strong>Product Search (ALL TYPES):</strong> Click the Products field below and start typing. 
                     This report now accepts all product types (storable, consumable, service).
                     If no products appear, click the "Debug Test" button.
                 </div>
+                <div class="alert alert-info" role="alert" style="margin-bottom: 10px;" invisible="report_mode != 'contact_transactions'">
+                    <strong>Contact Transactions:</strong> Select a contact to list linked POS, Sales, Stock Move, and Manufacturing transactions.
+                    Product and location fields are optional filters in this mode.
+                </div>
                 
                 <group>
-                    <group string="Product Selection">
+                    <group string="Product / Variant Selection">
                         <!-- DEBUG: Multiple widget options to test -->
                         <field name="product_ids" 
                                widget="many2many_tags"
@@ -26,6 +34,9 @@
                             <field name="product_count_available" readonly="1" class="oe_inline"/>
                             <span class="oe_inline"> products in system (all types)</span>
                         </div>
+                    </group>
+                    <group string="Contact Selection" invisible="report_mode != 'contact_transactions'">
+                        <field name="partner_id" options="{'no_create': True}"/>
                     </group>
                     <group string="Location Selection">
                         <field name="warehouse_id" options="{'no_create': True}"/>
@@ -40,7 +51,12 @@
                     </group>
                     <group string="Options">
                         <field name="show_internal_transfers"/>
-                        <field name="group_by_product"/>
+                        <field name="group_by_product" invisible="report_mode != 'product_stock_card'"/>
+                        <field name="include_draft_sales" invisible="report_mode != 'contact_transactions'"/>
+                        <field name="include_contact_pos" invisible="report_mode != 'contact_transactions'"/>
+                        <field name="include_contact_sales" invisible="report_mode != 'contact_transactions'"/>
+                        <field name="include_contact_stock_moves" invisible="report_mode != 'contact_transactions'"/>
+                        <field name="include_contact_mrp" invisible="report_mode != 'contact_transactions'"/>
                     </group>
                 </group>
                 

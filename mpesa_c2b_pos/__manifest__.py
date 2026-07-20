@@ -22,6 +22,8 @@
             'mpesa_c2b_pos/static/src/patches/settle_due_mpesa_patch.js',
             'mpesa_c2b_pos/static/src/patches/deposit_mpesa_validation_patch.js',
             'mpesa_c2b_pos/static/src/patches/cod_mpesa_collection_patch.js',
+            'sensible_pos_access_rights_employee/static/src/mpesa_expiry/sbl_mpesa_validation_service_patch.js',
+            'sensible_pos_access_rights_employee/static/src/mpesa_expiry/sbl_mpesa_payment_screen_expiry_patch.js',
         ],
     },
     'installable': True,

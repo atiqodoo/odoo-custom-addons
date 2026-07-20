@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_paint_tinting_pos_lot_cost_audit" model="ir.sequence">
+        <field name="name">Paint Tinting POS Lot Cost Audit</field>
+        <field name="code">paint.tinting.pos.lot.cost.audit</field>
+        <field name="prefix">PT/POSLOT/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

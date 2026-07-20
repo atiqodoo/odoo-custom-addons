@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="ir_cron_reconcile_product_movement_volume" model="ir.cron">
+        <field name="name">Movement Volume: Reconcile Missing Facts</field>
+        <field name="model_id" ref="model_product_movement_volume"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_reconcile_missing_facts(limit=1000)</field>
+        <field name="interval_number">15</field>
+        <field name="interval_type">minutes</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="ir_cron_remap_tinting_lineage_product_movement_volume" model="ir.cron">
+        <field name="name">Movement Volume: Remap Tinting Lineage Issues</field>
+        <field name="model_id" ref="model_product_movement_volume"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_remap_tinting_lineage(limit=1000)</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

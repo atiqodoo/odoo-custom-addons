@@ -10,10 +10,10 @@ access_colorant_mapping_line_manager,colorant.mapping.line.manager,model_coloran
 access_mrp_production_duplicate_wizard_user,mrp.production.duplicate.wizard.user,model_mrp_production_duplicate_wizard,mrp.group_mrp_user,1,1,1,1
 access_mrp_production_duplicate_wizard_manager,mrp.production.duplicate.wizard.manager,model_mrp_production_duplicate_wizard,mrp.group_mrp_manager,1,1,1,1
 access_tinting_formula_user,access.tinting.formula.user,model_tinting_formula,base.group_user,1,0,0,0
-access_tinting_formula_manager,access.tinting.formula.manager,model_tinting_formula,mrp.group_mrp_user,1,1,1,0
+access_tinting_formula_manager,access.tinting.formula.manager,model_tinting_formula,paint_tinting.group_tint_formula_manager,1,1,1,0
 access_tinting_formula_admin,access.tinting.formula.admin,model_tinting_formula,base.group_system,1,1,1,1
 access_tinting_formula_line_user,access.tinting.formula.line.user,model_tinting_formula_line,base.group_user,1,0,0,0
-access_tinting_formula_line_manager,access.tinting.formula.line.manager,model_tinting_formula_line,mrp.group_mrp_user,1,1,1,1
+access_tinting_formula_line_manager,access.tinting.formula.line.manager,model_tinting_formula_line,paint_tinting.group_tint_formula_manager,1,1,1,1
 access_tinting_formula_line_admin,access.tinting.formula.line.admin,model_tinting_formula_line,base.group_system,1,1,1,1
 access_retint_wizard,retint.wizard,model_retint_wizard,base.group_user,1,1,1,1
 access_retint_wizard_original_line,retint.wizard.original.line,model_retint_wizard_original_line,base.group_user,1,1,1,1
@@ -37,3 +37,14 @@ access_pt_deferred_valuation_admin,pt.deferred.valuation.admin,model_paint_tinti
 access_pt_deferred_reconciliation_user,pt.deferred.reconciliation.user,model_paint_tinting_deferred_reconciliation,base.group_user,1,0,0,0
 access_pt_deferred_reconciliation_manager,pt.deferred.reconciliation.manager,model_paint_tinting_deferred_reconciliation,mrp.group_mrp_user,1,1,1,0
 access_pt_deferred_reconciliation_admin,pt.deferred.reconciliation.admin,model_paint_tinting_deferred_reconciliation,base.group_system,1,1,1,1
+access_pt_pos_lot_cost_audit_user,pt.pos.lot.cost.audit.user,model_paint_tinting_pos_lot_cost_audit,base.group_user,1,0,0,0
+access_pt_pos_lot_cost_audit_manager,pt.pos.lot.cost.audit.manager,model_paint_tinting_pos_lot_cost_audit,mrp.group_mrp_user,1,1,1,0
+access_pt_pos_lot_cost_audit_admin,pt.pos.lot.cost.audit.admin,model_paint_tinting_pos_lot_cost_audit,base.group_system,1,1,1,1
+access_formula_version_user,tinting.formula.version.user,model_tinting_formula_version,base.group_user,1,0,0,0
+access_formula_version_manager,tinting.formula.version.manager,model_tinting_formula_version,paint_tinting.group_tint_formula_manager,1,1,1,1
+access_formula_version_line_user,tinting.formula.version.line.user,model_tinting_formula_version_line,base.group_user,1,0,0,0
+access_formula_version_line_manager,tinting.formula.version.line.manager,model_tinting_formula_version_line,paint_tinting.group_tint_formula_manager,1,1,1,1
+access_formula_import_batch_manager,tinting.formula.import.batch.manager,model_tinting_formula_import_batch,paint_tinting.group_tint_formula_manager,1,1,1,1
+access_formula_import_row_manager,tinting.formula.import.row.manager,model_tinting_formula_import_row,paint_tinting.group_tint_formula_manager,1,1,1,1
+access_formula_import_wizard_manager,tinting.formula.import.wizard.manager,model_tinting_formula_import_wizard,paint_tinting.group_tint_formula_manager,1,1,1,1
+access_formula_bulk_approve_wizard_manager,tinting.formula.bulk.approve.wizard.manager,model_tinting_formula_bulk_approve_wizard,paint_tinting.group_tint_formula_manager,1,1,1,1

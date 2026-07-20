@@ -43,11 +43,13 @@
         'views/sbl_app_gate_config_views.xml',
         'views/sbl_app_gate_log_views.xml',
         'views/sbl_hr_employee_view.xml',
+        'views/sbl_hr_employee_mpesa_expiry_view.xml',
         'views/sbl_hr_employee_cod_payment_method_view.xml',
     ],
     'assets': {
         'point_of_sale._assets_pos': [
-            'sensible_pos_access_rights_employee/static/src/**/*',
+            'sensible_pos_access_rights_employee/static/src/authorization/**/*',
+            'sensible_pos_access_rights_employee/static/src/overrides/**/*',
         ],
         'web.assets_backend': [
             # M-Pesa gate loads first — app_gate wraps it to avoid double prompts.

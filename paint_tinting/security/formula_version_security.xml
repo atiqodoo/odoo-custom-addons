@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_tint_formula_manager" model="res.groups">
+        <field name="name">Tinting Formula Manager</field>
+        <field name="category_id" ref="base.module_category_hidden"/>
+        <field name="implied_ids" eval="[(4, ref('mrp.group_mrp_user'))]"/>
+        <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+        <field name="comment">Can create, import, approve, supersede, and choose default tinting formula versions.</field>
+    </record>
+
+    <record id="rule_formula_version_operational_visibility" model="ir.rule">
+        <field name="name">Operational users see usable formula versions</field>
+        <field name="model_id" ref="model_tinting_formula_version"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('state', 'in', ('approved', 'superseded'))]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_formula_version_manager_visibility" model="ir.rule">
+        <field name="name">Formula managers see every version state</field>
+        <field name="model_id" ref="model_tinting_formula_version"/>
+        <field name="groups" eval="[(4, ref('paint_tinting.group_tint_formula_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_formula_version_line_operational_visibility" model="ir.rule">
+        <field name="name">Operational users see usable formula version lines</field>
+        <field name="model_id" ref="model_tinting_formula_version_line"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">[('version_id.state', 'in', ('approved', 'superseded'))]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_formula_version_line_manager_visibility" model="ir.rule">
+        <field name="name">Formula managers see every version line</field>
+        <field name="model_id" ref="model_tinting_formula_version_line"/>
+        <field name="groups" eval="[(4, ref('paint_tinting.group_tint_formula_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+</odoo>

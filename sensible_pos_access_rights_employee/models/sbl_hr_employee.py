@@ -29,7 +29,7 @@ class HrEmployeeBase(models.Model):
             'sbl_disable_pos_discount_button', 'sbl_require_auth_global_discount',
             'sbl_require_auth_cod_dispatch', 'sbl_require_auth_cod_pay_all',
             'sbl_require_auth_cod_pay_partial', 'sbl_require_auth_cod_return_all',
-            'sbl_require_auth_cod_return_partial',
+            'sbl_require_auth_cod_return_partial', 'sbl_require_auth_cod_discount',
             'sbl_hide_pos_payment', 'sbl_disable_pos_change_price',
             'sbl_hide_pos_finance_from_product_info', 'sbl_hide_pos_cash_in_out',
             'sbl_hide_pos_create_customer_button', 'sbl_hide_pos_edit_customer_button',

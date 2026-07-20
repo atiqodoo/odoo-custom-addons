@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="purchase_order_form_vendor_priority_product" model="ir.ui.view">
+        <field name="name">purchase.order.form.vendor.priority.product</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="priority" eval="90"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_id']" position="attributes">
+                <attribute name="context">{
+                    'partner_id': parent.partner_id,
+                    'quantity': product_qty,
+                    'company_id': parent.company_id,
+                    'vendor_priority_search': True,
+                    'vendor_priority_source': 'rfq_variant'
+                }</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="purchase_order_form_matrix_vendor_priority_product" model="ir.ui.view">
+        <field name="name">purchase.order.form.matrix.vendor.priority.product</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase_product_matrix.purchase_order_form_matrix"/>
+        <field name="priority" eval="90"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_template_id']" position="attributes">
+                <attribute name="context">{
+                    'partner_id': parent.partner_id,
+                    'company_id': parent.company_id,
+                    'vendor_priority_search': True,
+                    'vendor_priority_source': 'rfq_template_matrix'
+                }</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+

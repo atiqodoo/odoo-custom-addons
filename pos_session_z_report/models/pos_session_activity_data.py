@@ -79,11 +79,34 @@ class PosSessionZReportActivityData(models.TransientModel):
             histories = self.env['loyalty.history'].sudo().search([
                 ('order_id', 'in', order_ids),
                 ('order_model', '=', 'pos.order'),
+                ('card_id.program_id.program_type', '=', 'loyalty'),
             ])
-            _logger.debug('%s loyalty_history records for session: %d', _TAG, len(histories))
+            if 'sale.order' in self.env:
+                sale_orders = self.env['sale.order'].sudo().search([
+                    ('sbl_session_id', '=', session.id),
+                ]) if 'sbl_session_id' in self.env['sale.order']._fields else self.env['sale.order'].browse()
+                if sale_orders:
+                    histories |= self.env['loyalty.history'].sudo().search([
+                        ('order_id', 'in', sale_orders.ids),
+                        ('order_model', '=', 'sale.order'),
+                        ('card_id.program_id.program_type', '=', 'loyalty'),
+                    ])
+            _logger.debug(
+                '%s loyalty_history records for session after loyalty-program filter: %d',
+                _TAG, len(histories),
+            )
 
             awarded  = sum(h.issued for h in histories)
             redeemed = sum(h.used   for h in histories)
+            if not redeemed:
+                redeemed = sum(
+                    float(line.points_cost or 0.0)
+                    for line in session.order_ids.mapped('lines')
+                    if getattr(line, 'is_reward_line', False)
+                    and getattr(line, 'points_cost', 0.0)
+                    and line.coupon_id
+                    and line.coupon_id.program_id.program_type == 'loyalty'
+                )
 
             return dict(label=label,
                         left_label='Awarded (pts)', left_val=awarded,
@@ -98,8 +121,8 @@ class PosSessionZReportActivityData(models.TransientModel):
 
     def _activity_gift_cards(self, session):
         """
-        CREATED  = negative Credit Note Gift Card payments on REFUND orders.
-        REDEEMED = positive Credit Note Gift Card payments on regular orders.
+        ISSUED   = configured Credit Note Gift Card payment lines on returns.
+        REDEEMED = used points on the configured gift-card loyalty program.
         """
         label = 'Credit Note Gift Cards'
         zero = dict(label=label,
@@ -115,22 +138,55 @@ class PosSessionZReportActivityData(models.TransientModel):
                 _logger.debug('%s no credit_note_payment_method_id on config — skip', _TAG)
                 return zero
 
-            all_payments = session.order_ids.mapped('payment_ids').filtered(
+            issue_pmts = session.order_ids.mapped('payment_ids').filtered(
                 lambda p: p.payment_method_id == cngc_method
             )
-            _logger.debug('%s CNGC payments in session: %d', _TAG, len(all_payments))
+            issued = sum(abs(p.amount) for p in issue_pmts)
 
-            created_pmts  = all_payments.filtered(lambda p: p.amount < 0)
-            redeemed_pmts = all_payments.filtered(lambda p: p.amount > 0)
+            redeemed = 0.0
+            redeemed_count = 0
+            if 'loyalty.history' in self.env:
+                order_ids = session.order_ids.ids
+                cngc_program = getattr(config, 'credit_note_gift_card_program_id', False)
+                history_domain = [
+                    ('order_id', 'in', order_ids),
+                    ('order_model', '=', 'pos.order'),
+                    ('used', '>', 0),
+                ]
+                if cngc_program:
+                    history_domain.append(('card_id.program_id', '=', cngc_program.id))
+                else:
+                    history_domain.append(('card_id.program_id.program_type', '=', 'gift_card'))
 
-            issued   = sum(abs(p.amount) for p in created_pmts)
-            redeemed = sum(p.amount      for p in redeemed_pmts)
+                redeemed_histories = self.env['loyalty.history'].sudo().search(history_domain)
+                redeemed = sum(h.used for h in redeemed_histories)
+                redeemed_count = len(redeemed_histories)
+
+            if not redeemed:
+                cngc_program = getattr(config, 'credit_note_gift_card_program_id', False)
+                redeemed_lines = session.order_ids.mapped('lines').filtered(
+                    lambda line: getattr(line, 'is_reward_line', False)
+                    and getattr(line, 'points_cost', 0.0)
+                    and line.coupon_id
+                    and (
+                        (cngc_program and line.coupon_id.program_id == cngc_program)
+                        or (not cngc_program and line.coupon_id.program_id.program_type == 'gift_card')
+                    )
+                )
+                redeemed = sum(float(line.points_cost or 0.0) for line in redeemed_lines)
+                redeemed_count = len(redeemed_lines)
+
+            _logger.info(
+                '%s CNGC session=%s method=%s issue_payments=%d issued=%.2f redeemed_count=%d redeemed=%.2f',
+                _TAG, session.name, cngc_method.display_name,
+                len(issue_pmts), issued, redeemed_count, redeemed,
+            )
 
             return dict(label=label,
                         left_label='Issued (value)', left_val=issued,
-                        left_note=f'{len(created_pmts)} card(s)',
+                        left_note=f'{len(issue_pmts)} card(s)',
                         right_label='Redeemed (value)', right_val=redeemed,
-                        right_note=f'{len(redeemed_pmts)} use(s)')
+                        right_note=f'{redeemed_count} use(s)')
         except Exception as exc:
             _logger.error('%s _activity_gift_cards error: %s', _TAG, exc)
             return zero

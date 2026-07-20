@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cod_session_deposit_reservation_list" model="ir.ui.view">
+        <field name="name">pos.cod.session.deposit.reservation.list</field>
+        <field name="model">pos.cod.session.deposit.reservation</field>
+        <field name="arch" type="xml">
+            <list string="Same-Session COD Deposit Reservations" create="false" edit="false" delete="false"
+                  decoration-warning="state == 'reserved'" decoration-danger="state == 'error'"
+                  decoration-success="state == 'finalized'" default_order="create_date desc">
+                <field name="name"/>
+                <field name="create_date"/>
+                <field name="order_id"/>
+                <field name="commercial_partner_id" string="Customer"/>
+                <field name="source_session_id"/>
+                <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="state" widget="badge"/>
+                <field name="application_id" optional="show"/>
+                <field name="cashier_id" optional="show"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cod_session_deposit_reservation_form" model="ir.ui.view">
+        <field name="name">pos.cod.session.deposit.reservation.form</field>
+        <field name="model">pos.cod.session.deposit.reservation</field>
+        <field name="arch" type="xml">
+            <form string="Same-Session COD Deposit Reservation" create="false" edit="false" delete="false">
+                <sheet>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group string="Reservation">
+                            <field name="state" widget="badge"/>
+                            <field name="operation_uuid"/>
+                            <field name="order_id"/>
+                            <field name="partner_id"/>
+                            <field name="commercial_partner_id"/>
+                            <field name="amount"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Session and Finalization">
+                            <field name="source_session_id"/>
+                            <field name="pos_config_id"/>
+                            <field name="cashier_id"/>
+                            <field name="reserved_date"/>
+                            <field name="finalized_date"/>
+                            <field name="application_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Source Deposit Payments">
+                            <field name="source_payment_ids" readonly="1">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="payment_date"/>
+                                    <field name="pos_order_id"/>
+                                    <field name="payment_method_id"/>
+                                    <field name="amount"/>
+                                    <field name="session_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Source Allocation"><field name="source_allocation_json" nolabel="1"/></page>
+                        <page string="Finalization Error"><field name="error_message" nolabel="1"/></page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cod_session_deposit_reservations" model="ir.actions.act_window">
+        <field name="name">Same-Session Deposit Reservations</field>
+        <field name="res_model">pos.cod.session.deposit.reservation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

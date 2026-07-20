@@ -33,6 +33,10 @@
                     <i class="fa fa-undo me-1" role="img" aria-label="Refund" title="Refund" />
                     Refund
                 </button>
+                <button t-if="this.uiCanUseMethod('clickPrint')" t-att-class="uiActionButtonClass" t-on-click="() => { this.uiLogPromotedAction('print'); this.clickPrint(); }">
+                    <i class="fa fa-print me-1" role="img" aria-label="Print" title="Print" />
+                    Print
+                </button>
                 <button t-if="pos.models['account.fiscal.position'].length"
                     class="control-button o_fiscal_position_button"
                     t-att-class="uiActionButtonClass"

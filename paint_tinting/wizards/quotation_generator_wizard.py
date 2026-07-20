@@ -59,6 +59,48 @@ class QuotationGeneratorLine(models.TransientModel):
         ondelete='cascade',
         help='Reference to comparison line (source of truth for costs)'
     )
+
+    source_wizard_id = fields.Many2one(
+        'cost.comparison.wizard',
+        string='Source Comparison Wizard',
+        readonly=True,
+        ondelete='set null',
+        help='Comparison wizard batch that imported this quotation line'
+    )
+
+    line_colour_code_id = fields.Many2one(
+        'colour.code',
+        string='Colour Code',
+        readonly=True,
+        help='Colour snapshot for this quotation line'
+    )
+
+    line_fandeck_id = fields.Many2one(
+        'colour.fandeck',
+        string='Fandeck',
+        readonly=True,
+        help='Fandeck snapshot for this quotation line'
+    )
+
+    line_base_category_id = fields.Many2one(
+        'product.category',
+        string='Category',
+        readonly=True,
+        help='Base category snapshot for this quotation line'
+    )
+
+    formula_json = fields.Text(
+        string='Formula JSON',
+        readonly=True,
+        help='Formula snapshot to use when this line is generated into a sale order'
+    )
+
+    formula_version_id = fields.Many2one(
+        'tinting.formula.version',
+        string='Formula Version',
+        readonly=True,
+        help='Formula version active when this line was imported, if any'
+    )
     
     # ============================================
     # PRODUCT INFORMATION (from comparison line)
@@ -294,6 +336,13 @@ class QuotationGeneratorWizard(models.TransientModel):
         string='Email'
     )
 
+    active_tint_wizard_id = fields.Many2one(
+        'tint.wizard',
+        string='Active Tint Wizard',
+        readonly=True,
+        help='Last tint wizard opened from this quotation wizard for adding another batch'
+    )
+
     # ============================================
     # PRODUCT LINES
     # ============================================
@@ -324,7 +373,7 @@ class QuotationGeneratorWizard(models.TransientModel):
     # ============================================
     # COMPUTE METHODS
     # ============================================
-    @api.depends('line_ids.selected')
+    @api.depends('line_ids.selected', 'line_ids.price_manually_set')
     def _compute_statistics(self):
         """Calculate selection statistics"""
         _logger.info("🔢 Computing quotation statistics...")
@@ -359,6 +408,133 @@ class QuotationGeneratorWizard(models.TransientModel):
     def _onchange_existing_sale_order_id(self):
         if self.existing_sale_order_id:
             self.partner_id = self.existing_sale_order_id.partner_id
+
+    def _get_source_formula_json(self, source_wizard):
+        """Return the exact formula JSON that should be used for one batch."""
+        if source_wizard.show_scaled_products and source_wizard.scaled_colorant_shots_json:
+            return source_wizard.scaled_colorant_shots_json
+        return source_wizard.colorant_shots_json or '{}'
+
+    def _prepare_line_vals_from_comparison(self, source_wizard):
+        """Build quotation line commands from a cost comparison wizard."""
+        self.ensure_one()
+        source_wizard.ensure_one()
+
+        formula_json = self._get_source_formula_json(source_wizard)
+        parent = source_wizard.parent_wizard_id
+        formula_version = (
+            parent.formula_version_id
+            if parent and 'formula_version_id' in parent._fields
+            else self.env['tinting.formula.version']
+        )
+
+        _logger.info("=" * 80)
+        _logger.info(
+            "QUOTE_BATCH_PREPARE quotation_wizard_id=%s source_wizard_id=%s "
+            "parent_tint_wizard_id=%s lines=%s scaled=%s formula_version_id=%s",
+            self.id, source_wizard.id, parent.id if parent else False,
+            len(source_wizard.comparison_line_ids), source_wizard.show_scaled_products,
+            formula_version.id if formula_version else False,
+        )
+        _logger.info("QUOTE_BATCH_FORMULA_JSON source_wizard_id=%s payload=%s", source_wizard.id, formula_json)
+
+        line_vals = []
+        for idx, comp_line in enumerate(source_wizard.comparison_line_ids, 1):
+            if not comp_line.product_id:
+                _logger.warning(
+                    "QUOTE_BATCH_SKIP_NO_PRODUCT quotation_wizard_id=%s "
+                    "source_wizard_id=%s comparison_line_id=%s index=%s",
+                    self.id, source_wizard.id, comp_line.id, idx,
+                )
+                continue
+
+            imported_price = comp_line.selling_price_incl_vat or 0.0
+            line_vals.append((0, 0, {
+                'comparison_line_id': comp_line.id,
+                'source_wizard_id': source_wizard.id,
+                'line_colour_code_id': source_wizard.parent_wizard_id.colour_code_id.id,
+                'line_fandeck_id': source_wizard.parent_wizard_id.fandeck_id.id,
+                'line_base_category_id': source_wizard.base_category_id.id,
+                'formula_json': formula_json,
+                'formula_version_id': formula_version.id if formula_version else False,
+                'selected': True,
+                'selling_price_manual': imported_price,
+                'price_manually_set': imported_price > 0,
+            }))
+
+            _logger.info(
+                "QUOTE_BATCH_LINE_PREPARED quotation_wizard_id=%s "
+                "source_wizard_id=%s comparison_line_id=%s product_id=%s "
+                "brand=%s total_cost=%.4f imported_price=%.4f price_ready=%s",
+                self.id, source_wizard.id, comp_line.id, comp_line.product_id.id,
+                comp_line.brand_name, comp_line.total_cost_incl_vat,
+                imported_price, imported_price > 0,
+            )
+
+        _logger.info(
+            "QUOTE_BATCH_PREPARE_DONE quotation_wizard_id=%s source_wizard_id=%s "
+            "prepared_lines=%s",
+            self.id, source_wizard.id, len(line_vals),
+        )
+        _logger.info("=" * 80)
+        return line_vals
+
+    def action_add_another_tint(self):
+        """Open a fresh tint wizard that will append its comparison lines here."""
+        self.ensure_one()
+
+        _logger.info(
+            "QUOTE_ADD_ANOTHER_TINT_OPEN quotation_wizard_id=%s existing_lines=%s",
+            self.id, len(self.line_ids),
+        )
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Tint New Paint',
+            'res_model': 'tint.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': dict(
+                self.env.context,
+                active_quotation_generator_id=self.id,
+                default_active_quotation_generator_id=self.id,
+            ),
+        }
+
+    def action_append_comparison_batch(self, source_wizard):
+        """Append a cost comparison batch to this quotation wizard and reopen it."""
+        self.ensure_one()
+        source_wizard.ensure_one()
+
+        before_count = len(self.line_ids)
+        line_vals = self._prepare_line_vals_from_comparison(source_wizard)
+        if not line_vals:
+            raise UserError("No products were available to add to the quotation wizard.")
+
+        self.write({
+            'source_wizard_id': self.source_wizard_id.id or source_wizard.id,
+            'colour_code_id': self.colour_code_id.id or source_wizard.parent_wizard_id.colour_code_id.id,
+            'fandeck_id': self.fandeck_id.id or source_wizard.parent_wizard_id.fandeck_id.id,
+            'base_category_id': self.base_category_id.id or source_wizard.base_category_id.id,
+            'line_ids': line_vals,
+        })
+
+        after_count = len(self.line_ids)
+        _logger.info(
+            "QUOTE_BATCH_APPENDED quotation_wizard_id=%s source_wizard_id=%s "
+            "before=%s added=%s after=%s selected=%s with_price=%s",
+            self.id, source_wizard.id, before_count, len(line_vals), after_count,
+            self.total_selected, self.total_selected_with_price,
+        )
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Generate Quotation',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
 
     def action_create_customer_from_wizard(self):
         """Create a customer profile from the quotation wizard and select it."""
@@ -439,17 +615,41 @@ class QuotationGeneratorWizard(models.TransientModel):
         # CREATE LINES USING COMMAND SYNTAX - (0, 0, {...})
         # All products AUTO-CHECKED (selected=True)
         line_vals = []
-        
+        formula_json = self._get_source_formula_json(source_wizard)
+        parent = source_wizard.parent_wizard_id
+        formula_version = (
+            parent.formula_version_id
+            if parent and 'formula_version_id' in parent._fields
+            else self.env['tinting.formula.version']
+        )
+
+        _logger.info(
+            "QUOTE_INITIAL_BATCH source_wizard_id=%s parent_tint_wizard_id=%s "
+            "scaled=%s formula_version_id=%s formula_json=%s",
+            source_wizard.id, parent.id if parent else False,
+            source_wizard.show_scaled_products,
+            formula_version.id if formula_version else False,
+            formula_json,
+        )
+
         for idx, comp_line in enumerate(source_wizard.comparison_line_ids, 1):
             if not comp_line.product_id:
                 _logger.warning(f"  ⚠️ Line {idx}: Skipping - no product_id")
                 continue
-            
+
+            imported_price = comp_line.selling_price_incl_vat or 0.0
+
             line_vals.append((0, 0, {
                 'comparison_line_id': comp_line.id,  # ← Reference to source
+                'source_wizard_id': source_wizard.id,
+                'line_colour_code_id': source_wizard.parent_wizard_id.colour_code_id.id,
+                'line_fandeck_id': source_wizard.parent_wizard_id.fandeck_id.id,
+                'line_base_category_id': source_wizard.base_category_id.id,
+                'formula_json': formula_json,
+                'formula_version_id': formula_version.id if formula_version else False,
                 'selected': True,                    # ← AUTO-CHECKED!
-                'selling_price_manual': 0.0,
-                'price_manually_set': False,
+                'selling_price_manual': imported_price,
+                'price_manually_set': imported_price > 0,
             }))
             
             _logger.info(f"  ✅ Line {idx}: {comp_line.product_id.display_name} (AUTO-CHECKED)")
@@ -692,6 +892,12 @@ class QuotationGeneratorWizard(models.TransientModel):
                     "A quotation line is missing its source comparison line. "
                     "Please close and reopen the quotation generator."
                 )
+
+            line_formula_json = quot_line.formula_json or formula_json or '{}'
+            line_colour = quot_line.line_colour_code_id or self.colour_code_id
+            line_fandeck = quot_line.line_fandeck_id or self.fandeck_id
+            line_category = quot_line.line_base_category_id or self.base_category_id
+            line_source = quot_line.source_wizard_id or self.source_wizard_id
             
             _logger.info(f"  🔧 Processing line {idx+1}/{len(selected_lines)}")
             _logger.info(f"     Comparison line ID: {comp_line.id}")
@@ -712,13 +918,41 @@ class QuotationGeneratorWizard(models.TransientModel):
             _logger.info(f"     Base Cost: {comp_line.base_cost_incl_vat:.2f} KES")
             _logger.info(f"     Colorant Cost: {comp_line.colorant_cost_incl_vat:.2f} KES")
             _logger.info(f"     Total Cost: {comp_line.total_cost_incl_vat:.2f} KES")
+            _logger.info(
+                "     Batch Source: comparison_wizard_id=%s colour_id=%s "
+                "fandeck_id=%s category_id=%s formula_version_id=%s formula_len=%s",
+                line_source.id if line_source else False,
+                line_colour.id if line_colour else False,
+                line_fandeck.id if line_fandeck else False,
+                line_category.id if line_category else False,
+                quot_line.formula_version_id.id if quot_line.formula_version_id else False,
+                len(line_formula_json or ''),
+            )
+
+            base_cost_excl_vat = comp_line.base_cost_incl_vat / 1.16
+            colorant_cost_excl_vat = comp_line.colorant_cost_incl_vat / 1.16
+            total_cost_excl_vat = comp_line.total_cost_incl_vat / 1.16
+            _logger.info(
+                "     [COST IMPORT] VAT-inclusive snapshot kept for tinting flow: "
+                "base=%.4f colorant=%.4f total=%.4f",
+                comp_line.base_cost_incl_vat,
+                comp_line.colorant_cost_incl_vat,
+                comp_line.total_cost_incl_vat,
+            )
+            _logger.info(
+                "     [COST IMPORT] VAT-exclusive sale margin cost calculated: "
+                "base=%.4f colorant=%.4f total=%.4f",
+                base_cost_excl_vat,
+                colorant_cost_excl_vat,
+                total_cost_excl_vat,
+            )
             
             description = (
                 f"{comp_line.product_id.display_name}\n"
-                f"Colour: {self.colour_code_id.code} - {self.colour_code_id.name}"
+                f"Colour: {line_colour.code} - {line_colour.name}"
             )
             
-            order_line = self.env['sale.order.line'].create({
+            line_vals = {
                 'order_id': sale_order.id,
                 'product_id': comp_line.product_id.id,
                 'name': description,
@@ -730,7 +964,7 @@ class QuotationGeneratorWizard(models.TransientModel):
                 # ============================================
                 # FIXED: All tinting metadata now correctly written
                 # ============================================
-                'tinting_formula_json': formula_json,
+                'tinting_formula_json': line_formula_json,
                 'quoted_cost_at_creation': comp_line.total_cost_incl_vat,
                 'quoted_base_cost': comp_line.base_cost_incl_vat,
                 'quoted_colorant_cost': comp_line.colorant_cost_incl_vat,
@@ -739,10 +973,32 @@ class QuotationGeneratorWizard(models.TransientModel):
                 'base_product_uom_id': comp_line.base_product_uom_id.id if comp_line.base_product_uom_id else False,
                 
                 'is_tinted_product_line': True,
-                'colour_code_id': self.colour_code_id.id,
-                'fandeck_id': self.fandeck_id.id,
-                'base_category_id': self.base_category_id.id,
-            })
+                'colour_code_id': line_colour.id,
+                'fandeck_id': line_fandeck.id,
+                'base_category_id': line_category.id,
+            }
+
+            if 'tinting_formula_version_id' in self.env['sale.order.line']._fields:
+                line_vals['tinting_formula_version_id'] = (
+                    quot_line.formula_version_id.id
+                    if quot_line.formula_version_id else False
+                )
+
+            if 'purchase_price' in self.env['sale.order.line']._fields:
+                line_vals['purchase_price'] = total_cost_excl_vat
+                _logger.info(
+                    "     [COST IMPORT] Writing sale.order.line.purchase_price "
+                    "from quotation cost excl VAT: %.4f",
+                    total_cost_excl_vat,
+                )
+            else:
+                _logger.warning(
+                    "     [COST IMPORT] sale.order.line.purchase_price field not "
+                    "available; sale margin Cost column cannot be imported. "
+                    "Install sale_margin if this field is required."
+                )
+
+            order_line = self.env['sale.order.line'].create(line_vals)
             
             lines_created += 1
             
@@ -751,6 +1007,19 @@ class QuotationGeneratorWizard(models.TransientModel):
             _logger.info(f"     Base UOM: {order_line.base_product_uom_id.name if order_line.base_product_uom_id else 'N/A'}")
             _logger.info(f"     Selling Price: {order_line.price_unit:.2f} KES")
             _logger.info(f"     Quoted Total Cost: {order_line.quoted_cost_at_creation:.2f} KES")
+            if 'purchase_price' in order_line._fields:
+                _logger.info(
+                    "     [COST IMPORT] Final sale margin Cost on line: %.4f KES",
+                    order_line.purchase_price,
+                )
+                if abs(order_line.purchase_price - total_cost_excl_vat) > 0.01:
+                    _logger.warning(
+                        "     [COST IMPORT] purchase_price mismatch after create: "
+                        "expected %.4f, got %.4f. Another compute/write may have "
+                        "overridden the imported quotation cost.",
+                        total_cost_excl_vat,
+                        order_line.purchase_price,
+                    )
             _logger.info(f"     Tinting Formula stored: {bool(order_line.tinting_formula_json)}")
         
         # ============================================

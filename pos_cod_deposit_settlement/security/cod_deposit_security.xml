@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_cod_deposit_viewer" model="res.groups">
+        <field name="name">COD Deposit Application Viewer</field>
+        <field name="category_id" ref="base.module_category_sales_point_of_sale"/>
+        <field name="implied_ids" eval="[(4, ref('point_of_sale.group_pos_user'))]"/>
+    </record>
+    <record id="group_cod_deposit_manager" model="res.groups">
+        <field name="name">COD Deposit Application Manager</field>
+        <field name="category_id" ref="base.module_category_sales_point_of_sale"/>
+        <field name="implied_ids" eval="[(4, ref('pos_cod_deposit_settlement.group_cod_deposit_viewer'))]"/>
+    </record>
+</odoo>

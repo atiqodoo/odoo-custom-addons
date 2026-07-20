@@ -40,6 +40,25 @@ class ProductTemplate(models.Model):
         default=False,
         help='Indicates if this product is a colorant for tinting'
     )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Make newly created tinted products available in POS by default.
+
+        Keep the policy local to tinted products and respect an explicit value
+        supplied by a caller. ``available_on_pos`` is the installation's POS
+        mirror field and is kept aligned when that field is present.
+        """
+        prepared_vals_list = []
+        has_pos_mirror = 'available_on_pos' in self._fields
+        for values in vals_list:
+            values = dict(values)
+            if values.get('is_tinted_product'):
+                values.setdefault('available_in_pos', True)
+                if has_pos_mirror:
+                    values.setdefault('available_on_pos', values['available_in_pos'])
+            prepared_vals_list.append(values)
+        return super().create(prepared_vals_list)
     
     colorant_code = fields.Char(
         string='Colorant Code',

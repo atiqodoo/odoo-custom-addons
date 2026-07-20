@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_purchase_order_form_combined_lpo_bill" model="ir.ui.view">
+        <field name="name">purchase.order.form.combined.lpo.bill</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_create_invoice_wizard']" position="after">
+                <button name="action_create_combined_lpo_bill_wizard"
+                        string="Combined Bill"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="state not in ('purchase', 'done') or invoice_status != 'to invoice'"
+                        help="Create one vendor bill from this LPO and other selected eligible LPOs."/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_purchase_order_combined_lpo_bill_wizard" model="ir.actions.server">
+        <field name="name">Create Combined LPO Bill</field>
+        <field name="model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_create_combined_lpo_bill_wizard()</field>
+    </record>
+</odoo>

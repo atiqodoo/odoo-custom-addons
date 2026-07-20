@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="local_document_import_log_view_list" model="ir.ui.view">
+        <field name="name">local.document.import.log.list</field>
+        <field name="model">local.document.import.log</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false" decoration-success="state == 'imported'" decoration-danger="state == 'error'" decoration-muted="state == 'skipped'">
+                <field name="last_seen_date"/>
+                <field name="state"/>
+                <field name="watch_path_id"/>
+                <field name="original_filename"/>
+                <field name="relative_folder"/>
+                <field name="file_size"/>
+                <field name="document_id"/>
+                <field name="error_message"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="local_document_import_log_view_form" model="ir.ui.view">
+        <field name="name">local.document.import.log.form</field>
+        <field name="model">local.document.import.log</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false">
+                <header>
+                    <button name="action_open_document" type="object" string="Open Document" class="btn-primary" invisible="not document_id"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="state"/>
+                            <field name="watch_path_id"/>
+                            <field name="source_path"/>
+                            <field name="relative_folder"/>
+                            <field name="original_filename"/>
+                        </group>
+                        <group>
+                            <field name="file_extension"/>
+                            <field name="file_size"/>
+                            <field name="modified_time"/>
+                            <field name="checksum"/>
+                            <field name="imported_date"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="folder_id"/>
+                        <field name="document_id"/>
+                    </group>
+                    <group>
+                        <field name="debug_note"/>
+                        <field name="error_message"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="local_document_import_log_view_search" model="ir.ui.view">
+        <field name="name">local.document.import.log.search</field>
+        <field name="model">local.document.import.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="source_path"/>
+                <field name="original_filename"/>
+                <field name="watch_path_id"/>
+                <filter string="Pending" name="pending" domain="[('state', '=', 'pending')]"/>
+                <filter string="Imported" name="imported" domain="[('state', '=', 'imported')]"/>
+                <filter string="Errors" name="errors" domain="[('state', '=', 'error')]"/>
+                <filter string="Skipped" name="skipped" domain="[('state', '=', 'skipped')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Watch Path" name="group_watch_path" context="{'group_by': 'watch_path_id'}"/>
+                    <filter string="State" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Date" name="group_date" context="{'group_by': 'last_seen_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="local_document_import_log_action" model="ir.actions.act_window">
+        <field name="name">Local Import Logs</field>
+        <field name="res_model">local.document.import.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="local_document_import_log_view_search"/>
+        <field name="context">{'search_default_errors': 1}</field>
+    </record>
+</odoo>

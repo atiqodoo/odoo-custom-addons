@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_partner_form_inherit_vendor_invoice_profile" model="ir.ui.view">
+        <field name="name">res.partner.form.vendor.invoice.profile</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="purchase_net_price_compute.res_partner_form_inherit_discount_freight"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='freight_percentage']" position="after">
+                <field name="vendor_invoice_profile"
+                       groups="purchase.group_purchase_manager"
+                       options="{'no_create': True, 'no_open': True}"/>
+            </xpath>
+            <xpath expr="//field[@name='freight_percentage']/ancestor::group[1]" position="after">
+                <div class="alert alert-info" role="alert"
+                     groups="purchase.group_purchase_manager"
+                     invisible="supplier_rank == 0 or vendor_invoice_profile == 'standard'">
+                    This vendor is mapped to a specialized invoice calculation profile.
+                    The bill wizard will use that profile without matching the vendor name.
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

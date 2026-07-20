@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+
+    <t t-name="mpesa_c2b_pos.MpesaPaymentScreen">
+        <div style="position: fixed; inset: 8vh 10vw; z-index: 99999; display: flex; flex-direction: column; gap: 16px; padding: 24px; overflow: auto; background: white; color: #111827; border: 1px solid #d1d5db; border-radius: 8px; box-shadow: 0 24px 70px rgba(15, 23, 42, 0.35);">
+
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid #e5e7eb;">
+                <span style="display: grid; width: 40px; height: 40px; place-items: center; color: white; background: #008c45; border-radius: 8px; font-weight: 700;">M</span>
+                <h2 style="margin: 0;">M-Pesa Payment</h2>
+                <div>Order Total: <strong t-esc="formattedOrderAmount"/></div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <label style="color: #6b7280; font-weight: 600;">
+                    Customer's M-Pesa Phone Number
+                </label>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <input
+                        style="min-width: 280px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 18px;"
+                        type="tel"
+                        placeholder="07XX XXX XXX"
+                        t-ref="phoneInput"
+                        t-on-input="onPhoneInput"
+                        t-on-keyup="onPhoneKeyUp"
+                        maxlength="13"
+                        autocomplete="off"
+                    />
+                    <button
+                        style="padding: 10px 16px; color: white; border: 1px solid #008c45; border-radius: 6px; background: #008c45; font-weight: 700;"
+                        t-on-click="onSearch"
+                        t-att-disabled="state.searching || !state.phoneValid">
+                        <t t-if="state.searching">Searching...</t>
+                        <t t-else="">Search</t>
+                    </button>
+                </div>
+                <div t-if="state.phoneError" style="color: #991b1b;" t-esc="state.phoneError"/>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div t-if="state.status === 'not_found'" style="padding: 14px; color: #991b1b; border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2;">
+                    <strong>No unused M-Pesa payment found</strong> for this number.
+                </div>
+
+                <div t-if="state.status === 'already_used'" style="padding: 14px; color: #991b1b; border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2;">
+                    This transaction is not available. Search again or select another payment.
+                </div>
+
+                <div t-if="state.status === 'error'" style="padding: 14px; color: #991b1b; border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2;">
+                    Network error. Could not reach Odoo. Check connection and retry.
+                </div>
+
+                <div t-if="state.transactions.length > 0" style="display: flex; flex-direction: column; gap: 10px;">
+                    <p t-if="state.transactions.length > 1" style="margin: 0; color: #6b7280;">
+                        Multiple payments found. Select the correct one:
+                    </p>
+                    <t t-foreach="state.transactions" t-as="txn" t-key="txn.id">
+                        <MpesaTransactionCard
+                            txn="txn"
+                            orderAmount="props.orderAmount"
+                            selected="state.selectedTxnId === txn.id"
+                            onSelect.bind="onSelectTransaction"
+                        />
+                    </t>
+                </div>
+
+                <div t-if="state.selectedTxn and state.selectedTxn.match_type === 'underpayment'"
+                     style="padding: 14px; color: #92400e; border: 1px solid #fde68a; border-radius: 8px; background: #fffbeb;">
+                    <strong>Split payment:</strong>
+                    M-Pesa will apply Ksh <t t-esc="selectedApplyAmount.toFixed(2)"/>.
+                    Remaining due Ksh <t t-esc="selectedRemainingDue.toFixed(2)"/> can be paid with another method.
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                <button
+                    style="padding: 10px 16px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; font-weight: 700;"
+                    t-on-click="onCancel">
+                    Cancel
+                </button>
+                <button
+                    style="padding: 10px 16px; color: white; border: 1px solid #008c45; border-radius: 6px; background: #008c45; font-weight: 700;"
+                    t-on-click="onConfirm"
+                    t-att-disabled="!canConfirm">
+                    <t t-if="state.confirming">Processing...</t>
+                    <t t-else="">Confirm Payment</t>
+                </button>
+            </div>
+
+            <MpesaManagerPin
+                t-if="state.showPinDialog"
+                reason="state.pinReason"
+                onApprove.bind="onManagerApproved"
+                onCancel.bind="onPinCancelled"
+            />
+
+        </div>
+    </t>
+
+</templates>

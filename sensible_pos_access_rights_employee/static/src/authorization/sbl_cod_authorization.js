@@ -48,6 +48,14 @@ patch(CodOrdersScreen.prototype, {
         );
     },
 
+    async onCodDiscount(order) {
+        return await this.sblGuardCodAction(
+            "cod_discount",
+            "COD Discount",
+            () => super.onCodDiscount(order)
+        );
+    },
+
     async sblGuardCodAction(actionKey, label, callback) {
         const allowed = await this.pos.sblAuthorizeAction(actionKey, { label });
         if (!allowed) {

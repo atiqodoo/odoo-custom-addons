@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_attachment_requirements" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.attachment.requirements</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="purchase.res_config_settings_view_form_purchase"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='purchase_setting_container']" position="inside">
+                <setting id="pnpc_require_po_attachment_on_receive_products"
+                         string="Receive Products Document"
+                         help="Block Receive Products from the Purchase Order until the order has at least one attached document.">
+                    <field name="pnpc_require_po_attachment_on_receive_products"/>
+                </setting>
+                <setting id="pnpc_require_receipt_attachment_on_validate"
+                         string="Receipt Validation Document"
+                         help="Block receipt validation until the receipt has at least one attached document.">
+                    <field name="pnpc_require_receipt_attachment_on_validate"/>
+                </setting>
+                <setting id="pnpc_require_vendor_bill_attachment_on_confirm"
+                         string="Vendor Bill Confirmation Document"
+                         help="Block vendor bill confirmation until the bill has at least one attached document.">
+                    <field name="pnpc_require_vendor_bill_attachment_on_confirm"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

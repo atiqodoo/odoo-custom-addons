@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_session_z_report.ZReportSummaryCogItem">
+        <DropdownItem class="'o_menu_item'" onSelected.bind="openWizard">
+            <i class="fa fa-file-excel-o fa-fw me-1"/>
+            <span>Z-Report Summary</span>
+        </DropdownItem>
+    </t>
+</templates>

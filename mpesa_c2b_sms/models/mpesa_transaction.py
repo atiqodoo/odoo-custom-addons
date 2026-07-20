@@ -25,6 +25,21 @@ class MpesaTransaction(models.Model):
         'Amount Used', currency_field='currency_id', default=0.0,
         help='Amount already consumed by POS/invoice reconciliation.',
     )
+    amount_refunded = fields.Monetary(
+        'Amount Refunded', currency_field='currency_id',
+        compute='_compute_case_amounts', store=True,
+        help='Amount paid back through an internal refund case.',
+    )
+    amount_reversed = fields.Monetary(
+        'Amount Reversed by Safaricom', currency_field='currency_id',
+        compute='_compute_case_amounts', store=True,
+        help='Amount reversed or deducted by Safaricom after a reversal complaint.',
+    )
+    amount_frozen = fields.Monetary(
+        'Amount Frozen', currency_field='currency_id',
+        compute='_compute_case_amounts', store=True,
+        help='Amount blocked while a Safaricom dispute is under review.',
+    )
     amount_remaining = fields.Monetary(
         'Amount Remaining', currency_field='currency_id',
         compute='_compute_amount_remaining', store=True,
@@ -51,6 +66,12 @@ class MpesaTransaction(models.Model):
         'pos.order', string='POS Orders',
         compute='_compute_pos_order_ids', store=False,
     )
+    refund_case_ids = fields.One2many(
+        'mpesa.transaction.refund.case', 'transaction_id', 'Refund/Dispute Cases',
+    )
+    refund_case_count = fields.Integer(
+        'Refund/Dispute Case Count', compute='_compute_refund_case_count',
+    )
 
     # ------------------------------------------------------------------
     # POS locking (used by mpesa_c2b_pos)
@@ -72,6 +93,16 @@ class MpesaTransaction(models.Model):
             ('partial_pos',       'Partially Used (POS)'),
             ('reconciled_pos',    'Reconciled (POS)'),
             ('reconciled_invoice','Reconciled (Invoice)'),
+            ('refund_requested',  'Refund Requested'),
+            ('refund_approved',   'Refund Approved'),
+            ('partially_refunded','Partially Refunded'),
+            ('refunded',          'Refunded'),
+            ('safaricom_dispute', 'Safaricom Dispute'),
+            ('reversal_accepted', 'Reversal Accepted'),
+            ('reversal_objected', 'Reversal Objected'),
+            ('reversed_safaricom','Reversed by Safaricom'),
+            ('dispute_won',       'Dispute Won'),
+            ('dispute_lost',      'Dispute Lost'),
             ('cancelled',         'Cancelled'),
         ],
         default='new', required=True, index=True,
@@ -86,10 +117,40 @@ class MpesaTransaction(models.Model):
     # Computed display
     # ------------------------------------------------------------------
 
-    @api.depends('amount', 'amount_used')
+    @api.depends('amount', 'amount_used', 'amount_refunded', 'amount_reversed', 'amount_frozen')
     def _compute_amount_remaining(self):
         for rec in self:
-            rec.amount_remaining = max((rec.amount or 0.0) - (rec.amount_used or 0.0), 0.0)
+            rec.amount_remaining = max(
+                (rec.amount or 0.0)
+                - (rec.amount_used or 0.0)
+                - (rec.amount_refunded or 0.0)
+                - (rec.amount_reversed or 0.0)
+                - (rec.amount_frozen or 0.0),
+                0.0,
+            )
+
+    @api.depends('refund_case_ids.amount', 'refund_case_ids.state', 'refund_case_ids.case_type')
+    def _compute_case_amounts(self):
+        for rec in self:
+            paid_refunds = rec.refund_case_ids.filtered(
+                lambda c: c.case_type == 'internal_refund' and c.state == 'paid'
+            )
+            reversed_cases = rec.refund_case_ids.filtered(
+                lambda c: c.case_type == 'safaricom_reversal' and c.state == 'reversed'
+            )
+            frozen_cases = rec.refund_case_ids.filtered(
+                lambda c: (
+                    c.case_type == 'safaricom_reversal'
+                    and c.state in ('under_review', 'accepted', 'objected')
+                )
+            )
+            rec.amount_refunded = sum(paid_refunds.mapped('amount'))
+            rec.amount_reversed = sum(reversed_cases.mapped('amount'))
+            rec.amount_frozen = sum(frozen_cases.mapped('amount'))
+
+    def _compute_refund_case_count(self):
+        for rec in self:
+            rec.refund_case_count = len(rec.refund_case_ids)
 
     @api.depends('pos_usage_ids.pos_order_id')
     def _compute_pos_order_ids(self):
@@ -118,11 +179,74 @@ class MpesaTransaction(models.Model):
             rec.state = 'cancelled'
             _log.info("Transaction %s cancelled by %s", rec.mpesa_ref, self.env.user.name)
 
+    def action_open_refund_cases(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Refund/Dispute Cases',
+            'res_model': 'mpesa.transaction.refund.case',
+            'view_mode': 'list,form',
+            'domain': [('transaction_id', '=', self.id)],
+            'context': {
+                'default_transaction_id': self.id,
+                'default_partner_id': self.partner_id.id,
+                'default_currency_id': self.currency_id.id,
+                'default_amount': self.amount_remaining,
+            },
+        }
+
+    def action_request_internal_refund(self):
+        self.ensure_one()
+        case = self.env['mpesa.transaction.refund.case'].create({
+            'transaction_id': self.id,
+            'case_type': 'internal_refund',
+            'reason': 'Internal refund requested.',
+            'amount': self.amount_remaining,
+            'partner_id': self.partner_id.id,
+            'currency_id': self.currency_id.id,
+        })
+        case.action_submit()
+        return self.action_open_refund_cases()
+
+    def action_open_safaricom_dispute(self):
+        self.ensure_one()
+        case = self.env['mpesa.transaction.refund.case'].create({
+            'transaction_id': self.id,
+            'case_type': 'safaricom_reversal',
+            'reason': 'Safaricom reversal complaint received.',
+            'amount': self.amount_remaining or self.amount,
+            'partner_id': self.partner_id.id,
+            'currency_id': self.currency_id.id,
+        })
+        case.action_submit()
+        return self.action_open_refund_cases()
+
     def action_reset_to_new(self):
         """Manager-only: reset stuck transactions."""
         self.ensure_one()
         self.write({'state': 'new', 'pos_session_id': False, 'lock_token': False})
         _log.warning("Transaction %s reset to new by %s", self.mpesa_ref, self.env.user.name)
+
+    def action_recompute_availability_state(self):
+        for rec in self:
+            rec.write({'state': rec._available_state()})
+            _log.info("Transaction %s availability state recomputed by %s", rec.mpesa_ref, self.env.user.name)
+
+    def _available_state(self):
+        self.ensure_one()
+        if self.amount_used:
+            return 'partial_pos' if self.amount_remaining else 'reconciled_pos'
+        if self.amount_refunded and self.amount_remaining:
+            return 'partially_refunded'
+        if self.amount_reversed and self.amount_remaining:
+            return 'new' if self.partner_id else 'unmatched'
+        if self.amount_remaining:
+            return 'new' if self.partner_id else 'unmatched'
+        if self.amount_refunded:
+            return 'refunded'
+        if self.amount_reversed:
+            return 'reversed_safaricom'
+        return 'new' if self.partner_id else 'unmatched'
 
     @api.model
     def _cron_release_expired_pos_locks(self):

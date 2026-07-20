@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_cod_deposit_settlement.CodOrdersScreenPatch"
+       t-inherit="pos_cod.CodOrdersScreen" t-inherit-mode="extension">
+        <xpath expr="//button[contains(normalize-space(.), 'Partial Pay')]" position="after">
+            <button t-if="this.pos.config.cdds_enable_cod_deposit_settlement"
+                    class="btn btn-info"
+                    t-att-disabled="state.collecting"
+                    t-on-click.stop="() => this.onApplyCustomerDeposit(order)">
+                <i class="fa fa-exchange me-1"/>
+                Apply Deposit
+            </button>
+        </xpath>
+        <xpath expr="//div[hasclass('cod-meta')]" position="after">
+            <div t-if="order.cdds_reservation_label" class="alert alert-warning py-2 px-2 mt-2 mb-2">
+                <i class="fa fa-clock-o me-1"/>
+                <strong t-esc="order.cdds_reservation_label"/>
+                <span t-if="cddsReservedAmount(order)">
+                    - <t t-esc="formatCurrency(cddsReservedAmount(order))"/>
+                </span>
+                <div t-if="order.cdds_reservation_name" class="small" t-esc="order.cdds_reservation_name"/>
+            </div>
+        </xpath>
+    </t>
+</templates>

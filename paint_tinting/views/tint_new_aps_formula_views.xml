@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tint_wizard_new_aps_formula" model="ir.ui.view">
+        <field name="name">tint.wizard.new.aps.formula</field>
+        <field name="model">tint.wizard</field>
+        <field name="inherit_id" ref="paint_tinting.view_tint_wizard_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='colour_name']" position="after">
+                <field name="has_saved_formula" invisible="1"/>
+                <field name="new_formula_aps" string="APS (As Per Sample)"
+                       widget="boolean_toggle"
+                       readonly="has_saved_formula"
+                       help="Available only when no formula has previously been saved for this exact colour and base."/>
+                <field name="new_formula_aps_customer_id"
+                       string="APS Customer"
+                       invisible="not new_formula_aps"
+                       required="new_formula_aps"
+                       placeholder="Search or create a customer..."
+                       context="{'default_customer_rank': 1}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

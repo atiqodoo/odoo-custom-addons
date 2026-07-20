@@ -9,8 +9,10 @@
     'data': [
         'security/mpesa_groups.xml',
         'security/ir.model.access.csv',
+        'data/mpesa_refund_case_sequence.xml',
         'data/mpesa_cron.xml',
         'views/mpesa_sms_raw_log_views.xml',
+        'views/mpesa_refund_case_views.xml',
         'views/mpesa_transaction_views.xml',
         'views/mpesa_manual_sms_wizard_views.xml',
         'views/mpesa_modem_health_views.xml',
@@ -21,6 +23,7 @@
     'assets': {
         'web.assets_backend': [
             'mpesa_c2b_sms/static/src/js/mpesa_auto_refresh.js',
+            'mpesa_c2b_sms/static/src/scss/mpesa_transaction_list.scss',
         ],
     },
     'installable': True,

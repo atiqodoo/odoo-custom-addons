@@ -781,6 +781,14 @@ class CostComparisonWizard(models.TransientModel):
              '"Use This" is clicked on a comparison line.'
     )
 
+    quotation_generator_id = fields.Many2one(
+        'quotation.generator.wizard',
+        string='Active Quotation Wizard',
+        readonly=True,
+        ondelete='set null',
+        help='Existing quotation generator wizard to append this comparison batch to'
+    )
+
     # ============================================
     # COMPARISON CRITERIA
     # ============================================
@@ -989,6 +997,23 @@ class CostComparisonWizard(models.TransientModel):
             )
 
         res['parent_wizard_id'] = parent_wizard.id
+        quotation_generator_id = (
+            self.env.context.get('default_quotation_generator_id') or
+            self.env.context.get('active_quotation_generator_id')
+        )
+        if quotation_generator_id:
+            quotation_wizard = self.env['quotation.generator.wizard'].browse(quotation_generator_id)
+            if quotation_wizard.exists():
+                res['quotation_generator_id'] = quotation_wizard.id
+                _logger.info(
+                    "  Active quotation wizard found for append: ID %s",
+                    quotation_wizard.id
+                )
+            else:
+                _logger.warning(
+                    "  Active quotation wizard %s was provided but does not exist",
+                    quotation_generator_id
+                )
         _logger.info(
             "  ✅ Parent wizard found: ID %s | Base: %s",
             parent_wizard.id,
@@ -2108,7 +2133,20 @@ class CostComparisonWizard(models.TransientModel):
             if self.parent_wizard_id.fandeck_id else 'None'
         )
         _logger.info("  Category:               %s", self.base_category_id.name)
+        _logger.info(
+            "  Active Quotation Wizard: %s",
+            self.quotation_generator_id.id if self.quotation_generator_id else False
+        )
         _logger.info("=" * 80)
+
+        if self.quotation_generator_id:
+            _logger.info(
+                "QUOTE_BATCH_APPEND_REQUEST comparison_wizard_id=%s "
+                "quotation_wizard_id=%s comparison_lines=%s",
+                self.id, self.quotation_generator_id.id,
+                len(self.comparison_line_ids),
+            )
+            return self.quotation_generator_id.action_append_comparison_batch(self)
 
         return {
             'type': 'ir.actions.act_window',

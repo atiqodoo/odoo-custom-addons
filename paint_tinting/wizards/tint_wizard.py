@@ -130,6 +130,13 @@ class TintWizard(models.TransientModel):
     colour_name = fields.Char(related='colour_code_id.name', readonly=True)
     notes = fields.Text(string='Notes')
     colorant_line_ids = fields.One2many('tint.wizard.colorant.line', 'wizard_id', string='Colorant Lines')
+    active_quotation_generator_id = fields.Many2one(
+        'quotation.generator.wizard',
+        string='Active Quotation Wizard',
+        readonly=True,
+        ondelete='set null',
+        help='Quotation wizard that should receive the next cost comparison batch'
+    )
     
     # ============================================================
     # FORMULA FIELDS
@@ -791,6 +798,10 @@ class TintWizard(models.TransientModel):
         _logger.info(f"  Category: {self.base_variant_id.categ_id.name}")
         _logger.info(f"  UOM: {self.base_variant_id.uom_id.name}")
         _logger.info(f"  Current selling price: {self.selling_price_incl_vat:.2f} KES")
+        _logger.info(
+            "  Active quotation wizard for batch append: %s",
+            self.active_quotation_generator_id.id if self.active_quotation_generator_id else False
+        )
         
         # Count colorant lines with shots
         colorant_count = len(self.colorant_line_ids.filtered(lambda l: l.shots > 0))
@@ -802,9 +813,11 @@ class TintWizard(models.TransientModel):
         _logger.info("  🚀 Creating comparison wizard record...")
         
         comparison_wizard = self.env['cost.comparison.wizard'].with_context(
-            default_parent_wizard_id=self.id  # ✅ Pass via context for default_get()
+            default_parent_wizard_id=self.id,  # ✅ Pass via context for default_get()
+            default_quotation_generator_id=self.active_quotation_generator_id.id,
         ).create({
             'parent_wizard_id': self.id,  # ✅ Also pass in vals for create()
+            'quotation_generator_id': self.active_quotation_generator_id.id,
         })
         
         _logger.info(f"  ✅ Wizard created with ID: {comparison_wizard.id}")
@@ -820,6 +833,11 @@ class TintWizard(models.TransientModel):
             'res_id': comparison_wizard.id,  # ✅ Open specific record
             'view_mode': 'form',
             'target': 'new',
+            'context': dict(
+                self.env.context,
+                active_quotation_generator_id=self.active_quotation_generator_id.id,
+                default_quotation_generator_id=self.active_quotation_generator_id.id,
+            ),
         }
    
     # ============================================================
@@ -883,7 +901,7 @@ class TintWizard(models.TransientModel):
         _logger.info("📋 STEP 2: Checking for existing product...")
         
         # Include colour name with code in brackets
-        clean_product_name = f"{self.base_variant_id.display_name} – {self.colour_name} [{self.colour_code_id.code}]".strip()
+        clean_product_name = self._get_tinted_product_name()
         _logger.info(f"  Generated product name: '{clean_product_name}'")
         
         existing_product = self.env['product.template'].search(

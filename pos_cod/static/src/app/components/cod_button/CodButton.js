@@ -22,6 +22,10 @@ import { CodWizard } from "@pos_cod/app/components/cod_wizard/CodWizard";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { makeAwaitable } from "@point_of_sale/app/store/make_awaitable_dialog";
 import { codWarn, codError, codLog } from "@pos_cod/app/utils/cod_logger";
+import {
+    formatInvalidCodQuantityLines,
+    validateNewCodOrderQuantities,
+} from "@pos_cod/app/utils/cod_quantity_guard";
 
 const COMPONENT = "CodButton";
 const COD_DISPATCH_PRINT_EVENT = "pos-cod:dispatch-print";
@@ -85,6 +89,29 @@ patch(ProductScreen.prototype, {
         const lines = order.orderlines || order.lines || [];
         if (!lines.length) {
             codError(COMPONENT, "onCodButtonClick", "Order has no product lines.");
+            return;
+        }
+
+        const quantityValidation = validateNewCodOrderQuantities(lines, {
+            order_name: order.name,
+            order_uid: order.uuid || order.uid || order.id,
+        });
+        if (!quantityValidation.valid) {
+            const invalidLineSummary = formatInvalidCodQuantityLines(
+                quantityValidation.invalidLines
+            );
+            codError(
+                COMPONENT,
+                "onCodButtonClick",
+                "COD dispatch blocked before opening the wizard.",
+                { invalid_lines: quantityValidation.invalidLines }
+            );
+            this._codDialog.add(AlertDialog, {
+                title: "COD Order Blocked",
+                body:
+                    "Every COD item must have a quantity greater than zero. " +
+                    `Correct or remove:\n${invalidLineSummary}`,
+            });
             return;
         }
 

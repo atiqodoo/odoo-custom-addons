@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tinting_formula_version_list" model="ir.ui.view">
+        <field name="name">tinting.formula.version.list</field>
+        <field name="model">tinting.formula.version</field>
+        <field name="arch" type="xml">
+            <list string="Formula Versions"
+                  decoration-muted="state == 'superseded'"
+                  decoration-info="state == 'validated'"
+                  decoration-success="state == 'approved'"
+                  decoration-warning="state == 'draft'">
+                <field name="name"/>
+                <field name="formula_id" optional="hide"/>
+                <field name="version_number"/>
+                <field name="state" widget="badge"/>
+                <field name="is_default" widget="boolean_toggle"/>
+                <field name="origin"/>
+                <field name="total_shots"/>
+                <field name="total_ml"/>
+                <field name="change_summary" optional="show"/>
+                <field name="source_mo_id" optional="hide"/>
+                <field name="import_batch_id" optional="hide"/>
+                <field name="created_by_id" optional="hide"/>
+                <field name="created_date" optional="hide"/>
+                <field name="approved_by_id" optional="hide"/>
+                <field name="approved_date" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_tinting_formula_version_form" model="ir.ui.view">
+        <field name="name">tinting.formula.version.form</field>
+        <field name="model">tinting.formula.version</field>
+        <field name="arch" type="xml">
+            <form string="Tinting Formula Version">
+                <header>
+                    <button name="action_approve" string="Approve" type="object"
+                            class="oe_highlight" groups="paint_tinting.group_tint_formula_manager"
+                            invisible="state not in ('draft', 'validated')"/>
+                    <button name="action_approve_set_default" string="Approve &amp; Set Default"
+                            type="object" groups="paint_tinting.group_tint_formula_manager"
+                            invisible="state not in ('draft', 'validated')"/>
+                    <button name="action_set_default" string="Set as Default" type="object"
+                            groups="paint_tinting.group_tint_formula_manager"
+                            invisible="state != 'approved' or is_default"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,validated,approved,superseded"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_set_default" type="object" class="oe_stat_button"
+                                icon="fa-star" groups="paint_tinting.group_tint_formula_manager"
+                                invisible="state != 'approved' or is_default">
+                            <div class="o_stat_info"><span class="o_stat_text">Set Default</span></div>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="DEFAULT" bg_color="text-bg-success" invisible="not is_default"/>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group string="Identity">
+                            <field name="formula_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="version_number" readonly="1"/>
+                            <field name="previous_version_id" readonly="1"/>
+                            <field name="origin" readonly="1"/>
+                            <field name="is_default" readonly="1"/>
+                        </group>
+                        <group string="Totals">
+                            <field name="total_shots" readonly="1"/>
+                            <field name="total_ml" readonly="1"/>
+                            <field name="total_litres" readonly="1"/>
+                            <field name="times_used" readonly="1"/>
+                            <field name="last_used_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Colorant Recipe">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="colorant_id" options="{'no_create': True}"/>
+                                    <field name="colorant_code" readonly="1"/>
+                                    <field name="shots"/>
+                                    <field name="ml_volume" readonly="1"/>
+                                    <field name="qty_litres" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Changes &amp; Approval">
+                            <group>
+                                <field name="change_reason" readonly="state not in ('draft', 'validated')"/>
+                                <field name="change_summary" readonly="1"/>
+                                <field name="notes" readonly="state not in ('draft', 'validated')"/>
+                            </group>
+                            <group>
+                                <field name="created_by_id" readonly="1"/>
+                                <field name="created_date" readonly="1"/>
+                                <field name="approved_by_id" readonly="1"/>
+                                <field name="approved_date" readonly="1"/>
+                            </group>
+                        </page>
+                        <page string="Source">
+                            <group>
+                                <field name="source_mo_id" readonly="1"/>
+                                <field name="source_bom_id" readonly="1"/>
+                                <field name="import_batch_id" readonly="1"/>
+                                <field name="recipe_signature" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_tinting_formula_version_search" model="ir.ui.view">
+        <field name="name">tinting.formula.version.search</field>
+        <field name="model">tinting.formula.version</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="formula_id"/>
+                <field name="source_mo_id"/>
+                <field name="import_batch_id"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="validated" string="Validated" domain="[('state', '=', 'validated')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <filter name="superseded" string="Superseded" domain="[('state', '=', 'superseded')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_formula" string="Formula Family" context="{'group_by': 'formula_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_origin" string="Origin" context="{'group_by': 'origin'}"/>
+                    <filter name="group_import" string="Import Batch" context="{'group_by': 'import_batch_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_tinting_formula_versions" model="ir.actions.act_window">
+        <field name="name">Formula Versions</field>
+        <field name="res_model">tinting.formula.version</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_bulk_approve_formula_versions" model="ir.actions.server">
+        <field name="name">Retroactively Approve Selected Formula Versions</field>
+        <field name="model_id" ref="model_tinting_formula_version"/>
+        <field name="binding_model_id" ref="model_tinting_formula_version"/>
+        <field name="binding_view_types">list</field>
+        <field name="groups_id" eval="[(4, ref('paint_tinting.group_tint_formula_manager'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = records.action_open_bulk_approval_wizard()</field>
+    </record>
+</odoo>

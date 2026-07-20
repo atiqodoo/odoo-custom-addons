@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_pos_cod_transaction_log_list" model="ir.ui.view">
+        <field name="name">pos.cod.collection.transaction.log.list</field>
+        <field name="model">pos.cod.collection</field>
+        <field name="arch" type="xml">
+            <list string="COD Transaction Logs"
+                  create="false"
+                  edit="false"
+                  delete="false"
+                  default_order="create_date desc, id desc"
+                  decoration-success="kind == 'payment'"
+                  decoration-warning="kind == 'return'"
+                  decoration-info="kind == 'discount'">
+                <field name="create_date" string="Date/Time" widget="datetime"/>
+                <field name="kind" string="Type" widget="badge"/>
+                <field name="amount" string="Transaction Amount" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="cod_source_order_id" string="COD Order"/>
+                <field name="cod_source_customer_id" string="Customer" optional="show"/>
+                <field name="session_id" string="Transaction Session"/>
+                <field name="cod_session_user_id" string="Transaction Session User" optional="show"/>
+                <field name="cod_source_order_session_id" string="COD Source Session" optional="show"/>
+                <field name="cod_source_order_session_user_id" string="COD Source Session User" optional="show"/>
+                <field name="cod_source_order_total" widget="monetary"
+                       options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="cod_source_open_receivable_amount" widget="monetary"
+                       options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="cod_source_transaction_total" widget="monetary"
+                       options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="cod_source_remaining_profit_amount" widget="monetary"
+                       options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="cod_source_days_elapsed" optional="show"/>
+                <field name="cod_source_delivery_employee_id" optional="show"/>
+                <field name="payment_method_id" optional="show"/>
+                <field name="mpesa_ref" optional="show"/>
+                <field name="move_id" string="Journal Entry" optional="show"/>
+                <field name="cod_return_line_summary" optional="show"/>
+                <field name="create_uid" string="Created By" optional="show"/>
+                <field name="note" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pos_cod_transaction_log_form" model="ir.ui.view">
+        <field name="name">pos.cod.collection.transaction.log.form</field>
+        <field name="model">pos.cod.collection</field>
+        <field name="arch" type="xml">
+            <form string="COD Transaction Log" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <group string="Transaction Detail">
+                            <field name="create_date" readonly="1" widget="datetime"/>
+                            <field name="kind" readonly="1"/>
+                            <field name="amount" readonly="1" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="session_id" readonly="1"/>
+                            <field name="cod_session_user_id" readonly="1"/>
+                            <field name="payment_method_id" readonly="1"/>
+                            <field name="mpesa_ref" readonly="1"/>
+                            <field name="move_id" readonly="1"/>
+                            <field name="create_uid" readonly="1"/>
+                        </group>
+                        <group string="COD Source">
+                            <field name="cod_source_order_id" readonly="1"/>
+                            <field name="cod_source_order_date" readonly="1" widget="datetime"/>
+                            <field name="cod_source_customer_id" readonly="1"/>
+                            <field name="cod_source_state" readonly="1"/>
+                            <field name="cod_source_order_session_id" readonly="1"/>
+                            <field name="cod_source_order_session_user_id" readonly="1"/>
+                            <field name="cod_source_delivery_employee_id" readonly="1"/>
+                            <field name="cod_source_order_total" readonly="1" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="cod_source_open_receivable_amount" readonly="1" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="cod_source_transaction_total" readonly="1" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="cod_source_remaining_profit_amount" readonly="1" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="cod_source_days_elapsed" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Return Detail">
+                        <field name="cod_return_line_summary" readonly="1"/>
+                        <field name="return_line_qtys" readonly="1"/>
+                        <field name="note" readonly="1"/>
+                    </group>
+                    <group string="Audit Note">
+                        <div class="text-muted">
+                            Timestamps are stored in UTC and displayed in the user's timezone.
+                        </div>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pos_cod_transaction_log_search" model="ir.ui.view">
+        <field name="name">pos.cod.collection.transaction.log.search</field>
+        <field name="model">pos.cod.collection</field>
+        <field name="arch" type="xml">
+            <search string="COD Transaction Logs">
+                <field name="cod_source_order_id" string="COD Order"/>
+                <field name="cod_source_customer_id" string="Customer"/>
+                <field name="cod_source_state" string="COD State"/>
+                <field name="kind" string="Transaction Type"/>
+                <field name="amount" string="Transaction Amount"/>
+                <field name="cod_source_order_total" string="COD Order Total"/>
+                <field name="cod_source_open_receivable_amount" string="Open Receivable"/>
+                <field name="cod_source_transaction_total" string="All Transaction Value"/>
+                <field name="cod_source_remaining_profit_amount" string="Remaining Profit"/>
+                <field name="cod_source_days_elapsed" string="Days Elapsed"/>
+                <field name="session_id" string="Transaction Session"/>
+                <field name="cod_session_user_id" string="Transaction Session User"/>
+                <field name="cod_source_order_session_id" string="COD Source Session"/>
+                <field name="cod_source_order_session_user_id" string="COD Source Session User"/>
+                <field name="cod_source_delivery_employee_id" string="Delivery Employee"/>
+                <field name="payment_method_id" string="Payment Method"/>
+                <field name="mpesa_ref" string="M-Pesa Reference"/>
+                <field name="move_id" string="Journal Entry"/>
+                <field name="create_uid" string="Created By"/>
+                <field name="note" string="Note"/>
+                <filter string="Payments" name="filter_payment"
+                        domain="[('kind', '=', 'payment')]"/>
+                <filter string="Returns" name="filter_return"
+                        domain="[('kind', '=', 'return')]"/>
+                <filter string="Discounts" name="filter_discount"
+                        domain="[('kind', '=', 'discount')]"/>
+                <separator/>
+                <filter string="Open Receivable" name="filter_open_receivable"
+                        domain="[('cod_source_open_receivable_amount', '&gt;', 0)]"/>
+                <filter string="Fully Cleared" name="filter_fully_cleared"
+                        domain="[('cod_source_open_receivable_amount', '=', 0)]"/>
+                <filter string="Has M-Pesa Ref" name="filter_has_mpesa"
+                        domain="[('mpesa_ref', '!=', False)]"/>
+                <filter string="Return Line Transactions" name="filter_return_lines"
+                        domain="[('kind', '=', 'return')]"/>
+                <separator/>
+                <filter string="Transaction Date" name="filter_transaction_date" date="create_date"/>
+                <filter string="COD Order Date" name="filter_order_date" date="cod_source_order_date"/>
+                <group expand="0" string="Group By">
+                    <filter string="Transaction Type" name="group_kind"
+                            context="{'group_by': 'kind'}"/>
+                    <filter string="COD Order" name="group_order"
+                            context="{'group_by': 'cod_source_order_id'}"/>
+                    <filter string="COD State" name="group_cod_state"
+                            context="{'group_by': 'cod_source_state'}"/>
+                    <filter string="Customer" name="group_customer"
+                            context="{'group_by': 'cod_source_customer_id'}"/>
+                    <filter string="Transaction Session" name="group_transaction_session"
+                            context="{'group_by': 'session_id'}"/>
+                    <filter string="COD Source Session" name="group_source_session"
+                            context="{'group_by': 'cod_source_order_session_id'}"/>
+                    <filter string="Transaction Session User" name="group_transaction_user"
+                            context="{'group_by': 'cod_session_user_id'}"/>
+                    <filter string="COD Source Session User" name="group_source_user"
+                            context="{'group_by': 'cod_source_order_session_user_id'}"/>
+                    <filter string="Delivery Employee" name="group_delivery_employee"
+                            context="{'group_by': 'cod_source_delivery_employee_id'}"/>
+                    <filter string="Payment Method" name="group_payment_method"
+                            context="{'group_by': 'payment_method_id'}"/>
+                    <filter string="Journal Entry" name="group_move"
+                            context="{'group_by': 'move_id'}"/>
+                    <filter string="Created By" name="group_created_by"
+                            context="{'group_by': 'create_uid'}"/>
+                    <filter string="Transaction Date" name="group_transaction_date"
+                            context="{'group_by': 'create_date:day'}"/>
+                    <filter string="COD Order Date" name="group_order_date"
+                            context="{'group_by': 'cod_source_order_date:day'}"/>
+                    <filter string="Days Elapsed" name="group_days_elapsed"
+                            context="{'group_by': 'cod_source_days_elapsed'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_pos_cod_transaction_logs" model="ir.actions.act_window">
+        <field name="name">COD Transaction Logs</field>
+        <field name="res_model">pos.cod.collection</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_pos_cod_transaction_log_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_pos_cod_transaction_log_form')})]"/>
+        <field name="search_view_id" ref="view_pos_cod_transaction_log_search"/>
+        <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+    </record>
+
+    <menuitem
+        id="menu_pos_cod_root"
+        name="COD Orders"
+        parent="point_of_sale.menu_point_root"
+        sequence="25"/>
+
+    <menuitem
+        id="menu_pos_cod_pending_orders"
+        name="Orders List"
+        parent="menu_pos_cod_root"
+        action="action_pos_cod_pending_orders"
+        sequence="10"/>
+
+    <menuitem
+        id="menu_pos_cod_transaction_logs"
+        name="Transaction Logs"
+        parent="menu_pos_cod_root"
+        action="action_pos_cod_transaction_logs"
+        sequence="20"/>
+
+</odoo>

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_pos_order_pdf" model="ir.actions.report">
+        <field name="name">POS Order PDF</field>
+        <field name="model">pos.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">pos_cod.report_pos_order_pdf</field>
+        <field name="report_file">pos_cod.report_pos_order_pdf</field>
+        <field name="binding_model_id" ref="point_of_sale.model_pos_order"/>
+        <field name="binding_type">report</field>
+        <field name="binding_view_types">form</field>
+        <field name="print_report_name">'POS Order - %s' % (object.name or object.pos_reference or object.id)</field>
+    </record>
+
+    <template id="report_pos_order_pdf">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>
+                            <span>POS Order </span>
+                            <span t-field="o.name"/>
+                        </h2>
+
+                        <div class="row mt-3 mb-3">
+                            <div class="col-6">
+                                <strong>Customer</strong>
+                                <div t-if="o.partner_id" t-field="o.partner_id"/>
+                                <div t-else="">Walk-in Customer</div>
+                            </div>
+                            <div class="col-6">
+                                <strong>Order Details</strong>
+                                <div>
+                                    <span>Date: </span>
+                                    <span t-field="o.date_order"/>
+                                </div>
+                                <div>
+                                    <span>Session: </span>
+                                    <span t-field="o.session_id"/>
+                                </div>
+                                <div>
+                                    <span>Cashier: </span>
+                                    <span t-field="o.user_id"/>
+                                </div>
+                                <div t-if="o.pos_reference">
+                                    <span>Receipt Ref: </span>
+                                    <span t-field="o.pos_reference"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div t-if="o.is_cod" class="row mb-3">
+                            <div class="col-6">
+                                <strong>Cash on Delivery</strong>
+                                <div>
+                                    <span>COD State: </span>
+                                    <span t-field="o.cod_state"/>
+                                </div>
+                                <div t-if="o.delivery_employee_id">
+                                    <span>Delivery Employee: </span>
+                                    <span t-field="o.delivery_employee_id"/>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <strong>Delivery</strong>
+                                <div t-if="o.delivery_address">
+                                    <span>Address: </span>
+                                    <span t-field="o.delivery_address"/>
+                                </div>
+                                <div t-if="o.delivery_notes">
+                                    <span>Notes: </span>
+                                    <span t-field="o.delivery_notes"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <table class="table table-sm o_main_table mt-3">
+                            <thead>
+                                <tr>
+                                    <th class="text-start">Product</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-start">UoM</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Disc.%</th>
+                                    <th class="text-end">Tax Excl.</th>
+                                    <th class="text-end">Tax Incl.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.lines" t-as="line">
+                                    <td class="text-start">
+                                        <span t-field="line.product_id"/>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-field="line.qty"/>
+                                    </td>
+                                    <td class="text-start">
+                                        <span t-field="line.product_uom_id"/>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-field="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-field="line.discount"/>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-field="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-field="line.price_subtotal_incl" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="row mt-3">
+                            <div class="col-7">
+                                <strong t-if="o.general_note">Notes</strong>
+                                <div t-if="o.general_note" t-field="o.general_note"/>
+                            </div>
+                            <div class="col-5">
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <td class="text-end">Taxes:</td>
+                                        <td class="text-end">
+                                            <span t-field="o.amount_tax" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-end"><strong>Total:</strong></td>
+                                        <td class="text-end">
+                                            <strong>
+                                                <span t-field="o.amount_total" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="o.amount_paid">
+                                        <td class="text-end">Paid:</td>
+                                        <td class="text-end">
+                                            <span t-field="o.amount_paid" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="o.is_cod">
+                                        <td class="text-end">COD Open:</td>
+                                        <td class="text-end">
+                                            <span t-field="o.cod_amount_open" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

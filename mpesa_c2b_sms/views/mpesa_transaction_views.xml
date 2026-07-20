@@ -6,8 +6,12 @@
         <field name="name">mpesa.transaction.list</field>
         <field name="model">mpesa.transaction</field>
         <field name="arch" type="xml">
-            <list string="M-Pesa Transactions" decoration-success="state=='reconciled_pos' or state=='reconciled_invoice'"
-                  decoration-warning="state=='unmatched'" decoration-muted="state=='cancelled'">
+            <list string="M-Pesa Transactions" class="o_mpesa_transaction_list"
+                  decoration-success="state=='reconciled_pos' or state=='reconciled_invoice'"
+                  decoration-danger="state in ('refund_requested','refund_approved','partially_refunded','refunded')"
+                  decoration-primary="state in ('safaricom_dispute','reversal_accepted','reversal_objected','reversed_safaricom','dispute_won','dispute_lost')"
+                  decoration-warning="state in ('unmatched','refund_requested','refund_approved','partially_refunded','safaricom_dispute','reversal_accepted','reversal_objected')"
+                  decoration-muted="state == 'cancelled'">
                 <field name="mpesa_ref"/>
                 <field name="entry_source"/>
                 <field name="transaction_date"/>
@@ -15,14 +19,19 @@
                 <field name="display_phone"/>
                 <field name="amount"/>
                 <field name="amount_used"/>
+                <field name="amount_refunded" decoration-danger="amount_refunded &gt; 0"/>
+                <field name="amount_reversed" decoration-primary="amount_reversed &gt; 0"/>
+                <field name="amount_frozen"/>
                 <field name="amount_remaining"/>
                 <field name="partner_id"/>
                 <field name="pos_order_ids" widget="many2many_tags"/>
                 <field name="state" widget="badge"
                        decoration-success="state in ('reconciled_pos','reconciled_invoice')"
-                       decoration-warning="state=='unmatched'"
+                       decoration-danger="state in ('refund_requested','refund_approved','partially_refunded','refunded')"
+                       decoration-primary="state in ('safaricom_dispute','reversal_accepted','reversal_objected','reversed_safaricom','dispute_won','dispute_lost')"
+                       decoration-warning="state in ('unmatched','refund_requested','refund_approved','partially_refunded','safaricom_dispute','reversal_accepted','reversal_objected')"
                        decoration-info="state in ('pending_pos','partial_pos')"
-                       decoration-muted="state=='cancelled'"/>
+                       decoration-muted="state == 'cancelled'"/>
             </list>
         </field>
     </record>
@@ -35,21 +44,39 @@
             <form string="M-Pesa Transaction">
                 <header>
                     <field name="state" widget="statusbar"
-                           statusbar_visible="new,pending_pos,partial_pos,reconciled_pos"/>
+                           statusbar_visible="new,pending_pos,partial_pos,reconciled_pos,refund_requested,refund_approved,partially_refunded,refunded,safaricom_dispute,reversed_safaricom"/>
+                    <button name="action_request_internal_refund" string="Request Refund" type="object"
+                            groups="mpesa_c2b_sms.group_mpesa_manager"
+                            invisible="amount_remaining &lt;= 0 or state in ('pending_pos','cancelled','refunded','reversed_safaricom','safaricom_dispute','reversal_accepted','reversal_objected')"/>
+                    <button name="action_open_safaricom_dispute" string="Safaricom Dispute" type="object"
+                            groups="mpesa_c2b_sms.group_mpesa_manager"
+                            invisible="state in ('pending_pos','cancelled','refunded','reversed_safaricom','safaricom_dispute','reversal_accepted','reversal_objected')"/>
                     <button name="action_cancel" string="Cancel" type="object"
                             groups="mpesa_c2b_sms.group_mpesa_manager"
                             invisible="state not in ('new','unmatched')"/>
                     <button name="action_reset_to_new" string="Reset to New" type="object"
                             groups="mpesa_c2b_sms.group_mpesa_manager"
                             invisible="state != 'cancelled'"/>
+                    <button name="action_recompute_availability_state" string="Recompute Availability" type="object"
+                            groups="mpesa_c2b_sms.group_mpesa_manager"
+                            invisible="state not in ('refunded','reversed_safaricom','dispute_lost','partial_pos','partially_refunded')"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_refund_cases" type="object"
+                                class="oe_stat_button" icon="fa-undo">
+                            <field name="refund_case_count" widget="statinfo" string="Refund/Disputes"/>
+                        </button>
+                    </div>
                     <group>
                         <group string="Safaricom Details">
                             <field name="mpesa_ref"/>
                             <field name="entry_source"/>
                             <field name="amount"/>
                             <field name="amount_used"/>
+                            <field name="amount_refunded"/>
+                            <field name="amount_reversed"/>
+                            <field name="amount_frozen"/>
                             <field name="amount_remaining"/>
                             <field name="currency_id" invisible="1"/>
                             <field name="transaction_date"/>
@@ -80,6 +107,20 @@
                             </list>
                         </field>
                     </group>
+                    <group string="Refund / Dispute Cases" groups="mpesa_c2b_sms.group_mpesa_manager">
+                        <field name="refund_case_ids" nolabel="1" readonly="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="case_type"/>
+                                <field name="state" widget="badge"/>
+                                <field name="amount"/>
+                                <field name="safaricom_case_ref"/>
+                                <field name="refund_payment_ref"/>
+                                <field name="refund_journal_id"/>
+                                <field name="move_id"/>
+                            </list>
+                        </field>
+                    </group>
                     <group string="Manual Entry Audit" invisible="entry_source != 'manual'">
                         <field name="manual_created_by_id"/>
                         <field name="manual_created_at"/>
@@ -107,6 +148,12 @@
                 <filter name="partial_pos" string="Partially Used" domain="[('state','=','partial_pos')]"/>
                 <filter name="reconciled"  string="Reconciled"
                         domain="[('state','in',('reconciled_pos','reconciled_invoice'))]"/>
+                <filter name="refunds" string="Refunds"
+                        domain="[('state','in',('refund_requested','refund_approved','partially_refunded','refunded'))]"/>
+                <filter name="disputes" string="Safaricom Disputes"
+                        domain="[('state','in',('safaricom_dispute','reversal_accepted','reversal_objected','reversed_safaricom','dispute_won','dispute_lost'))]"/>
+                <filter name="available" string="Available Balance"
+                        domain="[('amount_remaining','&gt;',0)]"/>
                 <group expand="0" string="Group By">
                     <filter name="group_date" string="Date" context="{'group_by':'transaction_date:day'}"/>
                     <filter name="group_state" string="State" context="{'group_by':'state'}"/>

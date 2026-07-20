@@ -1,0 +1,28 @@
+{
+    "name": "Product Movement Volume Analysis",
+    "version": "18.0.1.2.0",
+    "category": "Inventory/Reporting",
+    "summary": "UoM-normalized product movement analytics and spreadsheet dashboard",
+    "license": "LGPL-3",
+    "depends": [
+        "stock_enterprise",
+        "purchase_stock",
+        "sale_stock",
+        "point_of_sale",
+        "mrp",
+        "spreadsheet_dashboard",
+    ],
+    "data": [
+        "security/security.xml",
+        "security/ir.model.access.csv",
+        "data/ir_cron.xml",
+        "views/product_grade_views.xml",
+        "views/movement_volume_views.xml",
+        "wizard/movement_backfill_wizard_views.xml",
+        "views/menu_views.xml",
+        "data/spreadsheet_dashboard.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "auto_install": False,
+}

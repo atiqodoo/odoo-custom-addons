@@ -254,7 +254,7 @@ class TintingFormula(models.Model):
         Example: "10B21 - Vinyl Silk - 4L - Pastel Base"
         Example: "10B21 - Vinyl Silk - 4L" (if no attribute)
         """
-        _logger.debug("🔄 Computing formula names...")
+        _logger.debug("FORMULA_NAME_COMPUTE_START")
         for record in self:
             colour = record.colour_code_id.code or 'Unknown'
             category = record.base_category_id.name or 'Unknown'
@@ -275,7 +275,7 @@ class TintingFormula(models.Model):
         Calculate total shots and volumes from formula lines
         Triggered whenever colorant shots change
         """
-        _logger.debug("🔄 Computing formula totals...")
+        _logger.debug("FORMULA_TOTALS_COMPUTE_START")
         for record in self:
             record.total_shots = sum(line.shots for line in record.formula_line_ids)
             record.total_ml = sum(line.ml_volume for line in record.formula_line_ids)
@@ -302,7 +302,7 @@ class TintingFormula(models.Model):
             for line in self.formula_line_ids
             if line.colorant_code
         }
-        _logger.debug(f"📋 Formula {self.name} shots dict: {shots_dict}")
+        _logger.debug("FORMULA_LEGACY_RECIPE_READ family_id=%s name=%s recipe=%s", self.id, self.name, shots_dict)
         return shots_dict
 
     def increment_usage_counter(self):
@@ -311,7 +311,7 @@ class TintingFormula(models.Model):
         Tracks formula popularity and last use date
         """
         self.ensure_one()
-        _logger.info(f"📊 Incrementing usage counter for: {self.name}")
+        _logger.info("FORMULA_FAMILY_USAGE_INCREMENT_START family_id=%s name=%s", self.id, self.name)
         self.write({
             'times_used': self.times_used + 1,
             'last_used_date': fields.Datetime.now()
@@ -332,7 +332,7 @@ class TintingFormula(models.Model):
         }
         """
         self.ensure_one()
-        _logger.debug(f"🔍 Comparing formula {self.name} with BOM {bom_id}...")
+        _logger.debug("FORMULA_LEGACY_BOM_COMPARE family_id=%s bom_id=%s", self.id, bom_id)
         
         bom = self.env['mrp.bom'].browse(bom_id)
         
@@ -368,10 +368,10 @@ class TintingFormula(models.Model):
     # ============================================================
     def action_approve(self):
         """Mark formula as approved (manager action)"""
-        _logger.info(f"✅ Approving formula: {self.name}")
+        _logger.info("FORMULA_LEGACY_APPROVE family_id=%s name=%s", self.id, self.name)
         self.write({'state': 'approved'})
 
     def action_reset_to_draft(self):
         """Reset formula to draft for editing"""
-        _logger.info(f"📝 Resetting formula to draft: {self.name}")
+        _logger.info("FORMULA_LEGACY_RESET_DRAFT family_id=%s name=%s", self.id, self.name)
         self.write({'state': 'draft'})

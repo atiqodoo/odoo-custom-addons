@@ -4,11 +4,19 @@ import { _t } from "@web/core/l10n/translation";
 import { patch } from "@web/core/utils/patch";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
+import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
 import { dtrpLogger } from "@pos_direct_thermal_printer/app/logger";
-import { dtrpPrintOrder } from "@pos_direct_thermal_printer/app/services/direct_printer_service";
+import {
+    dtrpPrintOrder,
+    dtrpReprintOrder,
+} from "@pos_direct_thermal_printer/app/services/direct_printer_service";
 
 function enabled(pos) {
     return Boolean(pos?.config?.dtrp_enabled && pos?.config?.dtrp_auto_print_on_validate);
+}
+
+function directPrinterEnabled(pos) {
+    return Boolean(pos?.config?.dtrp_enabled);
 }
 
 patch(PaymentScreen.prototype, {
@@ -62,5 +70,49 @@ patch(PaymentScreen.prototype, {
             nextScreen,
             printFailed,
         }, order);
+    },
+});
+
+patch(TicketScreen.prototype, {
+    async print(order) {
+        if (!directPrinterEnabled(this.pos)) {
+            return await super.print(...arguments);
+        }
+
+        dtrpLogger.info(this.pos, "TicketScreen custom thermal reprint started", {
+            order: order?.name || order?.pos_reference || order?.uuid || order?.id,
+            mode: this.pos.config.dtrp_connection_mode,
+            bridgeUrl: this.pos.config.dtrp_bridge_url,
+        }, order);
+
+        try {
+            const result = await dtrpReprintOrder(this.pos, order);
+            if (typeof order?.id === "number" && result?.ok) {
+                await this.pos.data.write("pos.order", [order.id], { nb_print: order.nb_print });
+            }
+            dtrpLogger.info(this.pos, "TicketScreen custom thermal reprint completed", {
+                order: order?.name || order?.pos_reference || order?.uuid || order?.id,
+                copies: result?.copies || 0,
+                nbPrint: order?.nb_print,
+            }, order);
+            return true;
+        } catch (error) {
+            dtrpLogger.error(this.pos, "TicketScreen custom thermal reprint failed", {
+                order: order?.name || order?.pos_reference || order?.uuid || order?.id,
+                message: error?.message || String(error),
+                stack: error?.stack || "",
+            }, order);
+
+            if (this.pos.config.dtrp_show_error_popup) {
+                this.dialog.add(AlertDialog, {
+                    title: _t("Direct Printer Error"),
+                    body: _t(
+                        "The custom thermal receipt could not be printed. Check that the local print bridge is running on this POS till PC.\n\n%s",
+                        error?.message || String(error)
+                    ),
+                });
+            }
+            return false;
+        }
     },
 });

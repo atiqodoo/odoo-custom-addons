@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_product_vendor_mapping_list" model="ir.ui.view">
+        <field name="name">product.product.vendor.mapping.list</field>
+        <field name="model">product.product</field>
+        <field name="arch" type="xml">
+            <list string="Variant Vendor Mapping" create="false" delete="false"
+                  decoration-warning="vps_mapping_state == 'primary_only'"
+                  decoration-danger="vps_mapping_state == 'none'">
+                <field name="default_code" optional="show"/>
+                <field name="display_name" string="Product Variant"/>
+                <field name="product_tmpl_id" optional="hide"/>
+                <field name="vps_primary_vendor_id"/>
+                <field name="vps_secondary_vendor_id"/>
+                <field name="vps_mapping_state" widget="badge"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="product_product_vendor_mapping_search" model="ir.ui.view">
+        <field name="name">product.product.vendor.mapping.search</field>
+        <field name="model">product.product</field>
+        <field name="arch" type="xml">
+            <search string="Variant Vendor Mapping">
+                <field name="name" string="Product"/>
+                <field name="default_code"/>
+                <field name="vps_primary_vendor_id"/>
+                <field name="vps_secondary_vendor_id"/>
+                <field name="categ_id"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_category" string="Product Category"
+                            context="{'group_by': 'categ_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="product_template_vendor_mapping_list" model="ir.ui.view">
+        <field name="name">product.template.vendor.mapping.list</field>
+        <field name="model">product.template</field>
+        <field name="arch" type="xml">
+            <list string="Template Vendor Mapping" create="false" delete="false"
+                  decoration-warning="vps_template_mapping_state == 'primary_only'"
+                  decoration-danger="vps_template_mapping_state == 'none'">
+                <field name="default_code" optional="show"/>
+                <field name="name" string="Product Template"/>
+                <field name="product_variant_count" optional="show"/>
+                <field name="vps_template_primary_vendor_id"/>
+                <field name="vps_template_secondary_vendor_id"/>
+                <field name="vps_template_mapping_state" widget="badge"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="product_template_vendor_mapping_search" model="ir.ui.view">
+        <field name="name">product.template.vendor.mapping.search</field>
+        <field name="model">product.template</field>
+        <field name="arch" type="xml">
+            <search string="Template Vendor Mapping">
+                <field name="name"/>
+                <field name="default_code"/>
+                <field name="vps_template_primary_vendor_id"/>
+                <field name="vps_template_secondary_vendor_id"/>
+                <field name="categ_id"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_category" string="Product Category"
+                            context="{'group_by': 'categ_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_variant_vendor_mapping" model="ir.actions.act_window">
+        <field name="name">Variant Vendor Mapping</field>
+        <field name="res_model">product.product</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="product_product_vendor_mapping_list"/>
+        <field name="search_view_id" ref="product_product_vendor_mapping_search"/>
+        <field name="domain">[('purchase_ok', '=', True)]</field>
+        <field name="context">{'search_default_active': 1}</field>
+    </record>
+
+    <record id="action_template_vendor_mapping" model="ir.actions.act_window">
+        <field name="name">Template Vendor Mapping</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="product_template_vendor_mapping_list"/>
+        <field name="search_view_id" ref="product_template_vendor_mapping_search"/>
+        <field name="domain">[('purchase_ok', '=', True)]</field>
+        <field name="context">{'search_default_active': 1}</field>
+    </record>
+
+    <menuitem id="menu_vendor_product_priority_root"
+              name="Vendor Mapping"
+              sequence="55"
+              action="action_variant_vendor_mapping"
+              groups="purchase.group_purchase_user"
+              web_icon="purchase,static/description/icon.png"/>
+    <menuitem id="menu_variant_vendor_mapping"
+              name="Variant Mapping"
+              parent="menu_vendor_product_priority_root"
+              action="action_variant_vendor_mapping"
+              sequence="10"
+              groups="purchase.group_purchase_user"/>
+    <menuitem id="menu_template_vendor_mapping"
+              name="Template Mapping"
+              parent="menu_vendor_product_priority_root"
+              action="action_template_vendor_mapping"
+              sequence="20"
+              groups="purchase.group_purchase_user"/>
+</odoo>

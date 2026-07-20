@@ -212,7 +212,7 @@ class PaintTintingDeferredReconciliation(models.Model):
         digits='Product Price',
     )
     cost_at_receipt = fields.Float(
-        string='Receipt Unit Cost',
+        string='Posted Bill Unit Cost',
         readonly=True,
         digits='Product Price',
     )
@@ -221,7 +221,7 @@ class PaintTintingDeferredReconciliation(models.Model):
         readonly=True,
         digits='Product Price',
         help=(
-            '(cost_at_receipt - cost_at_consumption) x qty_reconciled.\n'
+            '(posted bill unit cost - cost_at_consumption) x qty_reconciled.\n'
             'Positive = WIP was under-costed. Negative = WIP was over-costed.'
         ),
     )
@@ -543,6 +543,69 @@ class StockMovePTOverride(models.Model):
     # PRIVATE: Reconcile deferred records on goods receipt
     # ================================================================
 
+    def _pt_get_posted_vendor_bill_unit_cost(self):
+        self.ensure_one()
+
+        purchase_line = self.purchase_line_id
+        if not purchase_line:
+            _logger.info(
+                "[PT-DEFERRED] Receipt move %s has no purchase line - "
+                "cannot fetch posted vendor bill cost yet",
+                self.id,
+            )
+            return False
+
+        bill_line = self.env['account.move.line'].search([
+            ('purchase_line_id', '=', purchase_line.id),
+            ('product_id', '=', self.product_id.id),
+            ('move_id.move_type', '=', 'in_invoice'),
+            ('move_id.state', '=', 'posted'),
+            ('display_type', '=', 'product'),
+            ('quantity', '!=', 0),
+        ], order='date desc, move_id desc, id desc', limit=1)
+
+        if not bill_line:
+            _logger.info(
+                "[PT-DEFERRED] No posted vendor bill line yet for receipt "
+                "move %s | PO line %s | Product: %s",
+                self.id,
+                purchase_line.id,
+                self.product_id.display_name,
+            )
+            return False
+
+        bill = bill_line.move_id
+        unit_cost = (
+            bill_line.net_price
+            if 'net_price' in bill_line._fields and bill_line.net_price
+            else bill_line.price_unit
+        )
+
+        if bill_line.product_uom_id and bill_line.product_uom_id != self.product_uom:
+            unit_cost = bill_line.product_uom_id._compute_price(
+                unit_cost,
+                self.product_uom,
+            )
+
+        if bill_line.currency_id and bill_line.currency_id != self.company_id.currency_id:
+            unit_cost = bill_line.currency_id._convert(
+                unit_cost,
+                self.company_id.currency_id,
+                self.company_id,
+                bill.invoice_date or bill.date or fields.Date.context_today(self),
+            )
+
+        _logger.info(
+            "[PT-DEFERRED] Posted vendor bill cost from %s line %s: %.4f "
+            "| Receipt move: %s | Product: %s",
+            bill.name,
+            bill_line.id,
+            unit_cost,
+            self.id,
+            self.product_id.display_name,
+        )
+        return unit_cost
+
     def _pt_reconcile_on_receipt(self, receipt_moves):
         _logger.info(SEP_THIN)
         _logger.info("[PT-DEFERRED] === RECEIPT RECONCILIATION ===")
@@ -591,8 +654,23 @@ class StockMovePTOverride(models.Model):
 
             receipt_unit_cost = receipt_svl[0].unit_cost
             _logger.info(
-                "[PT-DEFERRED] Receipt unit cost from SVL[%s]: %.4f",
+                "[PT-DEFERRED] Diagnostic receipt SVL unit cost [%s]: %.4f",
                 receipt_svl[0].id, receipt_unit_cost,
+            )
+
+            bill_unit_cost = move._pt_get_posted_vendor_bill_unit_cost()
+            if not bill_unit_cost:
+                _logger.info(
+                    "[PT-DEFERRED] Posted vendor bill is required before "
+                    "reconciling %s. Keeping deferred layer(s) pending.",
+                    move.picking_id.name,
+                )
+                continue
+
+            receipt_unit_cost = bill_unit_cost
+            _logger.info(
+                "[PT-DEFERRED] Actual unit cost from posted vendor bill: %.4f",
+                receipt_unit_cost,
             )
 
             receipt_qty_pool = move.quantity
@@ -612,7 +690,7 @@ class StockMovePTOverride(models.Model):
 
                 _logger.info(
                     "[PT-DEFERRED] %s | Reconciling %.4f unit(s) | "
-                    "Frozen: %.4f | Receipt: %.4f | Diff/unit: %.4f | "
+                    "Frozen: %.4f | Bill: %.4f | Diff/unit: %.4f | "
                     "Total diff: %.4f",
                     deferred.name, qty_to_reconcile,
                     frozen_cost, receipt_unit_cost, diff_per_unit, diff_total,
@@ -689,7 +767,7 @@ class StockMovePTOverride(models.Model):
                             "Ref: <b>%(ref)s</b> | Receipt: <b>%(picking)s</b><br/>"
                             "Product: %(product)s | Qty: %(qty).4f<br/>"
                             "Provisional: %(frozen).4f "
-                            "to Receipt: %(receipt).4f<br/>"
+                            "to Bill: %(receipt).4f<br/>"
                             "Difference: <b>%(diff).4f</b> (%(label)s)<br/>"
                             "Account: %(account)s | Entry: %(entry)s<br/>"
                             "Status: <b>%(state)s</b>",
@@ -742,7 +820,7 @@ class StockMovePTOverride(models.Model):
         _logger.info("[PT-DEFERRED] === POST PRICE DIFFERENCE JOURNAL ENTRY ===")
         _logger.info(
             "[PT-DEFERRED] Deferred: %s | Product: %s | Qty: %.4f | "
-            "Frozen: %.4f | Receipt: %.4f | Diff: %.4f",
+            "Frozen: %.4f | Bill: %.4f | Diff: %.4f",
             deferred.name, deferred.product_id.display_name,
             qty_reconciled, frozen_cost, receipt_cost, diff_total,
         )
@@ -810,7 +888,7 @@ class StockMovePTOverride(models.Model):
             "Receipt       : %s\n"
             "Qty Reconciled: %.4f\n"
             "Frozen Cost   : %.4f\n"
-            "Receipt Cost  : %.4f\n"
+            "Bill Cost     : %.4f\n"
             "Diff per Unit : %+.4f\n"
             "Total Diff    : %+.4f"
         ) % (
@@ -867,3 +945,83 @@ class StockMovePTOverride(models.Model):
                 str(e), exc_info=True,
             )
             return False
+
+
+# ============================================================
+# OVERRIDE 3: account.move - reconcile when vendor bill posts
+# ============================================================
+
+class AccountMovePTDeferredValuation(models.Model):
+    _inherit = 'account.move'
+
+    def action_post(self):
+        res = super().action_post()
+
+        bills = self.filtered(
+            lambda m: m.move_type == 'in_invoice' and m.state == 'posted'
+        )
+        for bill in bills:
+            try:
+                bill._pt_reconcile_deferred_from_posted_vendor_bill()
+            except Exception as e:
+                _logger.error(
+                    "[PT-DEFERRED] ERROR while reconciling from posted "
+                    "vendor bill %s: %s",
+                    bill.name,
+                    str(e),
+                    exc_info=True,
+                )
+
+        return res
+
+    def _pt_reconcile_deferred_from_posted_vendor_bill(self):
+        self.ensure_one()
+
+        bill_lines = self.invoice_line_ids.filtered(
+            lambda line: (
+                line.display_type == 'product'
+                and line.purchase_line_id
+                and line.product_id
+            )
+        )
+        if not bill_lines:
+            return
+
+        pending_products = self.env['paint.tinting.deferred.valuation'].search([
+            ('product_id', 'in', bill_lines.mapped('product_id').ids),
+            ('company_id', '=', self.company_id.id),
+            ('state', 'in', ['pending', 'partial']),
+        ]).mapped('product_id')
+        if not pending_products:
+            _logger.info(
+                "[PT-DEFERRED] Posted bill %s has no pending deferred "
+                "products to reconcile",
+                self.name,
+            )
+            return
+
+        receipt_moves = self.env['stock.move'].search([
+            ('purchase_line_id', 'in', bill_lines.mapped('purchase_line_id').ids),
+            ('product_id', 'in', pending_products.ids),
+            ('company_id', '=', self.company_id.id),
+            ('state', '=', 'done'),
+            ('picking_id.picking_type_code', '=', 'incoming'),
+            ('location_id.usage', '=', 'supplier'),
+            ('location_dest_id.usage', '=', 'internal'),
+        ], order='date asc, id asc')
+
+        if not receipt_moves:
+            _logger.info(
+                "[PT-DEFERRED] Posted bill %s has pending deferred products "
+                "but no done receipt moves were found",
+                self.name,
+            )
+            return
+
+        _logger.info(
+            "[PT-DEFERRED] Posted vendor bill %s triggers deferred "
+            "reconciliation for receipt moves %s",
+            self.name,
+            receipt_moves.ids,
+        )
+        receipt_moves._pt_reconcile_on_receipt(receipt_moves)

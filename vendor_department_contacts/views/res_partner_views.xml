@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_inherit_vendor_departments" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.vendor.departments</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button class="oe_stat_button"
+                        type="object"
+                        name="action_open_vendor_departments"
+                        icon="fa-sitemap"
+                        invisible="supplier_rank == 0">
+                    <field string="Departments" name="vendor_department_count" widget="statinfo"/>
+                </button>
+            </div>
+            <xpath expr="//notebook" position="inside">
+                <page string="Vendor Departments" name="vendor_departments" invisible="supplier_rank == 0">
+                    <field name="vendor_department_ids" context="{'default_vendor_id': id}">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="code" optional="show"/>
+                            <field name="contact_count"/>
+                            <field name="active" optional="hide"/>
+                        </list>
+                        <form string="Vendor Department">
+                            <group>
+                                <group>
+                                    <field name="vendor_id" invisible="1"/>
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                </group>
+                                <group>
+                                    <field name="sequence"/>
+                                    <field name="active"/>
+                                </group>
+                            </group>
+                            <notebook>
+                                <page string="Contacts" name="contacts">
+                                    <field name="contact_line_ids">
+                                        <list editable="bottom">
+                                            <field name="sequence" widget="handle"/>
+                                            <field name="contact_id"
+                                                   context="{'default_parent_id': parent.vendor_id, 'default_type': 'contact'}"/>
+                                            <field name="title"/>
+                                            <field name="is_primary"/>
+                                            <field name="email" optional="show"/>
+                                            <field name="phone" optional="show"/>
+                                            <field name="mobile" optional="hide"/>
+                                        </list>
+                                    </field>
+                                </page>
+                                <page string="Internal Notes" name="notes">
+                                    <field name="note"/>
+                                </page>
+                            </notebook>
+                        </form>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_tint_formula_approval" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.tint.formula.approval</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="mrp.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='mrp']" position="inside">
+                <block title="Tinting Formula Control" name="tinting_formula_control_settings">
+                    <setting id="auto_approve_first_tint_formula"
+                             string="Automatically Approve First Tinting Formula"
+                             help="Approve and make default only Version 1 of a previously unregistered tinting formula family. Later versions still require Tinting Formula Manager approval.">
+                        <field name="auto_approve_first_tint_formula"/>
+                        <div class="text-muted">
+                            APS remains an intentional auto-approval exception. Enabling this setting does not retroactively approve existing Draft or Validated versions.
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

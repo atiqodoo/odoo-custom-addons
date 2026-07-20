@@ -18,11 +18,11 @@ class PosOrderLoyaltyOverride(models.Model):
     # -------------------------------------------------------------------------
     # sync_from_ui override — loyalty deduction for sbl-intercepted orders
     #
-    # sensible_pos_offline_sale_order.sync_from_ui intercepts zero-payment
-    # orders (state='paid', payment_ids=[]) and converts them to sale.order,
-    # returning pos.order: [] to the frontend.  Because confirm_coupon_programs
-    # is only called after a pos.order record is created, it never runs for
-    # these orders and loyalty.card.points is never reduced.
+    # sensible_pos_offline_sale_order.sync_from_ui converts orders to sale.order
+    # only when the POS frontend sends the explicit sbl_create_sale_order flag.
+    # Because confirm_coupon_programs is only called after a pos.order record is
+    # created, it never runs for those explicit sale-order conversions and
+    # loyalty.card.points is never reduced.
     #
     # Fix: pre-scan before super(), let sbl intercept, then apply deductions.
     # -------------------------------------------------------------------------
@@ -30,8 +30,8 @@ class PosOrderLoyaltyOverride(models.Model):
     @api.model
     def sync_from_ui(self, orders):
         """
-        Pre-scan orders for loyalty redemptions on zero-payment orders that
-        sensible_pos_offline_sale_order will intercept, then apply the point
+        Pre-scan orders for loyalty redemptions on orders that the cashier
+        explicitly sends to sale.order, then apply the point
         deductions directly after super() returns.
         """
         pending_deductions = {}  # { order_name: {'partner_id': int, 'uuid': str, 'deductions': {cid_str: pts}} }
@@ -117,7 +117,8 @@ class PosOrderLoyaltyOverride(models.Model):
     def _loyalty_sbl_will_intercept(self, order, pos_session):
         """
         Predict whether sensible_pos_offline_sale_order will intercept this order.
-        Replicates _sbl_should_create_sale_order_from_unpaid_pos_payload exactly.
+        It must only be true when the cashier clicked Create Sale Order and the
+        frontend serialized the explicit sbl_create_sale_order flag.
         Returns False if sbl feature is not enabled or module is not installed.
         """
         config = pos_session.config_id if pos_session else None
@@ -125,13 +126,7 @@ class PosOrderLoyaltyOverride(models.Model):
             return False
         if not getattr(config, 'sbl_create_sale_order', False):
             return False
-        if order.get('is_cod'):
-            return False
-        if order.get('state') != 'paid':
-            return False
-        if order.get('payment_ids'):
-            return False
-        if not order.get('partner_id') or not order.get('lines'):
+        if not order.get('sbl_create_sale_order'):
             return False
         return True
 

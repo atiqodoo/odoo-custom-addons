@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_electricity_meter_group_user,electricity.meter.group.user,model_electricity_meter,base.group_user,1,0,0,0
+access_electricity_meter_group_invoice,electricity.meter.group.invoice,model_electricity_meter,account.group_account_invoice,1,1,1,1
+access_electricity_reading_group_user,electricity.reading.group.user,model_electricity_reading,base.group_user,1,0,0,0
+access_electricity_reading_group_invoice,electricity.reading.group.invoice,model_electricity_reading,account.group_account_invoice,1,1,1,1

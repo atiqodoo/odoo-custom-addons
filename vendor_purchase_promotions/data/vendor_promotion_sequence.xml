@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_vendor_purchase_promotion_application" model="ir.sequence">
+        <field name="name">Vendor Promotion Application</field>
+        <field name="code">vendor.purchase.promotion.application</field>
+        <field name="prefix">VPA/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_vendor_promotion_override_log" model="ir.sequence">
+        <field name="name">Vendor Promotion Override Log</field>
+        <field name="code">vendor.promotion.override.log</field>
+        <field name="prefix">VPO/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_price_wizard_form_crown_profile" model="ir.ui.view">
+        <field name="name">vendor.price.wizard.form.crown.profile</field>
+        <field name="model">vendor.price.wizard</field>
+        <field name="inherit_id" ref="vendor_price_check.view_vendor_price_wizard_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='purchase_id']" position="after">
+                <field name="vendor_invoice_profile" readonly="1"/>
+                <field name="is_crown_profile" invisible="1"/>
+            </xpath>
+
+            <xpath expr="//field[@name='line_ids']/ancestor::group[1]" position="before">
+                <div class="alert alert-info" role="alert" invisible="not is_crown_profile">
+                    <strong>Crown invoice calculation:</strong>
+                    enter the invoice unit price, printed line total, and freight percentage for every received line.
+                    VAT is taken from the purchase order line. Enter 0% freight where Crown does not charge freight.
+                </div>
+                <group string="Crown Invoice Summary" invisible="not is_crown_profile">
+                    <group>
+                        <field name="invoice_total_vat_incl"
+                               string="Calculated Total (VAT Incl.)"
+                               readonly="1"
+                               widget="monetary"/>
+                        <field name="vendor_invoice_final_total"
+                               required="is_crown_profile"
+                               widget="monetary"/>
+                    </group>
+                    <group>
+                        <field name="invoice_variance_amount" readonly="1" widget="monetary"/>
+                        <field name="invoice_variance_percentage" readonly="1"/>
+                        <field name="invoice_variance_status" readonly="1"/>
+                        <field name="invoice_allocation_ratio" invisible="1"/>
+                    </group>
+                </group>
+            </xpath>
+
+            <xpath expr="//field[@name='line_ids']/list/field[@name='vendor_price']" position="attributes">
+                <attribute name="string">Invoice Unit Price</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='vendor_price']" position="after">
+                <field name="vendor_line_total"
+                       string="Vendor Line Total"
+                       widget="monetary"
+                       required="parent.is_crown_profile"
+                       column_invisible="not parent.is_crown_profile"/>
+                <field name="applied_freight" position="move"/>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='use_custom_pricing']" position="attributes">
+                <attribute name="column_invisible">parent.is_crown_profile</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='applied_discount']" position="attributes">
+                <attribute name="readonly">parent.is_crown_profile</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='applied_discount']" position="after">
+                <field name="structured_discount_amount"
+                       widget="monetary"
+                       readonly="1"
+                       column_invisible="not parent.is_crown_profile"/>
+                <field name="structured_discount_percentage"
+                       readonly="1"
+                       column_invisible="not parent.is_crown_profile"/>
+                <field name="discount_per_quantity"
+                       widget="monetary"
+                       readonly="1"
+                       column_invisible="not parent.is_crown_profile"/>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='discount_per_quantity']" position="after">
+                <field name="freight_amount"
+                       widget="monetary"
+                       readonly="1"
+                       column_invisible="not parent.is_crown_profile"/>
+                <field name="purchase_tax_ids"
+                       widget="many2many_tags"
+                       readonly="1"
+                       column_invisible="not parent.is_crown_profile"/>
+                <field name="vat_description"
+                       readonly="1"
+                       column_invisible="not parent.is_crown_profile"/>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='calculated_subtotal']" position="after">
+                <field name="preliminary_unit_price_excl_vat"
+                       widget="monetary"
+                       readonly="1"
+                       column_invisible="not parent.is_crown_profile"/>
+                <field name="allocated_variance_amount"
+                       widget="monetary"
+                       readonly="1"
+                       column_invisible="not parent.is_crown_profile"/>
+                <field name="final_unit_price_excl_vat"
+                       widget="monetary"
+                       readonly="1"
+                       column_invisible="not parent.is_crown_profile"/>
+                <field name="final_unit_price_incl_vat"
+                       widget="monetary"
+                       readonly="1"
+                       column_invisible="not parent.is_crown_profile"/>
+                <field name="final_line_total_vat_incl"
+                       widget="monetary"
+                       readonly="1"
+                       column_invisible="not parent.is_crown_profile"
+                       sum="Vendor Final Total"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

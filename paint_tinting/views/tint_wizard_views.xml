@@ -332,6 +332,7 @@
                     <field name="has_stock_warnings" invisible="1"/>
                     <field name="has_mapping_warnings" invisible="1"/>
                     <field name="selling_price_manually_set" invisible="1"/>
+                    <field name="active_quotation_generator_id" invisible="1"/>
                 </sheet>
             </form>
         </field>

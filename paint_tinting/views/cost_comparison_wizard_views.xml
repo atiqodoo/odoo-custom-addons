@@ -32,6 +32,7 @@
                     <!-- ============================================== -->
                     <!-- CURRENT FORMULA INFORMATION                    -->
                     <!-- ============================================== -->
+                    <field name="quotation_generator_id" invisible="1"/>
                     <group string="Current Formula">
                         <group>
                             <field name="base_category_id" readonly="1"/>

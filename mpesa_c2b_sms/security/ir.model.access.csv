@@ -3,6 +3,9 @@ access_mpesa_transaction_user,mpesa.transaction.user,model_mpesa_transaction,mpe
 access_mpesa_transaction_manager,mpesa.transaction.manager,model_mpesa_transaction,mpesa_c2b_sms.group_mpesa_manager,1,1,1,0
 access_mpesa_transaction_usage_user,mpesa.transaction.usage.user,model_mpesa_transaction_usage,mpesa_c2b_sms.group_mpesa_user,1,0,0,0
 access_mpesa_transaction_usage_manager,mpesa.transaction.usage.manager,model_mpesa_transaction_usage,mpesa_c2b_sms.group_mpesa_manager,1,1,1,0
+access_mpesa_refund_case_user,mpesa.transaction.refund.case.user,model_mpesa_transaction_refund_case,mpesa_c2b_sms.group_mpesa_user,1,0,0,0
+access_mpesa_refund_case_manager,mpesa.transaction.refund.case.manager,model_mpesa_transaction_refund_case,mpesa_c2b_sms.group_mpesa_manager,1,1,1,0
+access_mpesa_refund_case_approver,mpesa.transaction.refund.case.approver,model_mpesa_transaction_refund_case,mpesa_c2b_sms.group_mpesa_refund_approver,1,1,1,0
 access_mpesa_sms_raw_log_user,mpesa.sms.raw.log.user,model_mpesa_sms_raw_log,mpesa_c2b_sms.group_mpesa_user,1,0,0,0
 access_mpesa_sms_raw_log_manager,mpesa.sms.raw.log.manager,model_mpesa_sms_raw_log,mpesa_c2b_sms.group_mpesa_manager,1,0,0,0
 access_mpesa_modem_health_user,mpesa.modem.health.user,model_mpesa_modem_health,mpesa_c2b_sms.group_mpesa_user,1,0,0,0

@@ -5,7 +5,7 @@
     "category": "Point of Sale",
     "summary": "Configurable POS layout, density, typography, and flex ratios",
     "author": "Custom Development",
-    "depends": ["point_of_sale"],
+    "depends": ["point_of_sale", "pos_direct_thermal_printer"],
     "data": [
         "views/pos_settings_view.xml",
     ],

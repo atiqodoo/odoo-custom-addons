@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_department_list" model="ir.ui.view">
+        <field name="name">vendor.department.list</field>
+        <field name="model">vendor.department</field>
+        <field name="arch" type="xml">
+            <list string="Vendor Departments" default_order="vendor_id, sequence, name">
+                <field name="sequence" widget="handle"/>
+                <field name="vendor_id"/>
+                <field name="name"/>
+                <field name="code" optional="show"/>
+                <field name="contact_count"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_department_form" model="ir.ui.view">
+        <field name="name">vendor.department.form</field>
+        <field name="model">vendor.department</field>
+        <field name="arch" type="xml">
+            <form string="Vendor Department">
+                <sheet>
+                    <div class="oe_button_box" name="button_box"/>
+                    <group>
+                        <group>
+                            <field name="vendor_id" context="{'res_partner_search_mode': 'supplier'}"/>
+                            <field name="name"/>
+                            <field name="code"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Contacts" name="contacts">
+                            <field name="contact_line_ids" context="{'default_vendor_id': vendor_id}">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="contact_id"
+                                           context="{'default_parent_id': parent.vendor_id, 'default_type': 'contact'}"/>
+                                    <field name="title"/>
+                                    <field name="is_primary"/>
+                                    <field name="email" optional="show"/>
+                                    <field name="phone" optional="show"/>
+                                    <field name="mobile" optional="hide"/>
+                                    <field name="active" optional="hide"/>
+                                </list>
+                                <form string="Department Contact">
+                                    <group>
+                                        <group>
+                                            <field name="contact_id"
+                                                   context="{'default_parent_id': parent.vendor_id, 'default_type': 'contact'}"/>
+                                            <field name="title"/>
+                                            <field name="is_primary"/>
+                                        </group>
+                                        <group>
+                                            <field name="email"/>
+                                            <field name="phone"/>
+                                            <field name="mobile"/>
+                                            <field name="active"/>
+                                        </group>
+                                    </group>
+                                    <field name="note" placeholder="Internal notes for this department contact..."/>
+                                </form>
+                            </field>
+                        </page>
+                        <page string="Internal Notes" name="notes">
+                            <field name="note" placeholder="Notes about this vendor department..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_vendor_department_search" model="ir.ui.view">
+        <field name="name">vendor.department.search</field>
+        <field name="model">vendor.department</field>
+        <field name="arch" type="xml">
+            <search string="Search Vendor Departments">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="vendor_id"/>
+                <filter name="active" string="Active" domain="[('active', '=', True)]"/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter name="group_vendor" string="Vendor" context="{'group_by': 'vendor_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_vendor_department" model="ir.actions.act_window">
+        <field name="name">Vendor Departments</field>
+        <field name="res_model">vendor.department</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+    </record>
+</odoo>

@@ -30,6 +30,9 @@ const SBL_CACHE_TTL_MS = 5 * 60 * 1000;
 
 let _gatedXmlids = null;
 let _cacheTimestamp = 0;
+let _gateTimerConfig = null;
+let _gateTimerConfigTimestamp = 0;
+const _authorizedAppXmlids = new Map();
 
 // ── server helpers ───────────────────────────────────────────────────────────
 
@@ -58,6 +61,41 @@ async function sblGetGatedXmlids(orm) {
 function sblBustCache() {
     _gatedXmlids = null;
     _cacheTimestamp = 0;
+}
+
+async function sblGetGateTimerMinutes(orm) {
+    const now = Date.now();
+    if (_gateTimerConfig !== null && now - _gateTimerConfigTimestamp < SBL_CACHE_TTL_MS) {
+        return _gateTimerConfig;
+    }
+    try {
+        const config = await orm.call("pos.config", "sbl_get_backend_gate_lock_minutes", []);
+        _gateTimerConfig = Number(config?.minutes || 0);
+    } catch (err) {
+        console.warn("[AppGate] failed to load backend gate timer:", err);
+        _gateTimerConfig = 0;
+    }
+    _gateTimerConfigTimestamp = now;
+    return _gateTimerConfig;
+}
+
+function sblHasAppAuthorization(app) {
+    if (!app?.xmlid || !_authorizedAppXmlids.has(app.xmlid)) {
+        return false;
+    }
+    const expiresAt = _authorizedAppXmlids.get(app.xmlid);
+    if (expiresAt === Infinity || expiresAt > Date.now()) {
+        return true;
+    }
+    _authorizedAppXmlids.delete(app.xmlid);
+    return false;
+}
+
+function sblRememberAppAuthorization(app, minutes) {
+    if (app?.xmlid) {
+        const timeoutMs = Number(minutes || 0) * 60 * 1000;
+        _authorizedAppXmlids.set(app.xmlid, timeoutMs > 0 ? Date.now() + timeoutMs : Infinity);
+    }
 }
 
 /**
@@ -284,10 +322,17 @@ serviceRegistry.add(
                     const gatedApp = sblFindGatedApp(resolved, service, gatedXmlids);
                     console.log("[AppGate] gatedApp found:", gatedApp);
                     if (gatedApp) {
+                        if (sblHasAppAuthorization(gatedApp)) {
+                            return _originalSelectMenu(menu);
+                        }
                         const allowed = await sblRequestPin(dependencies.orm, gatedApp);
                         if (!allowed) {
                             return; // Block navigation.
                         }
+                        sblRememberAppAuthorization(
+                            gatedApp,
+                            await sblGetGateTimerMinutes(dependencies.orm)
+                        );
                     }
                 }
 

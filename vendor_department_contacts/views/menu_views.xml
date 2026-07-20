@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_vendor_department_contacts_root"
+              name="Vendor Structure"
+              parent="purchase.menu_purchase_config"
+              sequence="95"
+              groups="purchase.group_purchase_user"/>
+
+    <menuitem id="menu_vendor_departments"
+              name="Vendor Departments"
+              parent="menu_vendor_department_contacts_root"
+              action="action_vendor_department"
+              sequence="10"
+              groups="purchase.group_purchase_user"/>
+</odoo>

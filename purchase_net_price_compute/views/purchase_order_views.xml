@@ -6,12 +6,43 @@
         <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="vendor_promised_cost_contact"
+                <field name="vendor_contact_department_id"
                        required="1"
+                       domain="[('vendor_id', '=', partner_id), ('active', '=', True)]"
+                       context="{'default_vendor_id': partner_id}"
+                       placeholder="Vendor department"/>
+                <field name="vendor_promised_cost_contact_id"
+                       required="1"
+                       domain="[('vendor_id', '=', partner_id), ('active', '=', True)]"
+                       context="{
+                           'purchase_vendor_contact_selector': True,
+                           'purchase_vendor_id': partner_id,
+                           'purchase_vendor_department_id': vendor_contact_department_id,
+                           'default_department_id': vendor_contact_department_id
+                       }"
                        placeholder="Name of vendor sales/customer service contact"/>
+                <field name="vendor_promised_cost_contact" invisible="1"/>
+            </xpath>
+            <xpath expr="//notebook" position="before">
+                <field name="lpo_grade_volume_summary"
+                       readonly="1"
+                       widget="text"
+                       placeholder="Grade volume summary will update from order lines."/>
             </xpath>
 
             <!-- Add net_price field to order lines tree view -->
+            <xpath expr="//field[@name='order_line']//field[@name='product_qty']" position="after">
+                <field name="volume_reporting_grade_id" optional="show" readonly="1"/>
+                <field name="order_line_grade_volume_label" optional="show" readonly="1"/>
+                <field name="order_line_grade_volume" optional="hide" readonly="1"/>
+                <field name="order_line_grade_amount_vat_incl"
+                       optional="hide"
+                       readonly="1"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="volume_reference_uom_id" optional="hide" readonly="1"/>
+                <field name="volume_conversion_ratio" optional="hide" readonly="1"/>
+            </xpath>
             <xpath expr="//field[@name='order_line']//field[@name='price_unit']" position="after">
                 <field name="net_price" optional="show" readonly="1"/>
                 <field name="vendor_promised_cost_vat_incl"

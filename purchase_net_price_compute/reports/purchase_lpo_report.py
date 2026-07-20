@@ -12,6 +12,33 @@ _logger = logging.getLogger(__name__)
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
+    def _lpo_report_config_enabled(self, key):
+        return self.env['ir.config_parameter'].sudo().get_param(
+            f'purchase_net_price_compute.{key}',
+            'False',
+        ) == 'True'
+
+    def _lpo_report_show_cost(self):
+        return self._lpo_report_config_enabled('lpo_report_show_cost')
+
+    def _lpo_report_show_discount(self):
+        return self._lpo_report_config_enabled('lpo_report_show_discount')
+
+    def _lpo_report_show_tax(self):
+        return self._lpo_report_config_enabled('lpo_report_show_tax')
+
+    def _lpo_report_show_subtotal(self):
+        return self._lpo_report_config_enabled('lpo_report_show_subtotal')
+
+    def _lpo_report_show_total(self):
+        return self._lpo_report_config_enabled('lpo_report_show_total')
+
+    def _lpo_report_show_promotion(self):
+        return self._lpo_report_config_enabled('lpo_report_show_promotion')
+
+    def _lpo_report_show_grade_volume(self):
+        return self._lpo_report_config_enabled('lpo_report_show_grade_volume')
+
     def _lpo_report_format_float(self, value, precision_digits=2):
         """Format report quantities without useless .00 decimals."""
         try:
@@ -24,6 +51,15 @@ class PurchaseOrder(models.Model):
             return str(int(round(rounded_value)))
 
         return f"{rounded_value:.{precision_digits}f}".rstrip('0').rstrip('.')
+
+    def _lpo_report_lines(self):
+        self.ensure_one()
+        return self.order_line.filtered(
+            lambda line: not (
+                'is_promotion_foc' in line._fields
+                and line.is_promotion_foc
+            )
+        )
 
     def _lpo_report_signature_user(self):
         self.ensure_one()

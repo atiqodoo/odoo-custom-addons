@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_cod_deposit_settlement.CodDepositPopup">
+        <Dialog title="props.title" size="'lg'">
+            <div class="p-3">
+                <div class="alert alert-info d-flex gap-2 align-items-center">
+                    <i class="fa fa-exchange fa-lg"/>
+                    <div>
+                        <strong>Transfer cleared customer deposit to COD receivable</strong>
+                        <div class="small">No new Cash, Bank, M-Pesa or Cheque receipt will be created.</div>
+                    </div>
+                </div>
+                <div t-if="state.error" class="alert alert-danger" t-esc="state.error"/>
+                <table class="table table-sm table-bordered">
+                    <tbody>
+                        <tr><td>Customer</td><td class="text-end fw-bold" t-esc="props.quote.partner_name"/></tr>
+                        <tr><td>COD Order</td><td class="text-end" t-esc="props.quote.order_name"/></tr>
+                        <tr><td>COD Open</td><td class="text-end fw-bold" t-esc="money(props.quote.cod_open)"/></tr>
+                        <tr><td>Posted Customer Credits</td><td class="text-end" t-esc="money(props.quote.posted_credit)"/></tr>
+                        <tr t-if="props.quote.eligible_pos_invoice_debit">
+                            <td>Normal POS Invoice Debits Netted</td>
+                            <td class="text-end" t-esc="money(props.quote.eligible_pos_invoice_debit)"/>
+                        </tr>
+                        <tr><td>Guarded Available Deposit</td><td class="text-end" t-esc="money(props.quote.guarded_deposit)"/></tr>
+                        <tr t-if="props.quote.same_session_deposit_received">
+                            <td>Same-Session Deposit Received</td>
+                            <td class="text-end" t-esc="money(props.quote.same_session_deposit_received)"/>
+                        </tr>
+                        <tr t-if="props.quote.same_session_deposit_reserved">
+                            <td>Already Reserved Pending Session Close</td>
+                            <td class="text-end" t-esc="money(props.quote.same_session_deposit_reserved)"/>
+                        </tr>
+                        <tr t-if="props.quote.source_mode === 'same_session'" class="table-warning">
+                            <td><strong>Usable Same-Session Deposit</strong></td>
+                            <td class="text-end fw-bold" t-esc="money(props.quote.same_session_deposit_available)"/>
+                        </tr>
+                        <tr class="table-success"><td><strong>Maximum Applicable</strong></td><td class="text-end fw-bold" t-esc="money(props.quote.maximum_amount)"/></tr>
+                    </tbody>
+                </table>
+                <label class="form-label fw-bold">Amount to apply</label>
+                <input type="number" min="0.01" step="0.01" class="form-control form-control-lg"
+                       t-att-value="state.amount" t-on-input="onAmount"/>
+                <div class="small text-muted mt-2">
+                    <t t-if="props.quote.source_mode === 'same_session'">
+                        This amount will be reserved now and reconciled when the source POS session closes. The COD card remains visible until finalization.
+                    </t>
+                    <t t-else="">
+                        Posted and cleared default-receivable credits will be reconciled immediately.
+                    </t>
+                    Returns remain deferred.
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary btn-lg" t-on-click="props.close">Cancel</button>
+                <button class="btn btn-primary btn-lg" t-on-click="confirm">Apply Deposit</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

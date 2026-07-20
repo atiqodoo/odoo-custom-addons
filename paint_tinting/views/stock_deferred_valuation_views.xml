@@ -82,7 +82,7 @@
                                     <field name="receipt_move_id" optional="hide"/>
                                     <field name="qty_reconciled"/>
                                     <field name="cost_at_consumption" string="Frozen Cost"/>
-                                    <field name="cost_at_receipt" string="Receipt Cost"/>
+                                    <field name="cost_at_receipt" string="Bill Cost"/>
                                     <field name="price_difference" string="Diff Posted"
                                            decoration-danger="price_difference &gt; 0"
                                            decoration-success="price_difference &lt; 0"

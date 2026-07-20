@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_audit_log_list" model="ir.ui.view">
+        <field name="name">stock.audit.log.list</field>
+        <field name="model">stock.audit.log</field>
+        <field name="arch" type="xml">
+            <list string="Physical Audit Logs"
+                  create="false"
+                  edit="false"
+                  delete="false"
+                  decoration-danger="difference &lt; 0"
+                  decoration-success="difference &gt; 0"
+                  decoration-muted="difference == 0">
+                <field name="timestamp_counted"/>
+                <field name="timestamp_applied"/>
+                <field name="state"/>
+                <field name="source"/>
+                <field name="product_id"/>
+                <field name="product_default_code" optional="hide"/>
+                <field name="product_category_id" optional="show"/>
+                <field name="product_uom_id" optional="hide"/>
+                <field name="product_tag_ids" widget="many2many_tags" optional="hide"/>
+                <field name="product_available_in_pos" optional="hide"/>
+                <field name="product_tracking" optional="hide"/>
+                <field name="barcode"/>
+                <field name="nexx_barcode" optional="show"/>
+                <field name="location_id"/>
+                <field name="lot_id" optional="hide"/>
+                <field name="package_id" optional="hide"/>
+                <field name="owner_id" optional="hide"/>
+                <field name="system_quant" sum="System Quantity"/>
+                <field name="counted_quant" sum="Counted Quantity"/>
+                <field name="difference" sum="Difference"/>
+                <field name="unit_cost_excl_vat" widget="monetary" optional="show"/>
+                <field name="vat_amount_per_unit" widget="monetary" optional="hide"/>
+                <field name="unit_cost_incl_vat" widget="monetary" optional="show"/>
+                <field name="value_difference_excl_vat" widget="monetary" optional="show" sum="Value Excl. VAT"/>
+                <field name="value_difference_vat" widget="monetary" optional="hide" sum="VAT Difference"/>
+                <field name="value_difference_incl_vat" widget="monetary" sum="Value Incl. VAT"/>
+                <field name="employee_counted_id"/>
+                <field name="employee_applied_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="currency_id" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_stock_audit_log_form" model="ir.ui.view">
+        <field name="name">stock.audit.log.form</field>
+        <field name="model">stock.audit.log</field>
+        <field name="arch" type="xml">
+            <form string="Physical Audit Log" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="state"/>
+                            <field name="source"/>
+                            <field name="timestamp_counted"/>
+                            <field name="timestamp_applied"/>
+                            <field name="employee_counted_id"/>
+                            <field name="employee_applied_id"/>
+                        </group>
+                        <group>
+                            <field name="product_id"/>
+                            <field name="product_tmpl_id"/>
+                            <field name="product_default_code"/>
+                            <field name="product_category_id"/>
+                            <field name="product_tag_ids" widget="many2many_tags"/>
+                            <field name="product_available_in_pos"/>
+                            <field name="product_tracking"/>
+                            <field name="barcode"/>
+                            <field name="nexx_barcode"/>
+                            <field name="location_id"/>
+                            <field name="lot_id"/>
+                            <field name="package_id"/>
+                            <field name="owner_id"/>
+                        </group>
+                    </group>
+                    <group string="Quantities">
+                        <field name="system_quant"/>
+                        <field name="counted_quant"/>
+                        <field name="difference"/>
+                        <field name="product_uom_id"/>
+                    </group>
+                    <group string="Financial Impact">
+                        <field name="currency_id"/>
+                        <field name="unit_cost_excl_vat"/>
+                        <field name="vat_amount_per_unit"/>
+                        <field name="unit_cost_incl_vat"/>
+                        <field name="value_difference_excl_vat"/>
+                        <field name="value_difference_vat"/>
+                        <field name="value_difference_incl_vat"/>
+                    </group>
+                    <group string="Technical">
+                        <field name="quant_id"/>
+                        <field name="company_id"/>
+                        <field name="debug_reference"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_stock_audit_log_search" model="ir.ui.view">
+        <field name="name">stock.audit.log.search</field>
+        <field name="model">stock.audit.log</field>
+        <field name="arch" type="xml">
+            <search string="Physical Audit Logs">
+                <field name="product_id"/>
+                <field name="product_tmpl_id"/>
+                <field name="product_default_code"/>
+                <field name="product_category_id"/>
+                <field name="product_uom_id"/>
+                <field name="product_tag_ids"/>
+                <field name="product_available_in_pos"/>
+                <field name="product_sale_ok"/>
+                <field name="product_purchase_ok"/>
+                <field name="product_is_storable"/>
+                <field name="product_tracking"/>
+                <field name="product_type"/>
+                <field name="barcode"/>
+                <field name="nexx_barcode"/>
+                <field name="location_id"/>
+                <field name="employee_counted_id"/>
+                <field name="employee_applied_id"/>
+                <filter string="Pending" name="pending" domain="[('state', '=', 'draft')]"/>
+                <filter string="Applied" name="applied" domain="[('state', '=', 'applied')]"/>
+                <separator/>
+                <filter string="Shortages" name="shortages" domain="[('difference', '&lt;', 0)]"/>
+                <filter string="Surpluses" name="surpluses" domain="[('difference', '&gt;', 0)]"/>
+                <filter string="Zero Variance" name="zero_variance" domain="[('difference', '=', 0)]"/>
+                <separator/>
+                <filter string="Available in POS" name="available_in_pos" domain="[('product_available_in_pos', '=', True)]"/>
+                <filter string="Not Available in POS" name="not_available_in_pos" domain="[('product_available_in_pos', '=', False)]"/>
+                <filter string="Can Be Sold" name="can_be_sold" domain="[('product_sale_ok', '=', True)]"/>
+                <filter string="Can Be Purchased" name="can_be_purchased" domain="[('product_purchase_ok', '=', True)]"/>
+                <separator/>
+                <filter string="Counted Today" name="counted_today" date="timestamp_counted"/>
+                <group expand="0" string="Group By">
+                    <filter string="Product Variant" name="group_product" context="{'group_by': 'product_id'}"/>
+                    <filter string="Product Template" name="group_product_template" context="{'group_by': 'product_tmpl_id'}"/>
+                    <filter string="Product Category" name="group_product_category" context="{'group_by': 'product_category_id'}"/>
+                    <filter string="Unit of Measure" name="group_product_uom" context="{'group_by': 'product_uom_id'}"/>
+                    <filter string="Product Tracking" name="group_product_tracking" context="{'group_by': 'product_tracking'}"/>
+                    <filter string="Product Type" name="group_product_type" context="{'group_by': 'product_type'}"/>
+                    <filter string="Location" name="group_location" context="{'group_by': 'location_id'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Source" name="group_source" context="{'group_by': 'source'}"/>
+                    <filter string="Date Counted" name="group_counted_day" context="{'group_by': 'timestamp_counted:day'}"/>
+                    <filter string="Date Applied" name="group_applied_day" context="{'group_by': 'timestamp_applied:day'}"/>
+                    <filter string="Counter" name="group_counter" context="{'group_by': 'employee_counted_id'}"/>
+                    <filter string="Validator" name="group_validator" context="{'group_by': 'employee_applied_id'}"/>
+                    <filter string="Company" name="group_company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_stock_audit_log" model="ir.actions.act_window">
+        <field name="name">Physical Audit Logs</field>
+        <field name="res_model">stock.audit.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_stock_audit_log_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No physical inventory audit logs yet.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_stock_audit_log"
+              name="Physical Audit Logs"
+              parent="stock.menu_warehouse_report"
+              action="action_stock_audit_log"
+              sequence="151"
+              groups="stock.group_stock_manager"/>
+</odoo>

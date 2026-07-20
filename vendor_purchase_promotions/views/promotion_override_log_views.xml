@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_promotion_override_log_search" model="ir.ui.view">
+        <field name="name">vendor.promotion.override.log.search</field>
+        <field name="model">vendor.promotion.override.log</field>
+        <field name="arch" type="xml">
+            <search string="Promotion Checker Logs">
+                <field name="name"/>
+                <field name="purchase_id"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <filter name="pending_review" string="Pending Review"
+                        domain="[('review_state', '=', 'pending'), ('override_used', '=', True)]"/>
+                <filter name="overrides_used" string="Overrides Used"
+                        domain="[('override_used', '=', True)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_purchase" string="LPO" context="{'group_by': 'purchase_id'}"/>
+                    <filter name="group_user" string="User" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_review_state" string="Review Status" context="{'group_by': 'review_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_vendor_promotion_override_log_list" model="ir.ui.view">
+        <field name="name">vendor.promotion.override.log.list</field>
+        <field name="model">vendor.promotion.override.log</field>
+        <field name="arch" type="xml">
+            <list string="Promotion Checker Logs" create="false" delete="false"
+                  decoration-warning="override_available and not override_used"
+                  decoration-danger="override_used and review_state == 'pending'"
+                  decoration-success="review_state == 'reviewed'">
+                <field name="name"/>
+                <field name="purchase_id"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="warning_shown_count"/>
+                <field name="dismissal_count"/>
+                <field name="override_available"/>
+                <field name="override_used"/>
+                <field name="override_confirmed_at"/>
+                <field name="review_state"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_promotion_override_log_form" model="ir.ui.view">
+        <field name="name">vendor.promotion.override.log.form</field>
+        <field name="model">vendor.promotion.override.log</field>
+        <field name="arch" type="xml">
+            <form string="Promotion Checker Log" create="false" delete="false">
+                <sheet>
+                    <widget name="web_ribbon" title="Override Used" bg_color="text-bg-danger"
+                            invisible="not override_used"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="LPO and User">
+                            <field name="purchase_id" readonly="1"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="user_id" readonly="1"/>
+                            <field name="company_id" readonly="1" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Override Status">
+                            <field name="warning_shown_count" readonly="1"/>
+                            <field name="dismissal_count" readonly="1"/>
+                            <field name="first_dismissed_at" readonly="1"/>
+                            <field name="second_dismissed_at" readonly="1"/>
+                            <field name="override_available" readonly="1"/>
+                            <field name="override_used" readonly="1"/>
+                            <field name="override_confirmed_at" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Promotion Opportunities">
+                            <field name="line_ids" readonly="1">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="product_id"/>
+                                    <field name="promotion_id"/>
+                                    <field name="charged_qty"/>
+                                    <field name="current_foc_qty"/>
+                                    <field name="quantity_to_add"/>
+                                    <field name="recommended_qty"/>
+                                    <field name="recommended_foc_qty"/>
+                                    <field name="buy_qty" optional="hide"/>
+                                    <field name="free_qty" optional="hide"/>
+                                    <field name="product_uom_id" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Audit Events">
+                            <field name="event_ids" readonly="1">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="event_at"/>
+                                    <field name="event_type"/>
+                                    <field name="user_id"/>
+                                    <field name="details" widget="json" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Management Review" groups="purchase.group_purchase_manager">
+                            <group>
+                                <field name="review_state"/>
+                                <field name="reviewed_by" readonly="1"/>
+                                <field name="reviewed_at" readonly="1"/>
+                                <field name="review_notes"
+                                       placeholder="Record the review outcome..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vendor_promotion_override_logs" model="ir.actions.act_window">
+        <field name="name">Promotion Checker Review</field>
+        <field name="res_model">vendor.promotion.override.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vendor_promotion_override_log_search"/>
+        <field name="domain">[('override_used', '=', True)]</field>
+        <field name="context">{'search_default_pending_review': 1, 'create': False, 'delete': False}</field>
+    </record>
+
+    <menuitem id="menu_vendor_promotion_override_logs"
+              name="Promotion Checker Review"
+              parent="purchase.menu_procurement_management"
+              action="action_vendor_promotion_override_logs"
+              groups="purchase.group_purchase_manager"
+              sequence="72"/>
+
+    <record id="view_purchase_order_form_promotion_checker_logs" model="ir.ui.view">
+        <field name="name">purchase.order.form.promotion.checker.logs</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_promotion_override_logs"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-exclamation-triangle"
+                        invisible="promotion_override_log_count == 0">
+                    <field name="promotion_override_log_count"
+                           widget="statinfo" string="Promo Checks"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

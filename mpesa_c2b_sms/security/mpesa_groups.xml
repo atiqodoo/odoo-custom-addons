@@ -26,8 +26,17 @@
             </field>
         </record>
 
-        <record id="base.group_system" model="res.groups">
+        <record id="group_mpesa_refund_approver" model="res.groups">
+            <field name="name">M-Pesa Refund Approver</field>
+            <field name="category_id" ref="base.module_category_accounting_accounting"/>
             <field name="implied_ids" eval="[(4, ref('group_mpesa_manager'))]"/>
+            <field name="comment">
+                Can approve internal refunds, record paid refunds, and close Safaricom reversal disputes.
+            </field>
+        </record>
+
+        <record id="base.group_system" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('group_mpesa_refund_approver'))]"/>
         </record>
 
     </data>
@@ -35,6 +44,14 @@
     <data>
         <record id="group_mpesa_manager" model="res.groups">
             <field name="implied_ids" eval="[(4, ref('group_mpesa_manual_entry'))]"/>
+        </record>
+
+        <record id="group_mpesa_refund_approver" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('group_mpesa_manager'))]"/>
+        </record>
+
+        <record id="base.group_system" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('group_mpesa_refund_approver'))]"/>
         </record>
     </data>
 </odoo>

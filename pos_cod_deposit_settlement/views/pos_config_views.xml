@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_config_form_cdds" model="ir.ui.view">
+        <field name="name">pos.config.form.cod.deposit.settlement</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="pos_cod.view_pos_config_form_inherit_cod"/>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='cod_ar_account_id']" position="after">
+                <div class="mt-3 border-top pt-3">
+                    <field name="cdds_enable_cod_deposit_settlement"/>
+                    <label for="cdds_enable_cod_deposit_settlement" string="Enable Customer Deposit Settlement" class="ms-2"/>
+                </div>
+                <div class="mt-2" invisible="not cdds_enable_cod_deposit_settlement">
+                    <label for="cdds_transfer_journal_id" string="Deposit Transfer Journal"/>
+                    <field name="cdds_transfer_journal_id" options="{'no_create': True}"/>
+                    <field name="cdds_debug_logging"/>
+                    <span class="ms-2 text-muted">Enhanced server and browser diagnostics</span>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

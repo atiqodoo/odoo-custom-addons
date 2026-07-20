@@ -1,0 +1,35 @@
+.o_mpesa_transaction_list {
+    .text-danger {
+        color: #c22574 !important;
+    }
+
+    .text-primary {
+        color: #6f42c1 !important;
+    }
+
+    .text-bg-danger {
+        background-color: #f7d7e7 !important;
+        color: #8f164f !important;
+    }
+
+    .text-bg-primary {
+        background-color: #e4d8fb !important;
+        color: #4d238f !important;
+    }
+
+    .o_data_row.text-danger > .o_data_cell {
+        color: #c22574 !important;
+    }
+
+    .o_data_row.text-primary > .o_data_cell {
+        color: #6f42c1 !important;
+    }
+
+    .o_data_row.text-danger {
+        box-shadow: inset 4px 0 0 #e65aa0;
+    }
+
+    .o_data_row.text-primary {
+        box-shadow: inset 4px 0 0 #7b52c8;
+    }
+}

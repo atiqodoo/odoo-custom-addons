@@ -31,6 +31,12 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_line_ids']" position="before">
+                <field name="bill_grade_volume_summary"
+                       readonly="1"
+                       widget="text"
+                       invisible="not bill_grade_volume_summary"/>
+            </xpath>
             <xpath expr="//field[@name='invoice_line_ids']" position="after">
                 <field name="discrepancy_count" readonly="1" invisible="1"/>
                 <field name="discrepancy_approved" readonly="1" invisible="1"/>
@@ -60,6 +66,16 @@
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='invoice_line_ids']/list" position="inside">
+                <field name="vpc_from_vendor_price_wizard" column_invisible="1"/>
+                <field name="bill_volume_reference_uom_id" column_invisible="1"/>
+                <field name="bill_volume_reporting_grade_id" optional="show" readonly="1"/>
+                <field name="bill_grade_volume_label" optional="show" readonly="1"/>
+                <field name="bill_grade_amount_vat_incl"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       optional="show"
+                       readonly="1"
+                       sum="Grade Value VAT Incl."/>
                 <field name="line_subtotal_incl_vat"
                        widget="monetary"
                        options="{'currency_field': 'currency_id'}"

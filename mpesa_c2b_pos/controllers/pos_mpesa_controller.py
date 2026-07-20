@@ -16,10 +16,12 @@ from odoo import http
 from odoo.http import request
 
 _log = logging.getLogger(__name__)
-AVAILABLE_TRANSACTION_STATES = ('new', 'unmatched', 'partial_pos')
+AVAILABLE_TRANSACTION_STATES = ('new', 'unmatched', 'partial_pos', 'partially_refunded')
 
 
 def _release_state(txn):
+    if hasattr(txn, '_available_state'):
+        return txn._available_state()
     if txn.amount_remaining and txn.amount_remaining < txn.amount:
         return 'partial_pos'
     return 'new' if txn.partner_id else 'unmatched'
@@ -115,7 +117,7 @@ class PosMpesaController(http.Controller):
 
         result = []
         for txn in txns:
-            available_amount = txn.amount_remaining if txn.state == 'partial_pos' else txn.amount
+            available_amount = txn.amount_remaining
             diff = available_amount - order_amount
             if abs(diff) <= tolerance:
                 match_type = 'exact'
@@ -256,13 +258,40 @@ class PosMpesaController(http.Controller):
             txn.write({'state': _release_state(txn), 'pos_session_id': False, 'lock_token': False})
             return {'success': False, 'error': 'Lock expired — please re-validate'}
 
-        remaining_before = max((txn.amount or 0.0) - (txn.amount_used or 0.0), 0.0)
+        expiry_validator = getattr(
+            request.env['hr.employee'].sudo(),
+            'sbl_validate_expired_mpesa_sms_confirmation',
+            None,
+        )
+        if expiry_validator:
+            expiry_result = expiry_validator(
+                txn.id,
+                txn.pos_session_id.id,
+                _kw.get('expiry_authorization') or {},
+                request.session.get('sbl_mpesa_expiry_authorizations') or {},
+            )
+            if not expiry_result.get('approved'):
+                _log.warning(
+                    "Blocked expired M-Pesa confirm txn id=%d ref=%s session=%s reason=%s",
+                    txn.id,
+                    txn.mpesa_ref,
+                    txn.pos_session_id.id,
+                    expiry_result.get('message'),
+                )
+                return {
+                    'success': False,
+                    'expired': True,
+                    'error': expiry_result.get('message') or 'Expired M-Pesa SMS requires authorization.',
+                    'expiry_status': expiry_result.get('status') or {},
+                }
+
+        remaining_before = txn.amount_remaining or 0.0
         applied = min(float(applied_amount or remaining_before), remaining_before)
         if applied <= 0:
             return {'success': False, 'error': 'No M-Pesa balance remaining'}
 
         amount_used = (txn.amount_used or 0.0) + applied
-        remaining_after = max((txn.amount or 0.0) - amount_used, 0.0)
+        remaining_after = max(remaining_before - applied, 0.0)
         txn.write({
             'amount_used': amount_used,
             'pos_reserved_amount': (txn.pos_reserved_amount or 0.0) + applied,
@@ -326,10 +355,24 @@ class PosMpesaController(http.Controller):
             rollback = min(float(release_amount or reserved), reserved)
             reserved_after = max(reserved - rollback, 0.0)
             amount_used = max((txn.amount_used or 0.0) - rollback, 0.0)
+            remaining_after = max(
+                (txn.amount or 0.0)
+                - amount_used
+                - (txn.amount_refunded or 0.0)
+                - (txn.amount_reversed or 0.0)
+                - (txn.amount_frozen or 0.0),
+                0.0,
+            )
+            if amount_used > 0.01:
+                release_state = 'partial_pos' if remaining_after > 0.01 else 'reconciled_pos'
+            elif txn.amount_refunded and remaining_after > 0.01:
+                release_state = 'partially_refunded'
+            else:
+                release_state = 'new' if txn.partner_id else 'unmatched'
             txn.write({
                 'amount_used': amount_used,
                 'pos_reserved_amount': reserved_after,
-                'state': 'partial_pos' if amount_used > 0.01 else _release_state(txn),
+                'state': release_state,
                 'pos_session_id': txn.pos_session_id.id if reserved_after > 0.01 else False,
                 'pos_lock_expires': False,
                 'lock_token': False,

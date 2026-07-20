@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem
+        id="local_documents_importer_menu"
+        name="Local Folder Imports"
+        parent="documents.Config"
+        action="local_document_watch_path_action"
+        groups="documents.group_documents_manager"
+        sequence="20"/>
+
+    <menuitem
+        id="local_documents_importer_logs_menu"
+        name="Local Import Logs"
+        parent="documents.Config"
+        action="local_document_import_log_action"
+        groups="documents.group_documents_manager"
+        sequence="21"/>
+</odoo>

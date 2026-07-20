@@ -150,10 +150,10 @@ class PosOrder(models.Model):
 
                 txn_values = {}
                 if txn.state == 'pending_pos':
-                    remaining_before = max((txn.amount or 0.0) - (txn.amount_used or 0.0), 0.0)
+                    remaining_before = txn.amount_remaining or 0.0
                     applied = min(payment.amount or remaining_before, remaining_before)
                     amount_used = (txn.amount_used or 0.0) + applied
-                    remaining_after = max((txn.amount or 0.0) - amount_used, 0.0)
+                    remaining_after = max(remaining_before - applied, 0.0)
                     txn_values.update({
                         'state': 'partial_pos' if remaining_after > 0.01 else 'reconciled_pos',
                         'amount_used': amount_used,

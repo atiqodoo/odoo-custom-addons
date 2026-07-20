@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_cod_deposit_applications"
+              name="Deposit Applications"
+              parent="point_of_sale.menu_point_root"
+              action="action_cod_deposit_applications"
+              sequence="27"
+              groups="pos_cod_deposit_settlement.group_cod_deposit_viewer"/>
+    <menuitem id="menu_cod_session_deposit_reservations"
+              name="Same-Session Reservations"
+              parent="point_of_sale.menu_point_root"
+              action="action_cod_session_deposit_reservations"
+              sequence="28"
+              groups="pos_cod_deposit_settlement.group_cod_deposit_viewer"/>
+</odoo>

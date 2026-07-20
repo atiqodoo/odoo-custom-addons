@@ -42,6 +42,22 @@ class AccountMove(models.Model):
         compute='_compute_promised_cost_diff_count',
     )
 
+    bill_grade_volume_summary = fields.Text(
+        string='Bill Grade Volume Summary',
+        compute='_compute_bill_grade_volume_summary',
+        store=True,
+        readonly=True,
+        tracking=True,
+    )
+
+    bill_grade_volume_summary_json = fields.Json(
+        string='Bill Grade Volume Summary Snapshot',
+        compute='_compute_bill_grade_volume_summary',
+        store=True,
+        readonly=True,
+        help='Stored bill grade-wise volume and VAT-inclusive value snapshot from vendor price wizard lines.',
+    )
+
     # ══════════════════════════════════════════════════════════════════════════
     # COMPUTE METHODS
     # ══════════════════════════════════════════════════════════════════════════
@@ -91,6 +107,104 @@ class AccountMove(models.Model):
                 )
             ))
 
+    @api.depends(
+        'invoice_line_ids.vpc_from_vendor_price_wizard',
+        'invoice_line_ids.bill_volume_reporting_grade_id',
+        'invoice_line_ids.bill_volume_reference_uom_id',
+        'invoice_line_ids.bill_grade_volume',
+        'invoice_line_ids.bill_grade_amount_vat_incl',
+        'invoice_line_ids.display_type',
+    )
+    def _compute_bill_grade_volume_summary(self):
+        for move in self:
+            totals = {}
+            for line in move.invoice_line_ids.filtered(
+                lambda item: (
+                    item.display_type not in ('line_section', 'line_note')
+                    and item.purchase_line_id
+                    and (item.bill_grade_volume or item.bill_grade_amount_vat_incl)
+                )
+            ):
+                grade_id = line.bill_volume_reporting_grade_id.id or False
+                grade_name = (
+                    line.bill_volume_reporting_grade_id.display_name
+                    if line.bill_volume_reporting_grade_id
+                    else _('Unmapped Grade')
+                )
+                uom_id = line.bill_volume_reference_uom_id.id or False
+                uom_name = line.bill_volume_reference_uom_id.name or ''
+                currency = line.currency_id or move.currency_id or move.company_id.currency_id
+                key = (grade_id, grade_name, uom_id, uom_name, currency.id)
+                if key not in totals:
+                    totals[key] = {
+                        'grade_id': grade_id,
+                        'grade_name': grade_name,
+                        'uom_id': uom_id,
+                        'uom_name': uom_name,
+                        'volume': 0.0,
+                        'amount_vat_incl': 0.0,
+                        'currency_id': currency.id,
+                        'currency_name': currency.name,
+                    }
+                totals[key]['volume'] += line.bill_grade_volume or 0.0
+                totals[key]['amount_vat_incl'] += line.bill_grade_amount_vat_incl or 0.0
+
+            lines = []
+            snapshot = []
+            volume_totals = {}
+            amount_total = 0.0
+            formatter_order = move.purchase_id or move.invoice_line_ids.purchase_line_id.order_id[:1]
+            for key, values in sorted(totals.items(), key=lambda item: (item[0][1], item[0][3])):
+                currency = self.env['res.currency'].browse(values['currency_id'])
+                amount = currency.round(values['amount_vat_incl']) if currency else values['amount_vat_incl']
+                amount_text = f"{values['currency_name']} {amount:,.2f}"
+                volume_text = (
+                    formatter_order._lpo_report_format_float(values['volume'], 2)
+                    if formatter_order
+                    else f"{values['volume']:,.2f}".rstrip('0').rstrip('.')
+                )
+                volume_suffix = f" {values['uom_name']}" if values['uom_name'] else ''
+                lines.append(
+                    _(
+                        "%(grade)s Grade Billed Volume: %(volume)s%(uom)s / %(amount)s VAT Incl.",
+                        grade=values['grade_name'],
+                        volume=volume_text,
+                        uom=volume_suffix,
+                        amount=amount_text,
+                    )
+                )
+                snapshot.append(values)
+                volume_totals[values['uom_name']] = volume_totals.get(values['uom_name'], 0.0) + values['volume']
+                amount_total += values['amount_vat_incl']
+
+            if snapshot:
+                default_currency = move.currency_id or move.company_id.currency_id
+                if len({item['currency_id'] for item in snapshot}) == 1:
+                    default_currency = self.env['res.currency'].browse(snapshot[0]['currency_id'])
+                volume_parts = []
+                for uom_name, volume in sorted(volume_totals.items()):
+                    volume_text = (
+                        formatter_order._lpo_report_format_float(volume, 2)
+                        if formatter_order
+                        else f"{volume:,.2f}".rstrip('0').rstrip('.')
+                    )
+                    volume_parts.append(f"{volume_text} {uom_name}".strip())
+                amount_total = default_currency.round(amount_total) if default_currency else amount_total
+                lines.append(
+                    _(
+                        "TOTAL Grade Billed: %(volume)s / %(amount)s VAT Incl.",
+                        volume=", ".join(volume_parts),
+                        amount=(
+                            f"{default_currency.name} {amount_total:,.2f}"
+                            if default_currency
+                            else f"{amount_total:,.2f}"
+                        ),
+                    )
+                )
+
+            move.bill_grade_volume_summary = "\n".join(lines)
+            move.bill_grade_volume_summary_json = snapshot
+
     # ══════════════════════════════════════════════════════════════════════════
     # BUSINESS METHODS
     # ══════════════════════════════════════════════════════════════════════════
@@ -111,13 +225,17 @@ class AccountMove(models.Model):
             list: IDs of created vendor.price.discrepancy records
         """
         self.ensure_one()
-        _logger.info("🔍 Checking prices for bill %s", self.name or 'Unnamed')
+        _logger.info('[VPC_HISTORY] price_check_start bill_id=%s bill=%s', self.id, self.name or 'Unnamed')
         
         # Clear existing discrepancies before rechecking
         self.discrepancy_ids.unlink()
         
         # Get wizard prices if coming from wizard context
         wizard_prices = self.env.context.get('wizard_vendor_prices', {})
+        wizard_prices_by_purchase_line = self.env.context.get(
+            'wizard_vendor_prices_by_purchase_line',
+            {},
+        )
         
         # Fetch system configuration parameters
         bill_count = int(
@@ -154,13 +272,22 @@ class AccountMove(models.Model):
             # 1. Wizard vendor prices (if set)
             # 2. Net price (if custom pricing is used)
             # 3. Standard price_unit
-            current_price = wizard_prices.get(
-                product.id, 
-                line.net_price if getattr(line, 'use_custom_pricing', False) else line.price_unit
+            purchase_line_price = (
+                wizard_prices_by_purchase_line.get(line.purchase_line_id.id)
+                if line.purchase_line_id
+                else None
+            )
+            current_price = (
+                purchase_line_price
+                if purchase_line_price is not None
+                else wizard_prices.get(
+                    product.id,
+                    line.net_price if getattr(line, 'use_custom_pricing', False) else line.price_unit,
+                )
             )
 
             # Check against vendor pricing rules if no wizard price provided
-            if product.id not in wizard_prices:
+            if product.id not in wizard_prices and purchase_line_price is None:
                 pricing_rule = self.env['product.supplierinfo'].search([
                     ('product_id', '=', product.id),
                     ('partner_id', '=', self.partner_id.id),
@@ -258,7 +385,11 @@ class AccountMove(models.Model):
             raise ValidationError(_('Price discrepancies already approved.'))
             
         self.write({'discrepancy_approved': True})
-        _logger.info(f"✓ Discrepancies approved by {self.env.user.name}")
+        _logger.info(
+            '[VPC_HISTORY] discrepancies_approved bill_id=%s approver_id=%s',
+            self.id,
+            self.env.user.id,
+        )
         
         return {
             'type': 'ir.actions.client',

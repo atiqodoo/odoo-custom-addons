@@ -18,6 +18,7 @@
                     <br/>
                     <group>
                         <field name="idle_time_limit" widget="float_time" invisible="pos_lock == False"/>
+                        <field name="backend_app_gate_lock_time_limit" widget="float_time" invisible="pos_lock == False"/>
                     </group>
                 </div>
             </xpath>

@@ -9,6 +9,7 @@
     "depends": ["point_of_sale"],
     "data": [
         "security/ir.model.access.csv",
+        "report/pos_order_invoice_report.xml",
         "views/pos_config_views.xml",
         "views/res_config_settings_views.xml",
     ],

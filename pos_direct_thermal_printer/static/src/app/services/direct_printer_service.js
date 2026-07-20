@@ -70,10 +70,22 @@ export async function dtrpPrintOrder(pos, order) {
     return await dtrpPrintReceipt(pos, order, receipt, { markerPrefix: "dtrp_printed" });
 }
 
+export async function dtrpReprintOrder(pos, order) {
+    const receipt = dtrpBuildReceipt(pos, order);
+    const reprintId = `${receipt.orderUid || order?.uuid || order?.id || "order"}-reprint-${Date.now()}`;
+    return await dtrpPrintReceipt(
+        pos,
+        order,
+        { ...receipt, orderUid: reprintId },
+        { markerPrefix: "dtrp_reprinted", preventDuplicate: false }
+    );
+}
+
 export async function dtrpPrintReceipt(pos, order, receipt, options = {}) {
     const config = pos?.config || {};
     const markerPrefix = options.markerPrefix || "dtrp_printed";
     const marker = `${markerPrefix}_${order?.uuid || order?.uid || order?.id || receipt?.orderUid}`;
+    const preventDuplicate = options.preventDuplicate !== false;
     if (!dtrpPrinterEnabled(pos)) {
         dtrpLogger.debug(pos, "direct printer disabled", {
             enabled: config.dtrp_enabled,
@@ -81,7 +93,7 @@ export async function dtrpPrintReceipt(pos, order, receipt, options = {}) {
         }, order);
         return { skipped: true, ok: false };
     }
-    if (order?.[marker]) {
+    if (preventDuplicate && order?.[marker]) {
         dtrpLogger.warn(pos, "duplicate direct print prevented", { marker }, order);
         return { skipped: true, duplicate: true, ok: true };
     }
@@ -91,6 +103,7 @@ export async function dtrpPrintReceipt(pos, order, receipt, options = {}) {
     dtrpLogger.info(pos, "direct receipt print starting", {
         order: receipt.orderName,
         markerPrefix,
+        preventDuplicate,
         mode: config.dtrp_connection_mode,
         paper: config.dtrp_paper_width,
         copies,
@@ -120,7 +133,9 @@ export async function dtrpPrintReceipt(pos, order, receipt, options = {}) {
             throw lastError || new Error("Direct receipt print failed.");
         }
     }
-    order[marker] = true;
+    if (preventDuplicate) {
+        order[marker] = true;
+    }
     order.nb_print = (order.nb_print || 0) + copies;
     dtrpLogger.info(pos, "direct receipt print completed", {
         order: receipt.orderName,

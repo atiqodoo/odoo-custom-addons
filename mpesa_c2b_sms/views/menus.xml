@@ -21,6 +21,13 @@
               groups="mpesa_c2b_sms.group_mpesa_manual_entry,mpesa_c2b_sms.group_mpesa_manager"
               sequence="15"/>
 
+    <menuitem id="menu_mpesa_refund_cases"
+              name="Refund/Dispute Cases"
+              parent="menu_mpesa_root"
+              action="action_mpesa_refund_case"
+              groups="mpesa_c2b_sms.group_mpesa_manager"
+              sequence="18"/>
+
     <menuitem id="menu_mpesa_raw_log"
               name="SMS Raw Log"
               parent="menu_mpesa_root"

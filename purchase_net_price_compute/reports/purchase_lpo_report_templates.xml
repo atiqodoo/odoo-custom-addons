@@ -3,60 +3,96 @@
     <function model="ir.ui.view" name="_cleanup_lpo_legacy_signature_metadata"/>
 
     <template id="report_purchaseorder_document_lpo_no_cost" inherit_id="purchase.report_purchaseorder_document" priority="10000000">
-        <!-- Remove monetary/cost columns from the confirmed Purchase Order PDF. -->
-        <xpath expr="//th[@name='th_price_unit']" position="replace"/>
-        <xpath expr="//th[@name='th_discount']" position="replace"/>
-        <xpath expr="//th[@name='th_taxes']" position="replace"/>
-        <xpath expr="//th[@name='th_subtotal']" position="replace"/>
         <xpath expr="//th[@name='th_quantity']" position="after">
             <th name="th_uom" class="text-end"><strong>UOM</strong></th>
+            <th name="th_volume_grade" t-if="o._lpo_report_show_grade_volume()"><strong>Grade</strong></th>
+            <th name="th_grade_volume" t-if="o._lpo_report_show_grade_volume()" class="text-end"><strong>Grade Volume</strong></th>
+        </xpath>
+        <xpath expr="//th[@name='th_price_unit']" position="attributes">
+            <attribute name="t-if">o._lpo_report_show_cost()</attribute>
+        </xpath>
+        <xpath expr="//th[@name='th_discount']" position="attributes">
+            <attribute name="t-if">o._lpo_report_show_discount()</attribute>
+        </xpath>
+        <xpath expr="//th[@name='th_taxes']" position="attributes">
+            <attribute name="t-if">o._lpo_report_show_tax()</attribute>
+        </xpath>
+        <xpath expr="//th[@name='th_subtotal']" position="attributes">
+            <attribute name="t-if">o._lpo_report_show_subtotal()</attribute>
         </xpath>
 
-        <xpath expr="//td[span[@t-field='line.price_unit']]" position="replace"/>
-        <xpath expr="//td[.//span[@t-field='line.discount']]" position="replace"/>
-        <xpath expr="//td[span[@t-out=&quot;', '.join([(tax.invoice_label or tax.name) for tax in line.taxes_id])&quot;]]" position="replace"/>
-        <xpath expr="//td[span[@t-field='line.price_subtotal']]" position="replace"/>
         <xpath expr="//td[span[@t-field='line.product_qty']]/span[@t-field='line.product_uom.name']" position="replace"/>
         <xpath expr="//td[span[@t-field='line.product_qty']]/span[@t-if='line.product_packaging_id']" position="replace"/>
         <xpath expr="//td[span[@t-field='line.product_qty']]" position="after">
             <td class="text-end">
                 <span t-out="line.product_uom.name"/>
             </td>
+            <td t-if="o._lpo_report_show_grade_volume()">
+                <span t-out="line.volume_reporting_grade_id.display_name or ''"/>
+            </td>
+            <td t-if="o._lpo_report_show_grade_volume()" class="text-end">
+                <span t-out="line.order_line_grade_volume_label or ''"/>
+            </td>
         </xpath>
-
-        <xpath expr="//tr[hasclass('is-subtotal')]" position="replace"/>
-        <xpath expr="//div[@id='total']" position="replace"/>
+        <xpath expr="//td[span[@t-field='line.price_unit']]" position="attributes">
+            <attribute name="t-if">o._lpo_report_show_cost()</attribute>
+        </xpath>
+        <xpath expr="//td[span/span[@t-field='line.discount']]" position="attributes">
+            <attribute name="t-if">o._lpo_report_show_discount()</attribute>
+        </xpath>
+        <xpath expr="//td[span[contains(@t-out, 'tax.invoice_label')]]" position="attributes">
+            <attribute name="t-if">o._lpo_report_show_tax()</attribute>
+        </xpath>
+        <xpath expr="//td[span[@t-field='line.price_subtotal']]" position="attributes">
+            <attribute name="t-if">o._lpo_report_show_subtotal()</attribute>
+        </xpath>
 
         <!-- Avoid printing zero decimals on quantities, e.g. 5.00 -> 5. -->
         <xpath expr="//span[@t-field='line.product_qty']" position="replace">
             <span t-out="o._lpo_report_format_float(line.product_qty, 2)"/>
         </xpath>
-        <xpath expr="//span[@t-field='o.payment_term_id']" position="after">
+        <xpath expr="//table[contains(@class, 'o_main_table')]" position="before">
+            <t t-set="lpo_report_lines" t-value="o._lpo_report_lines()"/>
+        </xpath>
+        <xpath expr="//t[@t-foreach='o.order_line']" position="attributes">
+            <attribute name="t-foreach">lpo_report_lines</attribute>
+        </xpath>
+        <xpath expr="//t[contains(@t-if, 'o.order_line[line_index+1]')]" position="attributes">
+            <attribute name="t-if">current_section and (line_last or lpo_report_lines[line_index+1].display_type == 'line_section')</attribute>
+        </xpath>
+        <xpath expr="//tr[contains(@class, 'is-subtotal')]" position="attributes">
+            <attribute name="t-if">o._lpo_report_show_subtotal()</attribute>
+        </xpath>
+        <xpath expr="//div[@id='total']" position="attributes">
+            <attribute name="t-if">o._lpo_report_show_total()</attribute>
+        </xpath>
+        <xpath expr="//strong[normalize-space()='Payment Terms:']" position="replace"/>
+        <xpath expr="//span[@t-field='o.payment_term_id']" position="replace">
             <t t-set="lpo_signature_user" t-value="o._lpo_report_signature_user()"/>
             <t t-set="lpo_needs_approval" t-value="o._lpo_report_preparer_needs_approval()"/>
             <t t-set="lpo_stamp_company" t-value="o._lpo_report_stamp_company()"/>
-            <div class="row mt-5 lpo-signature-section" style="page-break-inside: avoid;">
+            <div class="row mt-2 lpo-signature-section" style="page-break-inside: avoid;">
                 <div class="col-4">
                     <strong>Prepared By</strong>
                     <div class="mt-1" t-field="o.user_id"/>
-                    <div style="height: 2.3cm; margin-top: 0.25cm;">
+                    <div style="height: 1.7cm; margin-top: 0.15cm;">
                         <img t-if="lpo_signature_user"
                              t-att-src="o._lpo_report_blue_image_uri(lpo_signature_user.lpo_signature_png, 'LPO signature')"
-                             style="max-height: 2.1cm; max-width: 5cm; object-fit: contain;"/>
+                             style="max-height: 1.55cm; max-width: 5cm; object-fit: contain;"/>
                     </div>
                     <div style="border-top: 1px solid #000; padding-top: 4px;">Signature</div>
                 </div>
                 <div t-if="lpo_needs_approval" class="col-4 offset-1">
                     <strong>Approved By</strong>
-                    <div style="height: 2.95cm;"></div>
+                    <div style="height: 2.15cm;"></div>
                     <div style="border-top: 1px solid #000; padding-top: 4px;">Signature</div>
                 </div>
                 <div t-att-class="'col-3 offset-1' if lpo_needs_approval else 'col-4 offset-2'">
                     <strong>Official Stamp</strong>
-                    <div style="height: 2.95cm; margin-top: 0.1cm;">
+                    <div style="height: 1.9cm; margin-top: 0.1cm;">
                         <img t-if="lpo_stamp_company"
                              t-att-src="o._lpo_report_blue_image_uri(lpo_stamp_company.lpo_rubber_stamp_png, 'LPO rubber stamp')"
-                             style="max-height: 2.7cm; max-width: 5cm; object-fit: contain;"/>
+                             style="max-height: 1.75cm; max-width: 5cm; object-fit: contain;"/>
                     </div>
                     <div style="border-top: 1px solid #000; padding-top: 4px;">Rubber Stamp</div>
                 </div>

@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pos_payment_method_mpesa,pos.payment.method.mpesa,point_of_sale.model_pos_payment_method,mpesa_c2b_sms.group_mpesa_manager,1,1,0,0
+access_pos_order_mpesa,pos.order.mpesa,point_of_sale.model_pos_order,mpesa_c2b_sms.group_mpesa_user,1,0,0,0
+access_mpesa_pos_reservation_user,mpesa.pos.reservation.user,model_mpesa_pos_reservation,mpesa_c2b_sms.group_mpesa_user,1,0,0,0
+access_mpesa_pos_reservation_manager,mpesa.pos.reservation.manager,model_mpesa_pos_reservation,mpesa_c2b_sms.group_mpesa_manager,1,1,1,0
+access_mpesa_pos_reservation_event_user,mpesa.pos.reservation.event.user,model_mpesa_pos_reservation_event,mpesa_c2b_sms.group_mpesa_user,1,0,0,0

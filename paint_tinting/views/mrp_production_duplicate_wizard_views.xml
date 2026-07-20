@@ -22,6 +22,18 @@
                         </p>
                     </div>
 
+                    <div class="alert alert-success" role="alert"
+                         invisible="not has_recipe_override">
+                        <strong>Revised recipe will be used.</strong>
+                        <p class="mb-1">
+                            A private BOM revision will be created for these MOs. Completing the MO will register the recipe as a new formula version.
+                        </p>
+                        <field name="recipe_change_summary" readonly="1" nolabel="1"/>
+                    </div>
+
+                    <field name="has_recipe_override" invisible="1"/>
+                    <field name="recipe_override_json" invisible="1"/>
+
                     <group>
                         <group string="Source Information">
                             <field name="source_mo_id" readonly="1"/>

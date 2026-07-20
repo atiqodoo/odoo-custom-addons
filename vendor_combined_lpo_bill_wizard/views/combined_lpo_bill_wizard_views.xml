@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_combined_lpo_bill_wizard_form" model="ir.ui.view">
+        <field name="name">combined.lpo.bill.wizard.form</field>
+        <field name="model">combined.lpo.bill.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Create Combined LPO Bill">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="company_id"/>
+                            <field name="currency_id"/>
+                            <field name="vendor_invoice_profile"/>
+                            <field name="is_crown_profile" invisible="1"/>
+                            <field name="is_gamma_profile" invisible="1"/>
+                            <field name="has_promised_cost_discrepancy" invisible="1"/>
+                            <field name="promised_cost_discrepancy_approved" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="vendor_invoice_reference"/>
+                            <field name="invoice_date"/>
+                            <field name="bill_id"/>
+                        </group>
+                    </group>
+
+                    <group string="Source LPOs">
+                        <field name="purchase_ids"
+                               widget="many2many_tags"
+                               domain="[('partner_id.commercial_partner_id', '=', partner_id), ('company_id', '=', company_id), ('currency_id', '=', currency_id), ('state', 'in', ('purchase', 'done')), ('invoice_status', '=', 'to invoice'), ('has_combined_lpo_billable_qty', '=', True)]"/>
+                    </group>
+
+                    <group string="Combined Invoice Summary">
+                        <group>
+                            <field name="invoice_total_vat_incl" readonly="1" widget="monetary"/>
+                            <field name="vendor_invoice_final_total" widget="monetary"/>
+                            <field name="invoice_variance_amount" readonly="1" widget="monetary"/>
+                            <field name="invoice_variance_percentage" readonly="1"/>
+                            <field name="invoice_status" readonly="1"/>
+                            <field name="invoice_allocation_ratio" invisible="not is_crown_profile" readonly="1"/>
+                        </group>
+                        <group string="Promotion Fulfilment" invisible="not is_gamma_profile">
+                            <field name="gamma_promotion_application_ids" widget="many2many_tags" readonly="1"/>
+                            <field name="gamma_promised_foc_qty" readonly="1"/>
+                            <field name="gamma_received_foc_qty" readonly="1"/>
+                            <field name="gamma_outstanding_foc_qty"
+                                   readonly="1"
+                                   decoration-danger="gamma_outstanding_foc_qty &gt; 0"
+                                   decoration-success="gamma_outstanding_foc_qty == 0"/>
+                        </group>
+                    </group>
+
+                    <field name="line_ids" nolabel="1">
+                        <list editable="bottom"
+                              decoration-muted="not include_line"
+                              decoration-danger="promised_cost_difference_vat_incl &gt; 0"
+                              decoration-success="promised_cost_difference_vat_incl &lt; 0">
+                            <field name="include_line"/>
+                            <field name="purchase_id" readonly="1"/>
+                            <field name="product_id" readonly="1"/>
+                            <field name="product_qty"/>
+                            <field name="max_billable_qty" readonly="1"/>
+                            <field name="product_uom_id" readonly="1"/>
+                            <field name="po_unit_price" readonly="1" widget="monetary"/>
+                            <field name="vendor_price" widget="monetary"/>
+                            <field name="vendor_line_total"
+                                   widget="monetary"
+                                   column_invisible="not parent.is_crown_profile"/>
+                            <field name="applied_discount"/>
+                            <field name="applied_freight" column_invisible="parent.is_gamma_profile"/>
+                            <field name="gamma_tint_type" column_invisible="not parent.is_gamma_profile"/>
+                            <field name="gamma_tint_percentage" column_invisible="not parent.is_gamma_profile"/>
+                            <field name="bill_unit_price_excl_vat" readonly="1" widget="monetary"/>
+                            <field name="unit_price_vat_incl"
+                                   readonly="1"
+                                   widget="monetary"
+                                   column_invisible="not parent.is_gamma_profile"/>
+                            <field name="line_total_vat_incl" readonly="1" widget="monetary" sum="Calculated Total"/>
+                            <field name="final_unit_price_excl_vat"
+                                   readonly="1"
+                                   widget="monetary"
+                                   column_invisible="not parent.is_crown_profile"/>
+                            <field name="final_unit_price_incl_vat"
+                                   readonly="1"
+                                   widget="monetary"
+                                   column_invisible="not parent.is_crown_profile"/>
+                            <field name="final_line_total_vat_incl"
+                                   readonly="1"
+                                   widget="monetary"
+                                   column_invisible="not parent.is_crown_profile"
+                                   sum="Final Total"/>
+                            <field name="vendor_promised_cost_vat_incl" readonly="1" widget="monetary"/>
+                            <field name="promised_cost_difference_vat_incl"
+                                   readonly="1"
+                                   widget="monetary"
+                                   decoration-danger="promised_cost_difference_vat_incl &gt; 0"
+                                   decoration-success="promised_cost_difference_vat_incl &lt; 0"/>
+                            <field name="gamma_gross_total"
+                                   readonly="1"
+                                   widget="monetary"
+                                   column_invisible="not parent.is_gamma_profile"/>
+                            <field name="gamma_discount_amount"
+                                   readonly="1"
+                                   widget="monetary"
+                                   column_invisible="not parent.is_gamma_profile"/>
+                            <field name="gamma_tint_charge"
+                                   readonly="1"
+                                   widget="monetary"
+                                   column_invisible="not parent.is_gamma_profile"/>
+                            <field name="structured_discount_amount"
+                                   readonly="1"
+                                   widget="monetary"
+                                   column_invisible="not parent.is_crown_profile"/>
+                            <field name="structured_discount_percentage"
+                                   readonly="1"
+                                   column_invisible="not parent.is_crown_profile"/>
+                            <field name="freight_amount"
+                                   readonly="1"
+                                   widget="monetary"
+                                   column_invisible="not parent.is_crown_profile"/>
+                            <field name="allocated_variance_amount"
+                                   readonly="1"
+                                   widget="monetary"
+                                   column_invisible="not parent.is_crown_profile"/>
+                            <field name="purchase_line_id" column_invisible="1"/>
+                            <field name="purchase_tax_ids" column_invisible="1"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                </sheet>
+                <footer>
+                    <button string="Reload Eligible Lines"
+                            name="action_reload_lines"
+                            type="object"
+                            class="btn-secondary"/>
+                    <button string="Create/Update Combined Bill &amp; Validate Prices"
+                            name="action_create_bill"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Approve Promised Cost Difference"
+                            name="action_approve_promised_cost_discrepancy"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="not has_promised_cost_discrepancy or promised_cost_discrepancy_approved"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

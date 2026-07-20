@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_product_movement_volume_company" model="ir.rule">
+        <field name="name">Movement volume: allowed companies</field>
+        <field name="model_id" ref="model_product_movement_volume"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('stock.group_stock_user'))]"/>
+    </record>
+</odoo>
+

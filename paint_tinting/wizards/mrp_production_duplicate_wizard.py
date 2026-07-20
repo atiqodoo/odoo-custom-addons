@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api, _
+import logging
+
+from odoo import Command, models, fields, api, _
 from odoo.exceptions import ValidationError
+
+
+_logger = logging.getLogger(__name__)
 
 
 class MrpProductionDuplicateWizard(models.TransientModel):
@@ -168,6 +173,14 @@ class MrpProductionDuplicateWizard(models.TransientModel):
             ))
 
         created_mos = self.env['mrp.production']
+        duplicate_bom = self._prepare_duplicate_bom()
+        uses_recipe_revision = duplicate_bom != self.source_mo_id.bom_id
+        _logger.info(
+            "TINT_DUPLICATE_BATCH_START wizard_id=%s source_mo_id=%s source_bom_id=%s "
+            "duplicate_bom_id=%s recipe_revision=%s quantity=%s user_id=%s",
+            self.id, self.source_mo_id.id, self.source_mo_id.bom_id.id,
+            duplicate_bom.id, uses_recipe_revision, self.quantity, self.env.user.id,
+        )
 
         # Update the originating SO line before manufacturing so the delivery
         # move is for the tinted product and can reserve the new finished lot.
@@ -182,16 +195,39 @@ class MrpProductionDuplicateWizard(models.TransientModel):
             sol.write(update_vals)
 
         for i in range(self.quantity):
-            new_mo = self.source_mo_id.copy({
+            copy_values = {
                 'origin': f"Duplicate {i + 1} of {self.source_mo_id.name}",
                 'source_mo_id': self.source_mo_id.id,
                 'product_qty': 1.0,
                 'state': 'draft',
                 'mo_selling_price': self.selling_price,
-            })
+                'bom_id': duplicate_bom.id,
+            }
+            if uses_recipe_revision:
+                # A done MO normally copies its historical raw moves. Clear
+                # them and rebuild from the new revision before confirmation.
+                copy_values['move_raw_ids'] = [Command.clear()]
+            new_mo = self.source_mo_id.copy(copy_values)
+
+            if uses_recipe_revision:
+                new_mo._compute_move_raw_ids()
+                _logger.info(
+                    "TINT_DUPLICATE_RAW_MOVES_REBUILT new_mo_id=%s bom_id=%s moves=%s",
+                    new_mo.id, duplicate_bom.id,
+                    [(move.product_id.id, move.bom_line_id.id, move.product_uom_qty)
+                     for move in new_mo.move_raw_ids],
+                )
 
             if self.auto_confirm:
                 new_mo.action_confirm()
+
+            if uses_recipe_revision:
+                for move in new_mo.move_raw_ids.filtered('bom_line_id'):
+                    exact_quantity = move.bom_line_id.product_qty
+                    move.write({
+                        'product_uom_qty': exact_quantity,
+                        'quantity': exact_quantity,
+                    })
 
             # When the duplicate flow was launched from an SO, the cashier
             # needs a real finished lot before returning to the order/POS.
@@ -201,6 +237,11 @@ class MrpProductionDuplicateWizard(models.TransientModel):
                 self._produce_tinting_duplicate_now(new_mo)
 
             created_mos |= new_mo
+
+        _logger.info(
+            "TINT_DUPLICATE_BATCH_DONE wizard_id=%s created_mo_ids=%s duplicate_bom_id=%s",
+            self.id, created_mos.ids, duplicate_bom.id,
+        )
 
         # If triggered from an SO flow, return to that SO after duplication
         if self.source_sale_order_id:
@@ -222,6 +263,11 @@ class MrpProductionDuplicateWizard(models.TransientModel):
             'context': {'create': False},
             'target': 'current',
         }
+
+    def _prepare_duplicate_bom(self):
+        """Extension hook: default duplicates continue using the source BOM."""
+        self.ensure_one()
+        return self.source_mo_id.bom_id
 
     def _produce_tinting_duplicate_now(self, production):
         """Produce a duplicated tinting MO immediately for the SO/POS flow."""

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_cod_transaction_log_list_deposit" model="ir.ui.view">
+        <field name="name">pos.cod.collection.transaction.log.list.deposit</field>
+        <field name="model">pos.cod.collection</field>
+        <field name="inherit_id" ref="pos_cod.view_pos_cod_transaction_log_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-primary">kind == 'deposit'</attribute>
+            </xpath>
+            <field name="move_id" position="after">
+                <field name="cod_deposit_application_id" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_pos_cod_transaction_log_form_deposit" model="ir.ui.view">
+        <field name="name">pos.cod.collection.transaction.log.form.deposit</field>
+        <field name="model">pos.cod.collection</field>
+        <field name="inherit_id" ref="pos_cod.view_pos_cod_transaction_log_form"/>
+        <field name="arch" type="xml">
+            <field name="move_id" position="after">
+                <field name="cod_deposit_application_id" readonly="1"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_pos_cod_transaction_log_search_deposit" model="ir.ui.view">
+        <field name="name">pos.cod.collection.transaction.log.search.deposit</field>
+        <field name="model">pos.cod.collection</field>
+        <field name="inherit_id" ref="pos_cod.view_pos_cod_transaction_log_search"/>
+        <field name="arch" type="xml">
+            <filter name="filter_discount" position="after">
+                <filter string="Customer Deposits" name="filter_customer_deposit"
+                        domain="[('kind', '=', 'deposit')]"/>
+            </filter>
+            <field name="move_id" position="after">
+                <field name="cod_deposit_application_id" string="Deposit Application"/>
+            </field>
+        </field>
+    </record>
+</odoo>

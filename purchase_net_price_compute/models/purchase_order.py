@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
+from odoo.tools.misc import html_escape
 from odoo.tools.float_utils import float_is_zero
 import logging
 
@@ -10,10 +11,13 @@ class PurchaseOrder(models.Model):
 
     vendor_promised_cost_contact = fields.Char(
         string="Vendor Sales/Customer Service Contact",
-        required=True,
+        readonly=True,
         tracking=True,
         index=True,
-        help="Vendor sales or customer service person who confirmed the promised VAT-inclusive cost.",
+        help=(
+            "Legacy text snapshot of the selected vendor sales or customer "
+            "service contact."
+        ),
     )
 
     has_custom_pricing_lines = fields.Boolean(
@@ -21,11 +25,130 @@ class PurchaseOrder(models.Model):
         compute='_compute_has_custom_pricing_lines',
         store=True
     )
+    lpo_grade_volume_summary = fields.Text(
+        string="Grade Volume Summary",
+        compute='_compute_lpo_grade_volume_summary',
+        store=True,
+        readonly=True,
+        tracking=True,
+        help="Gross order volume and VAT-inclusive value grouped by movement-volume reporting grade.",
+    )
+    lpo_grade_volume_summary_json = fields.Json(
+        string="Grade Volume Summary Snapshot",
+        compute='_compute_lpo_grade_volume_summary',
+        store=True,
+        readonly=True,
+        help="Stored grade-wise volume and VAT-inclusive value snapshot for later vendor bill comparison.",
+    )
 
     @api.depends('order_line.use_custom_pricing')
     def _compute_has_custom_pricing_lines(self):
         for order in self:
             order.has_custom_pricing_lines = any(line.use_custom_pricing for line in order.order_line)
+
+    @api.depends(
+        'order_line.volume_reporting_grade_id',
+        'order_line.order_line_grade_volume',
+        'order_line.volume_reference_uom_id',
+        'order_line.price_total',
+        'order_line.display_type',
+        'currency_id',
+    )
+    def _compute_lpo_grade_volume_summary(self):
+        for order in self:
+            totals = {}
+            for line in order.order_line.filtered(
+                lambda item: (
+                    not item.display_type
+                    and item.product_id
+                    and (item.order_line_grade_volume or item.price_total)
+                )
+            ):
+                grade_id = line.volume_reporting_grade_id.id or False
+                grade_name = (
+                    line.volume_reporting_grade_id.display_name
+                    if line.volume_reporting_grade_id
+                    else _('Unmapped Grade')
+                )
+                uom_name = line.volume_reference_uom_id.name or ''
+                uom_id = line.volume_reference_uom_id.id or False
+                key = (grade_id, grade_name, uom_id, uom_name)
+                if key not in totals:
+                    totals[key] = {
+                        'grade_id': grade_id,
+                        'grade_name': grade_name,
+                        'uom_id': uom_id,
+                        'uom_name': uom_name,
+                        'volume': 0.0,
+                        'amount_vat_incl': 0.0,
+                        'currency_id': order.currency_id.id,
+                        'currency_name': order.currency_id.name,
+                    }
+                totals[key]['volume'] += line.order_line_grade_volume or 0.0
+                totals[key]['amount_vat_incl'] += line.price_total or 0.0
+
+            lines = []
+            snapshot = []
+            for key, values in sorted(totals.items(), key=lambda item: (item[0][1], item[0][3])):
+                volume_text = order._lpo_report_format_float(values['volume'], 2)
+                volume_suffix = f" {values['uom_name']}" if values['uom_name'] else ""
+                amount_text = order._lpo_format_grade_amount(values['amount_vat_incl'])
+                lines.append(
+                    _(
+                        "%(grade)s Grade Gross Volume: %(volume)s%(uom)s / %(amount)s VAT Incl.",
+                        grade=values['grade_name'],
+                        volume=volume_text,
+                        uom=volume_suffix,
+                        amount=amount_text,
+                    )
+                )
+                snapshot.append({
+                    'grade_id': values['grade_id'],
+                    'grade_name': values['grade_name'],
+                    'uom_id': values['uom_id'],
+                    'uom_name': values['uom_name'],
+                    'volume': values['volume'],
+                    'amount_vat_incl': values['amount_vat_incl'],
+                    'currency_id': values['currency_id'],
+                    'currency_name': values['currency_name'],
+                })
+            order.lpo_grade_volume_summary = "\n".join(lines)
+            order.lpo_grade_volume_summary_json = snapshot
+
+    def _lpo_format_grade_amount(self, amount):
+        self.ensure_one()
+        currency = self.currency_id or self.company_id.currency_id
+        rounded_amount = currency.round(amount or 0.0) if currency else amount or 0.0
+        return f"{currency.name} {rounded_amount:,.2f}" if currency else f"{rounded_amount:,.2f}"
+
+    @api.onchange('order_line')
+    def _onchange_lpo_grade_volume_summary(self):
+        self.order_line._compute_lpo_grade_volume_fields()
+        self._compute_lpo_grade_volume_summary()
+
+    def _post_lpo_grade_volume_summary_change(self, previous_summaries):
+        for order in self:
+            previous = previous_summaries.get(order.id) or ''
+            current = order.lpo_grade_volume_summary or ''
+            if previous == current:
+                continue
+            body = _(
+                "<b>Grade Volume Summary Updated</b><br/>%(summary)s",
+                summary=html_escape(current).replace('\n', '<br/>') if current else _('No grade volumes.'),
+            )
+            order.message_post(body=body)
+
+    def write(self, vals):
+        previous_summaries = {
+            order.id: order.lpo_grade_volume_summary
+            for order in self
+        } if 'order_line' in vals else {}
+        result = super(PurchaseOrder, self.with_context(
+            skip_lpo_grade_volume_line_chatter=True
+        )).write(vals)
+        if previous_summaries:
+            self._post_lpo_grade_volume_summary_change(previous_summaries)
+        return result
 
     def _get_invoice_wizard_received_qty(self, po_line):
         received_to_bill = max((po_line.qty_received or 0.0) - (po_line.qty_invoiced or 0.0), 0.0)

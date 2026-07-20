@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_purchase_promotion_list" model="ir.ui.view">
+        <field name="name">vendor.purchase.promotion.list</field>
+        <field name="model">vendor.purchase.promotion</field>
+        <field name="arch" type="xml">
+            <list string="Vendor Promotions" decoration-muted="not active">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="calculation_profile"/>
+                <field name="product_tmpl_ids" widget="many2many_tags"/>
+                <field name="product_id" optional="show"/>
+                <field name="min_charged_qty"/>
+                <field name="max_charged_qty" optional="hide"/>
+                <field name="buy_qty"/>
+                <field name="free_qty"/>
+                <field name="repeat_offer"/>
+                <field name="date_start" optional="show"/>
+                <field name="date_end" optional="show"/>
+                <field name="priority" optional="hide"/>
+                <field name="active"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_purchase_promotion_form" model="ir.ui.view">
+        <field name="name">vendor.purchase.promotion.form</field>
+        <field name="model">vendor.purchase.promotion</field>
+        <field name="arch" type="xml">
+            <form string="Vendor Promotion">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Gamma Buy 22 Get 2"/></h1>
+                    </div>
+                    <group>
+                        <group string="Vendor and Product">
+                            <field name="partner_id"/>
+                            <field name="calculation_profile"/>
+                            <field name="product_tmpl_ids"
+                                   widget="many2many_tags"
+                                   options="{'no_create_edit': True}"
+                                   placeholder="Select all products covered by this promotion..."/>
+                            <field name="product_id"
+                                   string="Specific Variant (Optional)"
+                                   domain="[('product_tmpl_id', 'in', product_tmpl_ids)]"/>
+                            <field name="product_tmpl_id" invisible="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Validity and Priority">
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="priority"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Quantity Promotion">
+                        <group>
+                            <field name="min_charged_qty"/>
+                            <field name="max_charged_qty"/>
+                        </group>
+                        <group>
+                            <field name="buy_qty"/>
+                            <field name="free_qty"/>
+                            <field name="repeat_offer"/>
+                        </group>
+                    </group>
+                    <group string="Vendor Calculation Defaults">
+                        <group>
+                            <field name="override_discount"/>
+                            <field name="discount_percentage" invisible="not override_discount"/>
+                        </group>
+                        <group>
+                            <field name="default_tint_type" invisible="calculation_profile != 'gamma_paints'"/>
+                            <field name="default_tint_percentage" invisible="calculation_profile != 'gamma_paints'"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_vendor_promotion_application_list" model="ir.ui.view">
+        <field name="name">vendor.purchase.promotion.application.list</field>
+        <field name="model">vendor.purchase.promotion.application</field>
+        <field name="arch" type="xml">
+            <list string="Applied Vendor Promotions"
+                  create="false"
+                  edit="false"
+                  decoration-success="fulfillment_state == 'fulfilled'"
+                  decoration-warning="fulfillment_state in ('awaiting', 'partial')"
+                  decoration-danger="fulfillment_state == 'cancelled'">
+                <field name="name"/>
+                <field name="purchase_id"/>
+                <field name="partner_id"/>
+                <field name="product_id"/>
+                <field name="promotion_id"/>
+                <field name="charged_qty"/>
+                <field name="promised_foc_qty"/>
+                <field name="received_foc_qty"/>
+                <field name="outstanding_foc_qty"/>
+                <field name="fulfillment_state"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_promotion_application_form" model="ir.ui.view">
+        <field name="name">vendor.purchase.promotion.application.form</field>
+        <field name="model">vendor.purchase.promotion.application</field>
+        <field name="arch" type="xml">
+            <form string="Applied Vendor Promotion" create="false" edit="false">
+                <sheet>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="purchase_id"/>
+                            <field name="partner_id"/>
+                            <field name="promotion_id"/>
+                            <field name="product_id"/>
+                        </group>
+                        <group>
+                            <field name="charged_qty"/>
+                            <field name="promised_foc_qty"/>
+                            <field name="received_foc_qty"/>
+                            <field name="outstanding_foc_qty"/>
+                            <field name="fulfillment_state"/>
+                        </group>
+                    </group>
+                    <group string="Linked Documents">
+                        <field name="charged_line_id"/>
+                        <field name="foc_line_id"/>
+                        <field name="bill_ids" widget="many2many_tags"/>
+                    </group>
+                    <group string="Applied Snapshot">
+                        <field name="promotion_snapshot" widget="json" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vendor_purchase_promotions" model="ir.actions.act_window">
+        <field name="name">Vendor Promotions</field>
+        <field name="res_model">vendor.purchase.promotion</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_vendor_promotion_applications" model="ir.actions.act_window">
+        <field name="name">Promotion Fulfilment</field>
+        <field name="res_model">vendor.purchase.promotion.application</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <menuitem id="menu_vendor_purchase_promotions"
+              name="Vendor Promotions"
+              parent="purchase.menu_procurement_management"
+              action="action_vendor_purchase_promotions"
+              groups="purchase.group_purchase_manager"
+              sequence="70"/>
+    <menuitem id="menu_vendor_promotion_applications"
+              name="Promotion Fulfilment"
+              parent="purchase.menu_procurement_management"
+              action="action_vendor_promotion_applications"
+              groups="purchase.group_purchase_user"
+              sequence="71"/>
+</odoo>

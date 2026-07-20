@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_product_movement_volume_user,product.movement.volume.user,model_product_movement_volume,stock.group_stock_user,1,0,0,0
+access_product_movement_volume_manager,product.movement.volume.manager,model_product_movement_volume,stock.group_stock_manager,1,0,0,0
+access_product_movement_volume_backfill_manager,product.movement.volume.backfill.manager,model_product_movement_volume_backfill_wizard,stock.group_stock_manager,1,1,1,1
+

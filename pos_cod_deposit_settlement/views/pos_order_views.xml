@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_order_form_cdds" model="ir.ui.view">
+        <field name="name">pos.order.form.cod.deposit.settlement</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="pos_cod.view_pos_order_form_inherit_cod"/>
+        <field name="priority">95</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='cod_state']" position="after">
+                <field name="cod_deposit_applied_amount" invisible="not is_cod" readonly="1"/>
+                <field name="cod_session_deposit_reserved_amount" invisible="not is_cod" readonly="1"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="COD Deposit Applications" invisible="not is_cod">
+                    <field name="cod_deposit_application_ids" readonly="1" nolabel="1">
+                        <list create="false" edit="false" delete="false">
+                            <field name="name"/>
+                            <field name="create_date"/>
+                            <field name="amount"/>
+                            <field name="deposit_before"/>
+                            <field name="deposit_after"/>
+                            <field name="cod_open_before"/>
+                            <field name="cod_open_after"/>
+                            <field name="cashier_id"/>
+                            <field name="move_id"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="Same-Session Deposit Reservations" invisible="not is_cod">
+                    <field name="cod_session_deposit_reservation_ids" readonly="1" nolabel="1">
+                        <list create="false" edit="false" delete="false">
+                            <field name="name"/>
+                            <field name="source_session_id"/>
+                            <field name="amount"/>
+                            <field name="state" widget="badge"/>
+                            <field name="application_id"/>
+                            <field name="reserved_date"/>
+                            <field name="finalized_date"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
