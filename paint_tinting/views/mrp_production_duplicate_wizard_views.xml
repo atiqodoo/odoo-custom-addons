@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ================================================================ -->
-    <!-- DUPLICATE MO WIZARD FORM                                         -->
-    <!-- ================================================================ -->
     <record id="view_mrp_production_duplicate_wizard_form" model="ir.ui.view">
         <field name="name">mrp.production.duplicate.wizard.form</field>
         <field name="model">mrp.production.duplicate.wizard</field>
@@ -15,22 +12,25 @@
                             class="oe_highlight"/>
                     <button string="Cancel" special="cancel" class="btn-secondary"/>
                 </header>
-                
+
                 <sheet>
                     <div class="alert alert-info" role="alert">
-                        <h4>🎨 Duplicate Tinting MO</h4>
+                        <h4>Duplicate Tinting MO</h4>
                         <p class="mb-0">
-                            This will create multiple identical Manufacturing Orders
-                            for the same tinted product with the exact same formula.
+                            Creates identical Manufacturing Orders with the same formula.
+                            Each lot requires its own selling price — enter it below.
                         </p>
                     </div>
-                    
+
                     <group>
                         <group string="Source Information">
                             <field name="source_mo_id" readonly="1"/>
                             <field name="product_name" readonly="1"/>
+                            <field name="source_total_cost" readonly="1"/>
+                            <field name="source_sale_order_id" readonly="1"
+                                   invisible="not source_sale_order_id"/>
                         </group>
-                        
+
                         <group string="Duplication Settings">
                             <field name="quantity"
                                    help="Number of identical MOs to create"/>
@@ -38,17 +38,32 @@
                                    help="Automatically confirm the new MOs"/>
                         </group>
                     </group>
-                    
+
+                    <!-- Selling price — required, one price applied to all created lots -->
+                    <group string="Selling Price (applied to each new lot)">
+                        <field name="selling_price"
+                               decoration-danger="selling_price &lt;= 0 or selling_price &lt; source_total_cost"
+                               decoration-success="selling_price &gt; 0 and selling_price &gt;= source_total_cost"
+                               placeholder="Enter selling price (KES incl. VAT)..."
+                               required="1"/>
+                    </group>
+
+                    <div class="alert alert-warning" role="alert"
+                         invisible="selling_price &gt; 0">
+                        <strong>Selling price is required.</strong>
+                        Each duplicated lot must have a selling price set.
+                        You can adjust prices individually on each MO after creation.
+                    </div>
+
                     <separator string="Preview"/>
                     <field name="preview_message" nolabel="1" widget="html"/>
-                    
+
                     <div class="alert alert-warning mt-3" role="alert">
-                        <strong>⚠ Important:</strong>
+                        <strong>Important:</strong>
                         <ul class="mb-0">
-                            <li>Each MO will produce exactly 1.0 unit</li>
-                            <li>All MOs will use the same BOM and formula</li>
-                            <li>Colorant quantities will be identical</li>
-                            <li>You'll need to manufacture each MO separately</li>
+                            <li>Each MO produces exactly 1.0 unit with the same BOM and formula</li>
+                            <li>All MOs get the selling price entered above — edit individually if needed</li>
+                            <li>Selling price can be changed on each MO in the <strong>Tinting Pricing</strong> tab</li>
                         </ul>
                     </div>
                 </sheet>

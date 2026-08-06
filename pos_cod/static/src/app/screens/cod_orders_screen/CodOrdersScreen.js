@@ -162,7 +162,14 @@ export class CodOrdersScreen extends Component {
                 returnLines
             );
             if (result.success) {
-                this.state.message = `${result.order_name}: ${action === "return" ? "return recorded" : "payment received"} (${this.formatCurrency(result.amount)}).`;
+                const loyaltyIssued = (result.loyalty_points || []).reduce(
+                    (sum, item) => sum + Number(item.issued || 0),
+                    0
+                );
+                const loyaltyText = loyaltyIssued > 0
+                    ? ` Loyalty +${loyaltyIssued.toFixed(2)} pts.`
+                    : "";
+                this.state.message = `${result.order_name}: ${action === "return" ? "return recorded" : "payment received"} (${this.formatCurrency(result.amount)}).${loyaltyText}`;
                 this.state.messageType = "success";
                 if (!result.remaining) {
                     this.state.selectedOrderId = null;

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_res_config_settings_mpesa" model="ir.ui.view">
+        <field name="name">res.config.settings.mpesa</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='general_settings']" position="inside">
+                <block title="M-Pesa C2B SMS" name="mpesa_c2b_sms_settings"
+                       groups="base.group_system">
+                    <setting id="mpesa_api_token_setting"
+                             string="Bridge API Token"
+                             help="Pre-shared token that must match the bridge service settings.">
+                        <field name="mpesa_api_token" password="True"/>
+                    </setting>
+                    <setting id="mpesa_amount_tolerance_setting"
+                             string="Amount Tolerance"
+                             help="Acceptable rounding gap between M-Pesa amount and order total.">
+                        <field name="mpesa_amount_tolerance" class="oe_inline"/>
+                    </setting>
+                    <setting id="mpesa_auto_match_partner_setting"
+                             string="Auto-match Partner by Phone"
+                             help="Automatically link transactions to partners by phone number.">
+                        <field name="mpesa_auto_match_partner"/>
+                    </setting>
+                    <setting id="mpesa_bridge_type_setting"
+                             string="Bridge Engine"
+                             help="Choose whether the M-Pesa SMS app controls the Python bridge or Go bridge.">
+                        <field name="mpesa_bridge_type" widget="radio" class="o_light_label"/>
+                    </setting>
+                    <setting id="mpesa_bridge_runner_path_setting"
+                             string="Python Bridge Runner Path"
+                             help="PowerShell script used when Python Bridge is selected."
+                             invisible="mpesa_bridge_type != 'python'">
+                        <field name="mpesa_bridge_runner_path"/>
+                    </setting>
+                    <setting id="mpesa_go_bridge_runner_path_setting"
+                             string="Go Bridge Runner Path"
+                             help="PowerShell script used when Go Bridge is selected."
+                             invisible="mpesa_bridge_type != 'go'">
+                        <field name="mpesa_go_bridge_runner_path"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

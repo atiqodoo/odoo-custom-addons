@@ -164,7 +164,8 @@ patch(PosStore.prototype, {
         sessionId = this.session?.id || false,
         action = "payment",
         orderRef = false,
-        returnLines = null
+        returnLines = null,
+        mpesaRef = false
     ) {
         /**
          * Collect cash/card payment for a pending COD order.
@@ -184,13 +185,24 @@ patch(PosStore.prototype, {
             action,
             orderRef,
             returnLines,
+            mpesaRef,
         });
 
         try {
+            const payload = {
+                order_id: orderId,
+                payment_method_id: paymentMethodId,
+                amount,
+                session_id: sessionId,
+                action,
+                order_ref: orderRef,
+                return_lines: returnLines,
+                mpesa_ref: mpesaRef,
+            };
             const result = await this.data.call(
                 "pos.order",
                 "collect_cod_payment",
-                [orderId, paymentMethodId, amount, sessionId, action, orderRef, returnLines],
+                [payload],
             );
 
             if (result.success) {

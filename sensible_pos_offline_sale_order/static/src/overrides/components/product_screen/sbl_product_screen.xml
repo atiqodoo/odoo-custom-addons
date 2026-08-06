@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_order_to_sale_order.ProductScreen" t-inherit="point_of_sale.ProductScreen" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('subpads')]//ActionpadWidget" position="after">
+            <ActionpadWidget 
+                    partner="currentOrder?.get_partner()" 
+                    onClickMore.bind="displayAllControlPopup"
+                    actionName.translate="Create Sale Order"
+                    actionToTrigger="() => pos.createSaleOrder()"
+                    showActionButton="!currentOrder?.is_empty()"
+                    t-if="pos.config.sbl_create_sale_order"
+                />
+        </xpath>
+    </t>
+</templates>

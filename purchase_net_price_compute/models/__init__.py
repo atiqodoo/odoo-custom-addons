@@ -1,4 +1,5 @@
 from . import res_partner
+from . import res_config_settings
 from . import product_template
 from . import product_vendor_pricing
 from . import purchase_order_line

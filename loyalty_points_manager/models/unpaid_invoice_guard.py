@@ -120,16 +120,15 @@ class PosOrderUnpaidInvoiceGuard(models.Model):
         # purely to record the incoming payment against the customer's receivable).
         # This mirrors the same logic in pos_credit_limit._pcl_get_session_incoming_payments.
         session_incoming = self._get_session_incoming_for_partners(partner_ids)
-        effective_residual = max(0.0, round(total_residual - session_incoming, 2))
 
         _logger.info(
             "[unpaid_invoice_guard] partner_id=%s (%s)"
-            " | raw_residual=%.2f | session_incoming=%.2f | effective_residual=%.2f",
+            " | raw_residual=%.2f | session_incoming=%.2f | strict_block=True",
             partner_id, partner.name,
-            total_residual, session_incoming, effective_residual,
+            total_residual, session_incoming,
         )
 
-        if effective_residual <= 0:
+        if False:
             _logger.info(
                 "[unpaid_invoice_guard] partner_id=%s (%s): session payments cover"
                 " unpaid balance — loyalty redemption ALLOWED",
@@ -140,7 +139,7 @@ class PosOrderUnpaidInvoiceGuard(models.Model):
         result = {
             'has_unpaid': True,
             'count': len(invoices),
-            'total': effective_residual,
+            'total': round(total_residual, 2),
             'currency': currency_name,
         }
 

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_uncleared_payment_guard.CodOrdersScreenUnclearedBadge"
+       t-inherit="pos_cod.CodOrdersScreen"
+       t-inherit-mode="extension">
+        <xpath expr="//article[contains(@t-attf-class, 'cod-card')]" position="attributes">
+            <attribute name="t-attf-class">cod-card #{state.selectedOrderId === order.id ? 'is-selected' : ''} #{this.upgCodUnclearedClass(order)}</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('cod-card-main')]" position="after">
+            <t t-if="this.upgCodUnclearedLabel(order)">
+                <div t-attf-class="upg-cod-status upg-cod-status-#{order.upg_cod_uncleared_state}">
+                    <i class="fa fa-university me-1"/>
+                    <t t-esc="this.upgCodUnclearedLabel(order)"/>
+                </div>
+            </t>
+        </xpath>
+    </t>
+</templates>

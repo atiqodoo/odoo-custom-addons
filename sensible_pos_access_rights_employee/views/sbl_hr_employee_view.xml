@@ -33,6 +33,7 @@
                         <group>
                             <field name="sbl_hide_pos_payment_validate_button" widget="boolean_toggle"/>
                             <field name="sbl_disabled_payment_method_ids" widget="many2many_tags"/>
+                            <field name="sbl_deposit_settle_payment_method_ids" widget="many2many_tags"/>
                         </group>
                     </group>
                     <group name="sbl_pos_actions_popup" string="Actions Popup">
@@ -43,6 +44,7 @@
                         </group>
                         <group>
                             <field name="sbl_hide_pos_action_refund" widget="boolean_toggle"/>
+                            <field name="sbl_hide_pos_action_reward" widget="boolean_toggle"/>
                             <field name="sbl_hide_pos_action_fiscal_position" widget="boolean_toggle"/>
                             <field name="sbl_hide_pos_action_cancel_order" widget="boolean_toggle"/>
                         </group>
@@ -79,11 +81,46 @@
                         </group>
                         <group>
                             <field name="sbl_hide_pos_close_register" widget="boolean_toggle"/>
+                            <field name="sbl_hide_pos_daily_sale" widget="boolean_toggle"/>
                             <field name="sbl_hide_pos_clear_cache" widget="boolean_toggle"/>
                             <field name="sbl_hide_pos_debug_window" widget="boolean_toggle"/>
+                            <field name="sbl_block_mpesa_sms_app" widget="boolean_toggle"/>
                         </group>
                     </group>
                 </page>
+
+                <!-- ── App Gate tab ─────────────────────────────────────── -->
+                <page name="sbl_app_gate" string="App Gate">
+                    <group string="Blocked Apps">
+                        <field name="sbl_blocked_app_ids"
+                               widget="many2many_tags"
+                               options="{'no_create': True, 'no_open': True}"
+                               string="Blocked Apps"
+                               help="Apps this employee is BLOCKED from. All gated apps always require a PIN — but if an app appears here, this employee will be denied access even with a valid PIN."/>
+                    </group>
+                    <group string="How It Works">
+                        <div colspan="2" class="text-muted">
+                            <p>
+                                <strong>All apps</strong> listed in
+                                <strong>Settings → Technical → App Gate Configuration</strong>
+                                always prompt for an Employee PIN when clicked —
+                                regardless of who is logged into Odoo.
+                            </p>
+                            <p>
+                                The employee identifies themselves by entering their
+                                <strong>PIN</strong> (set on the Settings tab → HR Settings → PIN).
+                                If the app is in their <strong>Blocked Apps</strong> list above,
+                                they will see: <em>"Employee [Name] is not authorized to access [App]"</em>
+                                even if their PIN is correct.
+                            </p>
+                            <p>
+                                All attempts (successful and failed) are recorded in
+                                <strong>Settings → Technical → App Gate Access Log</strong>.
+                            </p>
+                        </div>
+                    </group>
+                </page>
+
             </notebook>
         </field>
     </record>

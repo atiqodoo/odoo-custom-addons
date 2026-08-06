@@ -58,12 +58,77 @@
             
             <!-- ADD PARTNER FIELD - Positioned after product_id field -->
             <xpath expr="//field[@name='product_id']" position="after">
-                <field name="partner_id" 
-                       context="{'search_default_customer': 1, 'show_vat': True}" 
+                <field name="partner_id"
+                       context="{'search_default_customer': 1, 'show_vat': True}"
                        options="{'no_create_edit': False}"
                        placeholder="Search or create customer/contact..."/>
             </xpath>
-            
+
+            <!-- NEW TINTING PRICING TAB — after Miscellaneous -->
+            <xpath expr="//page[@name='miscellaneous']" position="after">
+                <page string="Tinting Pricing" name="tinting_pricing"
+                      invisible="not is_tinting_mo">
+
+                    <!-- ── Component cost breakdown ── -->
+                    <field name="move_raw_ids" nolabel="1" readonly="1"
+                           string="Component Costs">
+                        <list>
+                            <field name="product_id" string="Component" readonly="1"/>
+                            <field name="tinting_is_colorant" string="Colorant"
+                                   readonly="1" widget="boolean"/>
+                            <field name="product_uom_qty" string="Qty" readonly="1"
+                                   digits="[16,4]"
+                                   decoration-muted="tinting_is_colorant"/>
+                            <field name="tinting_shots" string="Shots" readonly="1"
+                                   digits="[10,2]"
+                                   decoration-muted="not tinting_is_colorant"/>
+                            <field name="tinting_ml" string="Vol (ml)" readonly="1"
+                                   digits="[10,3]"
+                                   decoration-muted="not tinting_is_colorant"/>
+                            <field name="product_uom" string="UoM" readonly="1"/>
+                            <field name="tinting_unit_cost_incl_vat"
+                                   string="Unit Cost (incl. VAT)" readonly="1"
+                                   digits="[16, 2]"/>
+                            <field name="tinting_line_cost_incl_vat"
+                                   string="Line Total (incl. VAT)" readonly="1"
+                                   digits="[16, 2]"/>
+                        </list>
+                    </field>
+
+                    <!-- ── Cost + pricing summary ── -->
+                    <group string="Cost Summary">
+                        <group>
+                            <field name="mo_base_cost" readonly="1"/>
+                            <field name="mo_colorant_cost" readonly="1"/>
+                            <field name="mo_total_cost" readonly="1"
+                                   class="fw-bold"/>
+                        </group>
+                        <group string="Selling Price (this lot)">
+                            <field name="mo_selling_price"
+                                   decoration-danger="not mo_selling_price_set or mo_selling_price &lt; mo_total_cost"
+                                   decoration-success="mo_selling_price_set and mo_selling_price &gt;= mo_total_cost"
+                                   placeholder="Enter selling price for this lot..."/>
+                            <field name="mo_selling_price_set" invisible="1"/>
+                            <field name="mo_profit" readonly="1"
+                                   decoration-danger="mo_profit &lt; 0"
+                                   decoration-success="mo_profit &gt; 0"/>
+                            <field name="mo_margin_percent" readonly="1"
+                                   decoration-danger="mo_margin_percent &lt; 0"
+                                   decoration-warning="mo_margin_percent &gt;= 0 and mo_margin_percent &lt; 15"
+                                   decoration-success="mo_margin_percent &gt;= 15"
+                                   string="Margin %"/>
+                        </group>
+                    </group>
+
+                    <div class="alert alert-warning" role="alert"
+                         invisible="mo_selling_price_set">
+                        <strong>Selling price not set for this lot.</strong>
+                        Enter the selling price above before marking this MO as done.
+                    </div>
+
+                </page>
+            </xpath>
+
         </field>
     </record>
     

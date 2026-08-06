@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_ui_layout_engine.ColorPickerField">
+        <t t-if="props.readonly">
+            <span class="pos-ui-color-picker-readonly">
+                <span class="pos-ui-color-picker-swatch" t-att-style="'background-color: ' + colorValue"/>
+                <span t-esc="colorValue"/>
+            </span>
+        </t>
+        <t t-else="">
+            <div class="pos-ui-color-picker-field">
+                <input
+                    t-ref="input"
+                    t-att-id="props.id"
+                    class="pos-ui-color-picker-input"
+                    type="color"
+                    t-att-value="colorValue"
+                    t-on-input="onColorInput"
+                    t-on-change="onColorInput"
+                />
+                <span class="pos-ui-color-picker-value" t-esc="colorValue"/>
+            </div>
+        </t>
+    </t>
+</templates>

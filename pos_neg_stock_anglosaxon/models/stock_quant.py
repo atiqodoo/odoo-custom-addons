@@ -25,6 +25,7 @@ Design decisions (per spec):
 """
 
 import logging
+from markupsafe import Markup
 from odoo import api, fields, models
 
 _logger = logging.getLogger(__name__)
@@ -40,6 +41,33 @@ class StockQuant(models.Model):
     """
 
     _inherit = 'stock.quant'
+
+    @api.constrains('quantity')
+    def constrain_product_quantity(self):
+        if self.env.context.get('pos_allow_negative_stock'):
+            return
+        return super().constrain_product_quantity()
+
+    def _validate_fields(self, field_names, excluded_names=()):
+        """Bypass Kenya negative-quant checks for explicitly allowed POS flows.
+
+        l10n_ke_edi_oscu_stock adds its own quantity constraint and does not
+        inspect context flags. Skipping quantity validation here makes the
+        bypass independent of module method-resolution order while preserving
+        all non-quantity constraints.
+        """
+        if (
+            (
+                self.env.context.get('pos_allow_negative_stock')
+                or self.env.context.get('cod_dispatch')
+            )
+            and 'quantity' in set(field_names)
+        ):
+            remaining = set(field_names) - {'quantity'}
+            if remaining:
+                return super()._validate_fields(remaining, excluded_names)
+            return
+        return super()._validate_fields(field_names, excluded_names)
 
     def _apply_inventory(self):
         """Override inventory adjustment to reconcile open POS negative layers.
@@ -217,7 +245,7 @@ class StockQuant(models.Model):
             # ── Post chatter on POS order for accountant audit trail ──────────
             if layer.pos_order_id:
                 layer.pos_order_id.message_post(
-                    body=(
+                    body=Markup(
                         '<b>[Negative Stock Closed via Adjustment]</b><br/>'
                         f'Product: {product.display_name}<br/>'
                         f'Units reconciled: {to_reconcile:.2f}<br/>'

@@ -1388,15 +1388,13 @@ class CostComparisonWizard(models.TransientModel):
 
             colorant_cost_incl = colorant_cost_excl * 1.16
 
-            # Total cost
+            # Total cost — selling price left at 0 for user to enter manually
             total_cost_incl = base_cost_incl + colorant_cost_incl
-            selling_price = total_cost_incl * 1.30
+            selling_price = 0.0
 
             _logger.info(
-                "    Base: %.2f | Colorant: %.2f | TOTAL: %.2f KES | "
-                "Selling (30%%): %.2f KES",
-                base_cost_incl, colorant_cost_incl,
-                total_cost_incl, selling_price
+                "    Base: %.2f | Colorant: %.2f | TOTAL: %.2f KES",
+                base_cost_incl, colorant_cost_incl, total_cost_incl
             )
 
             # Create comparison line

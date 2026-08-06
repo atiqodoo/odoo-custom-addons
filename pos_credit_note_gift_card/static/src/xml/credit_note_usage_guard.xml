@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_credit_note_gift_card.SelectionPopupCreditNoteUsageGuard"
+       t-inherit="point_of_sale.SelectionPopup"
+       t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('selection-item')]" position="attributes">
+            <attribute name="t-att-class">{
+                'selected active': item.isSelected,
+                'cn-usage-guarded-option': this.cnIsBlockedSelectionItem &amp;&amp; this.cnIsBlockedSelectionItem(item),
+            }</attribute>
+            <attribute name="t-att-data-cn-usage-guarded">this.cnIsBlockedSelectionItem &amp;&amp; this.cnIsBlockedSelectionItem(item) ? '1' : undefined</attribute>
+            <attribute name="t-att-title">this.cnIsBlockedSelectionItem &amp;&amp; this.cnIsBlockedSelectionItem(item) ? 'Only used in creating credit notes' : undefined</attribute>
+        </xpath>
+    </t>
+
+    <t t-name="pos_credit_note_gift_card.CodOrdersScreenCreditNoteUsageGuard"
+       t-inherit="pos_cod.CodOrdersScreen"
+       t-inherit-mode="extension">
+        <xpath expr="//select[hasclass('cod-method')]" position="attributes">
+            <attribute name="t-att-data-credit-note-payment-method-id">creditNotePaymentMethodId || undefined</attribute>
+        </xpath>
+    </t>
+</templates>

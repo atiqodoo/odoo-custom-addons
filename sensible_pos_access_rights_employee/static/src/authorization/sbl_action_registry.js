@@ -109,6 +109,10 @@ export const SBL_POS_ACTIONS = {
         label: "Payment Method",
         field: "sbl_disabled_payment_method_ids",
     },
+    deposit_settle_payment_method: {
+        label: "Deposit / Due Settlement Payment Method",
+        field: "sbl_deposit_settle_payment_method_ids",
+    },
     install_app: {
         label: "Install App",
         field: "sbl_hide_pos_install_app",
@@ -124,6 +128,10 @@ export const SBL_POS_ACTIONS = {
     close_register: {
         label: "Close Register",
         field: "sbl_hide_pos_close_register",
+    },
+    daily_sale: {
+        label: "Daily Sale",
+        field: "sbl_hide_pos_daily_sale",
     },
     clear_cache: {
         label: "Clear Cache",
@@ -152,6 +160,10 @@ export const SBL_POS_ACTIONS = {
     refund: {
         label: "Refund",
         field: "sbl_hide_pos_action_refund",
+    },
+    reward: {
+        label: "Reward",
+        field: "sbl_hide_pos_action_reward",
     },
     fiscal_position: {
         label: "Fiscal Position",

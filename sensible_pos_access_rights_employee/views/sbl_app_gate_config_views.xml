@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ── List view ───────────────────────────────────────────────────────── -->
+    <record id="sbl_app_gate_config_tree" model="ir.ui.view">
+        <field name="name">sbl.app.gate.config.tree</field>
+        <field name="model">sbl.app.gate.config</field>
+        <field name="arch" type="xml">
+            <list string="App Gate Configuration" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="xmlid"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Form view ───────────────────────────────────────────────────────── -->
+    <record id="sbl_app_gate_config_form" model="ir.ui.view">
+        <field name="name">sbl.app.gate.config.form</field>
+        <field name="model">sbl.app.gate.config</field>
+        <field name="arch" type="xml">
+            <form string="App Gate Configuration">
+                <sheet>
+                    <group>
+                        <group string="App Details">
+                            <field name="name"/>
+                            <field name="xmlid"
+                                   help="The XML ID of the top-level menu for this app, e.g. point_of_sale.menu_point_root"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group string="Status">
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Action ──────────────────────────────────────────────────────────── -->
+    <record id="sbl_app_gate_config_action" model="ir.actions.act_window">
+        <field name="name">App Gate Configuration</field>
+        <field name="res_model">sbl.app.gate.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'active_test': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No apps configured yet.
+            </p>
+            <p>
+                Add entries here to list the Odoo main apps that employees may
+                be required to unlock with their PIN. Then assign specific apps
+                to each employee on their employee form under the
+                <strong>App Gate</strong> tab.
+            </p>
+        </field>
+    </record>
+
+    <!-- ── Settings > Technical menu item ─────────────────────────────────── -->
+    <menuitem
+        id="sbl_app_gate_config_menu"
+        name="App Gate Configuration"
+        parent="base.menu_custom"
+        action="sbl_app_gate_config_action"
+        sequence="150"
+        groups="base.group_system"/>
+
+</odoo>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_barcode" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.product.barcode.custom</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="stock.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='stock']" position="inside">
+                <block title="Product Category Validation" id="product_category_validation">
+                    <setting string="Require product category"
+                             help="When enabled, saving a product without a category assigned is blocked.">
+                        <field name="product_require_category"/>
+                    </setting>
+                    <setting string="Disallow default 'All' category"
+                             help="When enabled, products must use a specific category. The default 'All' category is rejected on save.">
+                        <field name="product_require_non_default_category"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

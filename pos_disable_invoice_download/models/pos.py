@@ -21,6 +21,43 @@ class ResConfigSettings(models.TransientModel):
 class PosOrder(models.Model):
     _inherit = 'pos.order'
 
+    @api.model
+    def _process_order(self, order, existing_order):
+        """Backend audit/fallback for customer POS orders that should invoice."""
+        partner_id = order.get('partner_id')
+        to_invoice = order.get('to_invoice')
+        line_count = len(order.get('lines') or [])
+        _logger.info(
+            "[pos_disable_invoice_download] _process_order audit | name=%s | uuid=%s | "
+            "partner_id=%s | to_invoice=%s | line_count=%s | existing_order=%s",
+            order.get('name'),
+            order.get('uuid'),
+            partner_id,
+            to_invoice,
+            line_count,
+            bool(existing_order),
+        )
+        if partner_id and not to_invoice and line_count:
+            _logger.warning(
+                "[pos_disable_invoice_download] Backend forcing to_invoice=True because "
+                "customer is selected and order is not empty | name=%s | uuid=%s | "
+                "partner_id=%s | line_count=%s",
+                order.get('name'),
+                order.get('uuid'),
+                partner_id,
+                line_count,
+            )
+            order['to_invoice'] = True
+        elif partner_id and not to_invoice:
+            _logger.info(
+                "[pos_disable_invoice_download] Backend invoice force skipped for empty "
+                "customer order | name=%s | uuid=%s | partner_id=%s",
+                order.get('name'),
+                order.get('uuid'),
+                partner_id,
+            )
+        return super()._process_order(order, existing_order)
+
     def _generate_pos_order_invoice(self):
         ctx = dict(self.env.context)
         # If the POS config disables PDF download, ensure the invoice generation does not render/send PDFs

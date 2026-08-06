@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_payment_method_form_upg" model="ir.ui.view">
+        <field name="name">pos.payment.method.form.upg</field>
+        <field name="model">pos.payment.method</field>
+        <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form"/>
+        <field name="priority">30</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='pcl_is_credit_method']" position="after">
+                <field name="upg_is_uncleared_guard_method"
+                       widget="boolean_toggle"
+                       string="Uncleared Guard Mapping"
+                       help="Global fallback mapping for cheque-like methods. POS Config payment-method mapping remains the preferred per-shop control."/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

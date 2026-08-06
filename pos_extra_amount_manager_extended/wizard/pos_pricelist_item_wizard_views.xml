@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_pricelist_item_wizard_form" model="ir.ui.view">
+        <field name="name">pos.pricelist.item.wizard.form</field>
+        <field name="model">pos.pricelist.item.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Add Product to Pricelist">
+                <sheet>
+                    <div class="alert alert-warning" role="alert">
+                        <p><strong>This product has no explicit rule on the order pricelist.</strong></p>
+                        <p>Add the normal pricelist price, then the extra amount will be recalculated.</p>
+                    </div>
+
+                    <group>
+                        <group string="Order Line">
+                            <field name="pos_order_line_id" readonly="1"/>
+                            <field name="pos_order_id" readonly="1"/>
+                            <field name="product_id" readonly="1"/>
+                            <field name="pricelist_id" readonly="1"/>
+                        </group>
+                        <group string="Price Check">
+                            <field name="paid_price_per_unit" widget="monetary" readonly="1"/>
+                            <field name="current_product_sales_price" widget="monetary" readonly="1"/>
+                            <field name="cost_price_incl_vat" widget="monetary" readonly="1"/>
+                            <field name="fixed_price"/>
+                            <field name="expected_extra_per_unit" widget="monetary" readonly="1"
+                                   decoration-success="expected_extra_per_unit &gt; 0"
+                                   decoration-danger="expected_extra_per_unit &lt; 0"/>
+                            <field name="expected_total_extra" widget="monetary" readonly="1"
+                                   decoration-success="expected_total_extra &gt; 0"
+                                   decoration-danger="expected_total_extra &lt; 0"/>
+                        </group>
+                    </group>
+
+                    <group string="Pricelist Rule">
+                        <group>
+                            <field name="apply_on" widget="radio"/>
+                            <field name="min_quantity"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_add_to_pricelist" string="Add to Pricelist" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pos_pricelist_item_wizard" model="ir.actions.act_window">
+        <field name="name">Add Product to Pricelist</field>
+        <field name="res_model">pos.pricelist.item.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

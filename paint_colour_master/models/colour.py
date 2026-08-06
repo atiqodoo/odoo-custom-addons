@@ -65,32 +65,53 @@ class ColourCode(models.Model):
             result.append((record.id, display_name))
         return result
 
+    def _filter_crown_paints_duplicates(self, records):
+        """When multiple records share the same colour code, keep only the Crown Paints vendor record."""
+        from collections import Counter
+        code_counts = Counter(records.mapped('code'))
+        duplicate_codes = {c for c, cnt in code_counts.items() if cnt > 1}
+        if not duplicate_codes:
+            return records
+        keep_ids = []
+        for rec in records:
+            if rec.code in duplicate_codes:
+                if rec.vendor_id and 'CROWN PAINTS' in (rec.vendor_id.name or '').upper():
+                    keep_ids.append(rec.id)
+            else:
+                keep_ids.append(rec.id)
+        return self.browse(keep_ids)
+
     @api.model
     def name_search(self, name, args=None, operator='ilike', limit=100):
         """Customize name_search to search both code and name, prioritizing code matches.
         This method is called when searching in Many2one fields - no fandeck restriction needed."""
         args = args or []
-        
+
         if name:
             # First, try exact code match
             domain = [('code', '=', name)]
             record_ids = self._search(domain + args, limit=limit)
-            
+
             # If no exact match, try partial matches on both code and name
             if not record_ids:
                 domain = ['|', ('code', operator, name), ('name', operator, name)]
                 record_ids = self._search(domain + args, limit=limit)
         else:
             record_ids = self._search(args, limit=limit)
-        
+
         if record_ids:
-            return self.browse(record_ids).name_get()
+            records = self._filter_crown_paints_duplicates(self.browse(record_ids))
+            return records.name_get()
         return []
-    
+
     @api.model
     def _name_search(self, name, domain=None, operator='ilike', limit=None, order=None):
         """Override _name_search to remove fandeck domain restriction during search."""
         domain = domain or []
         # Remove any fandeck_id domain restrictions during search
         domain = [d for d in domain if not (isinstance(d, (list, tuple)) and len(d) == 3 and d[0] == 'fandeck_id')]
-        return super()._name_search(name, domain=domain, operator=operator, limit=limit, order=order)
+        record_ids = super()._name_search(name, domain=domain, operator=operator, limit=limit, order=order)
+        if record_ids:
+            records = self._filter_crown_paints_duplicates(self.browse(record_ids))
+            return records.ids
+        return record_ids

@@ -1,0 +1,28 @@
+.pos-ui-color-picker-field,
+.pos-ui-color-picker-readonly {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pos-ui-color-picker-input {
+    width: 3rem;
+    height: 2rem;
+    padding: 0.125rem;
+    border: 1px solid #d8dadd;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.pos-ui-color-picker-swatch {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1px solid #d8dadd;
+    border-radius: 4px;
+}
+
+.pos-ui-color-picker-value {
+    color: #374151;
+    font-family: monospace;
+}

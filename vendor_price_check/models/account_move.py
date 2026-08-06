@@ -37,6 +37,11 @@ class AccountMove(models.Model):
         help="Total of all invoice lines including taxes (price_subtotal + tax)."
     )
 
+    promised_cost_diff_count = fields.Integer(
+        string="Promised Cost Diff Count",
+        compute='_compute_promised_cost_diff_count',
+    )
+
     # ══════════════════════════════════════════════════════════════════════════
     # COMPUTE METHODS
     # ══════════════════════════════════════════════════════════════════════════
@@ -69,6 +74,22 @@ class AccountMove(models.Model):
                 if not line.display_type
             )
             move.subtotal_incl_vat = total
+
+    @api.depends(
+        'invoice_line_ids.vendor_promised_cost_vat_incl',
+        'invoice_line_ids.promised_cost_difference_vat_incl',
+        'invoice_line_ids.display_type',
+    )
+    def _compute_promised_cost_diff_count(self):
+        for move in self:
+            rounding = move.currency_id.rounding or 0.01
+            move.promised_cost_diff_count = len(move.invoice_line_ids.filtered(
+                lambda line: (
+                    line.display_type not in ('line_section', 'line_note')
+                    and line.vendor_promised_cost_vat_incl
+                    and abs(line.promised_cost_difference_vat_incl) > rounding
+                )
+            ))
 
     # ══════════════════════════════════════════════════════════════════════════
     # BUSINESS METHODS
@@ -267,6 +288,31 @@ class AccountMove(models.Model):
             'view_mode': 'list,form',
             'domain': [('bill_id', '=', self.id)],
             'context': {'default_bill_id': self.id}
+        }
+
+    def action_view_promised_cost_diffs(self):
+        self.ensure_one()
+        view = self.env.ref(
+            'vendor_price_check.view_account_move_line_promised_cost_diff_list',
+            raise_if_not_found=False,
+        )
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Promised Cost Differences'),
+            'res_model': 'account.move.line',
+            'view_mode': 'list,form',
+            'views': [(view.id, 'list'), (False, 'form')] if view else [(False, 'list'), (False, 'form')],
+            'domain': [
+                ('move_id', '=', self.id),
+                ('display_type', 'not in', ('line_section', 'line_note')),
+                ('vendor_promised_cost_vat_incl', '!=', 0.0),
+                ('promised_cost_difference_vat_incl', '!=', 0.0),
+            ],
+            'context': {
+                'create': False,
+                'edit': False,
+                'delete': False,
+            },
         }
 
     def action_post(self):

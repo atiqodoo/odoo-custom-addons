@@ -1,4 +1,6 @@
 .pos .product-screen {
+    background-color: var(--pos-ui-background-color, #e9ecef);
+
     &.density-compact {
         font-size: 12px;
 
@@ -32,8 +34,13 @@
 
     .leftpane,
     .rightpane {
+        background-color: transparent !important;
         min-width: 0;
         overflow: hidden;
+    }
+
+    .rightpane > .position-relative {
+        background-color: transparent;
     }
 
     &:not(.ui-layout-default) {
@@ -82,6 +89,70 @@
     &.density-compact .control-buttons .pos-ui-action-bar-button {
         min-width: 82px;
         padding-inline: 0.6rem;
+    }
+}
+
+.pos .pos-topheader {
+    &.ui-navbar-hide-logo,
+    &.ui-navbar-search-expanded {
+        .pos-centerheader {
+            display: none !important;
+            width: 0 !important;
+            flex: 0 0 0 !important;
+        }
+    }
+
+    &.ui-navbar-search-expanded {
+        .pos-leftheader {
+            width: 28%;
+            flex: 0 1 28%;
+            min-width: 0;
+        }
+
+        .pos-rightheader {
+            width: 72%;
+            flex: 1 1 72%;
+            max-width: none;
+            min-width: 0;
+            overflow: visible !important;
+        }
+
+        .status-buttons {
+            min-width: 0;
+            flex-wrap: nowrap;
+        }
+
+        .status-buttons > .input-group,
+        .status-buttons > div:has(input) {
+            flex: 1 1 560px;
+            min-width: 340px;
+            max-width: 760px;
+        }
+
+        .status-buttons input {
+            width: 100%;
+            min-width: 0;
+        }
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .pos .pos-topheader.ui-navbar-search-expanded {
+        .pos-leftheader {
+            width: 22%;
+            flex-basis: 22%;
+        }
+
+        .pos-rightheader {
+            width: 78%;
+            flex-basis: 78%;
+        }
+
+        .status-buttons > .input-group,
+        .status-buttons > div:has(input) {
+            min-width: 240px;
+            flex-basis: 380px;
+        }
     }
 }
 

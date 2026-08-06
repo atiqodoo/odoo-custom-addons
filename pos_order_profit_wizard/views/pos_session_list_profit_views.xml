@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_session_list_profit_columns" model="ir.ui.view">
+        <field name="name">pos.session.list.profit.columns</field>
+        <field name="model">pos.session</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_session_tree"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="session_total_profit"
+                       optional="show"
+                       string="Session Profit"
+                       widget="monetary"
+                       decoration-success="session_total_profit &gt; 0"
+                       decoration-danger="session_total_profit &lt; 0"
+                       decoration-muted="session_total_profit == 0"/>
+                <field name="session_profit_margin_pct"
+                       optional="show"
+                       string="Margin (%)"
+                       decoration-success="session_profit_margin_pct &gt; 0"
+                       decoration-danger="session_profit_margin_pct &lt; 0"
+                       decoration-muted="session_profit_margin_pct == 0"/>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

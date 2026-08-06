@@ -39,6 +39,151 @@ class PurchaseOrderLine(models.Model):
         store=True
     )
 
+    vendor_promised_cost_vat_incl = fields.Monetary(
+        string="Vendor Promised Cost (VAT Incl.)",
+        currency_field='currency_id',
+        store=True,
+        index=True,
+        tracking=True,
+        help="VAT-inclusive cost promised by the vendor for this purchase line.",
+    )
+
+    def _get_rfq_bill_price_check_count(self):
+        value = self.env['ir.config_parameter'].sudo().get_param(
+            'purchase_net_price_compute.rfq_bill_price_check_count',
+            '3'
+        )
+        try:
+            return max(int(value or 0), 0)
+        except ValueError:
+            return 0
+
+    def _get_lowest_recent_bill_price(self):
+        self.ensure_one()
+
+        bill_count = self._get_rfq_bill_price_check_count()
+        if not bill_count or not self.product_id or not self.order_id.partner_id:
+            return False
+
+        order = self.order_id
+        bill_lines = self.env['account.move.line'].search([
+            ('move_id.move_type', '=', 'in_invoice'),
+            ('move_id.state', '=', 'posted'),
+            ('move_id.partner_id', '=', order.partner_id.id),
+            ('company_id', '=', order.company_id.id),
+            ('product_id', '=', self.product_id.id),
+            ('display_type', '=', 'product'),
+            ('quantity', '!=', 0),
+        ], order='date desc, move_id desc, id desc')
+
+        selected_bill_ids = []
+        prices = []
+        for bill_line in bill_lines:
+            bill = bill_line.move_id
+            if bill.id not in selected_bill_ids:
+                if len(selected_bill_ids) >= bill_count:
+                    continue
+                selected_bill_ids.append(bill.id)
+
+            price = (
+                bill_line.net_price
+                if 'net_price' in bill_line._fields and bill_line.net_price
+                else bill_line.price_unit
+            )
+            if price <= 0:
+                continue
+
+            if bill_line.product_uom_id and self.product_uom and bill_line.product_uom_id != self.product_uom:
+                price = bill_line.product_uom_id._compute_price(price, self.product_uom)
+
+            if bill_line.currency_id and order.currency_id and bill_line.currency_id != order.currency_id:
+                price = bill_line.currency_id._convert(
+                    price,
+                    order.currency_id,
+                    order.company_id,
+                    bill.invoice_date or bill.date or fields.Date.context_today(self),
+                )
+
+            prices.append(price)
+
+        if not prices:
+            _logger.info(
+                "No recent posted bill prices found for %s (id=%s) / vendor %s (id=%s) / company %s",
+                self.product_id.display_name,
+                self.product_id.id,
+                order.partner_id.display_name,
+                order.partner_id.id,
+                order.company_id.id,
+            )
+            return False
+
+        lowest_price = min(prices)
+        _logger.info(
+            "Recent posted bill prices for %s (id=%s) / vendor %s from bills %s: %s; selected lowest=%s",
+            self.product_id.display_name,
+            self.product_id.id,
+            order.partner_id.display_name,
+            selected_bill_ids,
+            prices,
+            lowest_price,
+        )
+        return lowest_price
+
+    def _apply_lowest_recent_bill_price(self):
+        for line in self:
+            if line.order_id.state not in ('draft', 'sent'):
+                continue
+            lowest_price = line._get_lowest_recent_bill_price()
+            if lowest_price:
+                _logger.info(
+                    "Using lowest recent bill price for %s on RFQ %s: %s",
+                    line.product_id.display_name,
+                    line.order_id.name or 'New',
+                    lowest_price,
+                )
+                if line.id:
+                    line.with_context(skip_rfq_bill_price=True).write({
+                        'price_unit': lowest_price,
+                    })
+                else:
+                    line.price_unit = lowest_price
+
+    @api.depends(
+        'product_id',
+        'product_qty',
+        'product_uom',
+        'company_id',
+        'order_id.partner_id',
+        'order_id.currency_id',
+        'use_custom_pricing',
+    )
+    def _compute_price_unit_and_date_planned_and_name(self):
+        # Run standard Odoo logic first (sets price_unit from product.supplierinfo
+        # or standard_price, and sets date_planned / name).
+        super()._compute_price_unit_and_date_planned_and_name()
+
+        # Post-correction for template-level vendor prices: Odoo's standard
+        # compute may resolve a supplierinfo line without product_id, which can
+        # assign the same template price to every variant.
+        for line in self:
+            if not line.product_id or line.invoice_lines or not line.company_id:
+                continue
+            params = line._get_select_sellers_params()
+            seller = line.product_id._select_seller(
+                partner_id=line.partner_id,
+                quantity=line.product_qty,
+                date=(line.order_id.date_order and line.order_id.date_order.date()
+                      or fields.Date.context_today(line)),
+                uom_id=line.product_uom,
+                params=params,
+            )
+            # seller.product_id is False for template-level entries → same price
+            # for all variants. Replace with this variant's own standard_price.
+            if seller and not seller.product_id and line.product_id.standard_price:
+                line.price_unit = line.product_id.standard_price
+
+        self._apply_lowest_recent_bill_price()
+
     @api.depends('product_id', 'product_id.use_custom_vendor_pricing',
                  'order_id.partner_id', 'product_qty')
     def _compute_pricing_rule(self):
@@ -80,6 +225,12 @@ class PurchaseOrderLine(models.Model):
                 )
 
             line.pricing_rule_id = pricing_rules[:1] if pricing_rules else False
+
+    def _product_id_change(self):
+        res = super()._product_id_change()
+        self._apply_lowest_recent_bill_price()
+        self._compute_net_price()
+        return res
 
     @api.depends('product_id', 'order_id.partner_id', 'pricing_rule_id', 'discount')
     def _compute_applied_discount(self):
@@ -190,12 +341,56 @@ class PurchaseOrderLine(models.Model):
             line._compute_applied_discount()
             line._compute_applied_freight()
 
-            # If there's a pricing rule with a price, use it
-            if line.pricing_rule_id and line.pricing_rule_id.price_unit > 0:
+            # Only use a pricing rule's price_unit when the rule targets this
+            # specific variant (product_id is set). Template-level rules
+            # (product_id = False) apply discount/freight to all variants but
+            # must NOT override the per-variant cost price, otherwise every
+            # variant in the matrix gets the same price as the first one.
+            if (line.pricing_rule_id
+                    and line.pricing_rule_id.price_unit > 0
+                    and line.pricing_rule_id.product_id):
                 line.price_unit = line.pricing_rule_id.price_unit
+
+            line._apply_lowest_recent_bill_price()
 
             # Recalculate net_price to reflect new discount and freight
             line._compute_net_price()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        if not self.env.context.get('skip_rfq_bill_price'):
+            rfq_lines = lines.filtered(
+                lambda line: (
+                    line.order_id.state in ('draft', 'sent')
+                    and line.product_id
+                    and line.order_id.partner_id
+                )
+            )
+            rfq_lines._apply_lowest_recent_bill_price()
+            rfq_lines._compute_net_price()
+        return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        trigger_fields = {
+            'product_id',
+            'product_qty',
+            'product_uom',
+            'order_id',
+            'price_unit',
+        }
+        if not self.env.context.get('skip_rfq_bill_price') and trigger_fields.intersection(vals):
+            rfq_lines = self.filtered(
+                lambda line: (
+                    line.order_id.state in ('draft', 'sent')
+                    and line.product_id
+                    and line.order_id.partner_id
+                )
+            )
+            rfq_lines._apply_lowest_recent_bill_price()
+            rfq_lines._compute_net_price()
+        return res
 
     def _prepare_invoice_line(self, **optional_values):
         """

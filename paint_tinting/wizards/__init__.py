@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from . import tint_wizard
+from . import tint_product_exists_wizard
 from . import retint_wizard
 from . import retint_analytics
 from . import tint_wizard_colorant_line

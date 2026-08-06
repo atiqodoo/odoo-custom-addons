@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_nexx_barcode_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Nexx Barcodes</field>
+        <field name="res_model">nexx.barcode.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Action menu item bound to the product.product list view (gear icon) -->
+    <record id="action_server_nexx_barcode_import" model="ir.actions.server">
+        <field name="name">Import Nexx Barcodes</field>
+        <field name="model_id" ref="product.model_product_product"/>
+        <field name="binding_model_id" ref="product.model_product_product"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = env.ref('product_barcode_custom.action_nexx_barcode_import_wizard').read()[0]</field>
+    </record>
+
+    <record id="view_nexx_barcode_import_wizard_form" model="ir.ui.view">
+        <field name="name">nexx.barcode.import.wizard.form</field>
+        <field name="model">nexx.barcode.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Nexx Barcodes">
+                <sheet>
+                    <group invisible="state == 'done'">
+                        <group string="CSV Format">
+                            <field name="match_by"/>
+                            <field name="delimiter"/>
+                        </group>
+                        <group string="File">
+                            <field name="file_data" filename="file_name" widget="binary"/>
+                            <field name="file_name" invisible="1"/>
+                        </group>
+                    </group>
+                    <group invisible="state == 'done'" string="Expected columns">
+                        <div colspan="2" class="text-muted">
+                            <p>Upload a CSV with two columns in this order:</p>
+                            <p><strong>Column 1</strong> — the "Match by" identifier for each product variant.</p>
+                            <p><strong>Column 2</strong> — <code>nexx_barcode</code> — the Nexx ERP barcode to assign.</p>
+                            <p>First row must be a header row. Example:</p>
+                            <pre>default_code,nexx_barcode
+SKU001,NX-00012345
+SKU002,NX-00012346</pre>
+                        </div>
+                    </group>
+                    <group invisible="state != 'done'" string="Import Result">
+                        <field name="result_message" nolabel="1" widget="text" readonly="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_import"
+                            string="Import"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state == 'done'"/>
+                    <button name="action_download_template"
+                            string="Download Template"
+                            type="object"
+                            invisible="state == 'done'"/>
+                    <button string="Close" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

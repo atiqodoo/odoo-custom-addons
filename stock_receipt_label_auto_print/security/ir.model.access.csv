@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_stock_receipt_label_wizard_user,stock.receipt.label.wizard user,model_stock_receipt_label_wizard,stock.group_stock_user,1,1,1,1
+access_stock_receipt_label_wizard_manager,stock.receipt.label.wizard manager,model_stock_receipt_label_wizard,stock.group_stock_manager,1,1,1,1
+access_stock_receipt_label_wizard_line_user,stock.receipt.label.wizard.line user,model_stock_receipt_label_wizard_line,stock.group_stock_user,1,1,1,1
+access_stock_receipt_label_wizard_line_manager,stock.receipt.label.wizard.line manager,model_stock_receipt_label_wizard_line,stock.group_stock_manager,1,1,1,1
+access_product_barcode_print_wizard_user,product.barcode.print.wizard user,model_product_barcode_print_wizard,stock.group_stock_user,1,1,1,1
+access_product_barcode_print_wizard_manager,product.barcode.print.wizard manager,model_product_barcode_print_wizard,stock.group_stock_manager,1,1,1,1
+access_product_barcode_print_wizard_line_user,product.barcode.print.wizard.line user,model_product_barcode_print_wizard_line,stock.group_stock_user,1,1,1,1
+access_product_barcode_print_wizard_line_manager,product.barcode.print.wizard.line manager,model_product_barcode_print_wizard_line,stock.group_stock_manager,1,1,1,1
+access_barcode_label_config_user,barcode.label.config user,model_barcode_label_config,stock.group_stock_user,1,0,0,0
+access_barcode_label_config_manager,barcode.label.config manager,model_barcode_label_config,stock.group_stock_manager,1,1,1,1

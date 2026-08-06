@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_purchase_net_price" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.purchase.net.price</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="purchase.res_config_settings_view_form_purchase"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='purchase_setting_container']" position="inside">
+                <setting id="rfq_bill_price_check_count"
+                         help="Use the lowest price from the last posted vendor bills for the selected product variant on RFQ lines. Set to 0 to disable.">
+                    <field name="rfq_bill_price_check_count"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

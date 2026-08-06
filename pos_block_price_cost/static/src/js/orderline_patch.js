@@ -11,6 +11,7 @@
  *
  * Behaviour:
  *   - Logs a console.warn when price drops below cost (badge turns red in UI)
+ *   - Does NOT auto-reset the price (cashier can still try to proceed)
  *   - Hard block happens later at PaymentScreen.validateOrder / COD button (pos_restriction.js)
  *   - Refund / return lines (qty < 0) are always skipped
  */
@@ -21,7 +22,6 @@ import { patch } from "@web/core/utils/patch";
 
 // Allow pcBelowCost through OWL's strict prop shape validator
 Orderline.props.line.shape.pcBelowCost = { type: Boolean, optional: true };
-
 
 console.log("pos_block_price_cost: orderline_patch.js loaded");
 

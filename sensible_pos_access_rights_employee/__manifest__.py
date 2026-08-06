@@ -29,14 +29,30 @@
     'author': 'Sensible Consulting Services',
     'website': 'https://sensiblecs.com',
     'license': 'AGPL-3',
-    'depends': ['pos_hr', 'pos_fixed_discount', 'pos_cod'],
+    'depends': [
+        'pos_hr',
+        'pos_fixed_discount',
+        'pos_cod',
+        'pos_loyalty',
+        'pos_settle_due',
+        'mpesa_c2b_sms',
+    ],
     'data': [
         'security/ir.model.access.csv',
-        'views/sbl_hr_employee_view.xml'
+        'data/sbl_app_gate_data.xml',
+        'views/sbl_app_gate_config_views.xml',
+        'views/sbl_app_gate_log_views.xml',
+        'views/sbl_hr_employee_view.xml',
+        'views/sbl_hr_employee_cod_payment_method_view.xml',
     ],
     'assets': {
         'point_of_sale._assets_pos': [
             'sensible_pos_access_rights_employee/static/src/**/*',
+        ],
+        'web.assets_backend': [
+            # M-Pesa gate loads first — app_gate wraps it to avoid double prompts.
+            'sensible_pos_access_rights_employee/static/lib/backend/mpesa_sms_app_gate.js',
+            'sensible_pos_access_rights_employee/static/lib/backend/app_gate/app_gate_service.js',
         ],
     },
     'images': ['static/description/banner.png'],

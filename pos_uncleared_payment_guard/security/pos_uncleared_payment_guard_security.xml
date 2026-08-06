@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_pos_uncleared_payment_viewer" model="res.groups">
+        <field name="name">Uncleared POS Payment Viewer</field>
+        <field name="category_id" ref="base.module_category_sales_point_of_sale"/>
+        <field name="implied_ids" eval="[(4, ref('point_of_sale.group_pos_user'))]"/>
+    </record>
+
+    <record id="group_pos_uncleared_payment_manager" model="res.groups">
+        <field name="name">Uncleared POS Payment Manager</field>
+        <field name="category_id" ref="base.module_category_sales_point_of_sale"/>
+        <field name="implied_ids" eval="[(4, ref('pos_uncleared_payment_guard.group_pos_uncleared_payment_viewer'))]"/>
+    </record>
+
+    <record id="seq_pos_uncleared_payment_hold" model="ir.sequence">
+        <field name="name">POS Uncleared Payment Hold</field>
+        <field name="code">pos.uncleared.payment.hold</field>
+        <field name="prefix">UPG/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="ir_cron_upg_detect_accounting_reconciliation" model="ir.cron">
+        <field name="name">POS Uncleared Payment Guard: Detect Accounting Clearance</field>
+        <field name="model_id" ref="model_pos_uncleared_payment_hold"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_detect_accounting_reconciliation()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

@@ -7,6 +7,14 @@ _logger = logging.getLogger(__name__)
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
+    vendor_promised_cost_contact = fields.Char(
+        string="Vendor Sales/Customer Service Contact",
+        required=True,
+        tracking=True,
+        index=True,
+        help="Vendor sales or customer service person who confirmed the promised VAT-inclusive cost.",
+    )
+
     has_custom_pricing_lines = fields.Boolean(
         string="Has Custom Pricing Lines",
         compute='_compute_has_custom_pricing_lines',

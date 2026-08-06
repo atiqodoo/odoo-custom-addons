@@ -10,6 +10,7 @@ class PosCodCollection(models.Model):
     order_id = fields.Many2one('pos.order', required=True, index=True, ondelete='cascade')
     session_id = fields.Many2one('pos.session', required=True, index=True, ondelete='restrict')
     payment_method_id = fields.Many2one('pos.payment.method', index=True, ondelete='restrict')
+    mpesa_ref = fields.Char('M-Pesa Reference', readonly=True, index=True, copy=False)
     move_id = fields.Many2one('account.move', readonly=True, ondelete='set null')
     kind = fields.Selection(
         [('payment', 'Payment'), ('return', 'Return')],

@@ -1,0 +1,25 @@
+.cod-card .upg-cod-status {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    max-width: 100%;
+    margin: 8px 0 2px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #5f4100;
+    background: #fff3cd;
+    border: 1px solid #f3d27a;
+}
+
+.cod-card .upg-cod-status-manual_cleared {
+    color: #0f5132;
+    background: #d1e7dd;
+    border-color: #a3cfbb;
+}
+
+.cod-card.upg-cod-uncleared {
+    border-color: #b58100;
+}

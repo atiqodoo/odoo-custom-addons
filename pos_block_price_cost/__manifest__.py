@@ -14,7 +14,7 @@
         - Refund / return lines (qty < 0) are always exempt from all checks
         - Server-side PIN validation: only POS Manager group employees can override
     """,
-    'depends': ['point_of_sale', 'web', 'hr', 'pos_cod'],
+    'depends': ['point_of_sale', 'web', 'hr', 'pos_cod', 'sensible_pos_offline_sale_order'],
     'data': [],
     'assets': {
         'point_of_sale._assets_pos': [
@@ -30,6 +30,7 @@
             'pos_block_price_cost/static/src/js/pos_restriction.js',
             'pos_block_price_cost/static/src/js/global_discount_check.js',
             'pos_block_price_cost/static/src/js/cod_check.js',
+            'pos_block_price_cost/static/src/js/create_sale_order_below_cost_guard.js',
         ],
     },
     'installable': True,

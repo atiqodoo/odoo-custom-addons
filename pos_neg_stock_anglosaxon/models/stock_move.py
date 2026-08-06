@@ -30,6 +30,7 @@ Three responsibilities on stock.move:
 """
 
 import logging
+from markupsafe import Markup
 from odoo import _, api, fields, models
 
 _logger = logging.getLogger(__name__)
@@ -50,6 +51,35 @@ class StockMove(models.Model):
     # ─────────────────────────────────────────────────────────────────────────
     # Incoming Cost Resolution
     # ─────────────────────────────────────────────────────────────────────────
+
+    def _coerce_pos_neg_unit_cost(self, value, source='unknown'):
+        """Return a numeric unit cost from Odoo/custom price-unit results."""
+        if isinstance(value, dict):
+            for key in ('price_unit', 'unit_cost', 'cost', 'price'):
+                if value.get(key) is not None:
+                    try:
+                        return float(value[key])
+                    except (TypeError, ValueError):
+                        break
+            for item in value.values():
+                try:
+                    return float(item)
+                except (TypeError, ValueError):
+                    continue
+            _logger.warning(
+                '[NegStock] Could not extract numeric unit cost from %s result: %s',
+                source, value,
+            )
+            return 0.0
+
+        try:
+            return float(value or 0.0)
+        except (TypeError, ValueError):
+            _logger.warning(
+                '[NegStock] Non-numeric unit cost from %s result: %s',
+                source, value,
+            )
+            return 0.0
 
     def _get_pos_neg_incoming_cost(self):
         """Determine the effective unit cost for this incoming receipt move.
@@ -73,7 +103,10 @@ class StockMove(models.Model):
         cost = 0.0
 
         try:
-            cost = self._get_price_unit()
+            cost = self._coerce_pos_neg_unit_cost(
+                self._get_price_unit(),
+                source='stock.move._get_price_unit()',
+            )
             _logger.debug(
                 '[NegStock] _get_price_unit() | move id=%d | product="%s" | cost=%.6f',
                 self.id, self.product_id.display_name, cost,
@@ -86,7 +119,10 @@ class StockMove(models.Model):
             )
 
         if cost == 0.0:
-            cost = self.price_unit or 0.0
+            cost = self._coerce_pos_neg_unit_cost(
+                self.price_unit,
+                source='stock.move.price_unit',
+            )
             if cost:
                 _logger.debug(
                     '[NegStock] Using price_unit fallback=%.6f for move id=%d',
@@ -140,6 +176,10 @@ class StockMove(models.Model):
             - Creates and posts account.move entries for price differences.
             - Links price diff moves to SVL via price_diff_move_ids.
         """
+        incoming_unit_cost = self._coerce_pos_neg_unit_cost(
+            incoming_unit_cost,
+            source='_reconcile_neg_layers_for_product.incoming_unit_cost',
+        )
         _logger.info(
             '[NegStock] RECONCILE START | product_id=%d | incoming_qty=%.4f | '
             'incoming_unit_cost=%.6f | receipt=%s',
@@ -249,7 +289,7 @@ class StockMove(models.Model):
                 # Post chatter on the POS order for accountant visibility
                 if layer.pos_order_id:
                     layer.pos_order_id.message_post(
-                        body=(
+                        body=Markup(
                             '<b>[Price Diff JE Created]</b><br/>'
                             f'Product: {layer.product_id.display_name}<br/>'
                             f'Units reconciled: {to_reconcile:.2f}<br/>'

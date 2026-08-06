@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_upg_hold_tree_cod_fields" model="ir.ui.view">
+        <field name="name">pos.uncleared.payment.hold.list.cod.fields</field>
+        <field name="model">pos.uncleared.payment.hold</field>
+        <field name="inherit_id" ref="pos_uncleared_payment_guard.view_upg_hold_tree"/>
+        <field name="arch" type="xml">
+            <field name="pos_order_id" position="after">
+                <field name="cod_collection_id" optional="show"/>
+                <field name="cod_account_move_id" optional="hide"/>
+                <field name="is_cod_uncleared_hold" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_upg_hold_form_cod_fields" model="ir.ui.view">
+        <field name="name">pos.uncleared.payment.hold.form.cod.fields</field>
+        <field name="model">pos.uncleared.payment.hold</field>
+        <field name="inherit_id" ref="pos_uncleared_payment_guard.view_upg_hold_form"/>
+        <field name="arch" type="xml">
+            <field name="pos_payment_id" position="after">
+                <field name="cod_collection_id"/>
+                <field name="cod_account_move_id"/>
+                <field name="is_cod_uncleared_hold"/>
+            </field>
+        </field>
+    </record>
+</odoo>

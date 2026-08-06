@@ -16,7 +16,8 @@
                         type="object"
                         class="oe_highlight"
                         groups="sales_team.group_sale_salesman"
-                        invisible="not has_exactly_one_tinted_line"/>
+                        invisible="not has_pending_tinted_lines"
+                        title="Process the next unprocessed tinted product line"/>
 
             </xpath>
 
@@ -33,11 +34,45 @@
             <xpath expr="//sheet/div[@class='oe_title']" position="after">
 
                 <div class="alert alert-info oe_inline" role="alert"
-                     invisible="not has_exactly_one_tinted_line">
-                    <strong>One tinted product selected.</strong>
-                    Click <strong>"Create Tinted Product &amp; MO"</strong> to manufacture.
+                     invisible="not has_pending_tinted_lines">
+                    <strong><field name="pending_tinted_line_count" readonly="1" nolabel="1"/> tinted product(s) pending manufacture.</strong>
+                    Click <strong>"Create Tinted Product &amp; MO"</strong> on each line below, or use the header button to process the next one.
                 </div>
 
+            </xpath>
+
+        </field>
+    </record>
+
+
+    <!-- Per-line "Create Tinted Product & MO" button + done indicator -->
+    <record id="view_order_form_inherit_tinting_line_button" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.tinting.line.button</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='order_line']//field[@name='price_subtotal']" position="after">
+                <!-- Load flags as invisible columns so they can drive visibility conditions -->
+                <field name="is_tinted_product_line" column_invisible="1"/>
+                <field name="tinted_product_created" column_invisible="1"/>
+
+                <!-- Per-line create button — visible only on unprocessed tinted lines -->
+                <button name="action_create_tinted_product_for_line"
+                        string="Create Tinted &amp; MO"
+                        type="object"
+                        class="btn-primary btn-sm"
+                        invisible="not is_tinted_product_line or tinted_product_created"
+                        title="Create tinted product, BOM and manufacturing order for this line"/>
+
+                <!-- Done badge — visible only on already-processed tinted lines -->
+                <button string="✓ MO Created"
+                        type="object"
+                        name="action_create_tinted_product_for_line"
+                        class="btn-success btn-sm"
+                        invisible="not is_tinted_product_line or not tinted_product_created"
+                        disabled="1"
+                        title="Tinted product and MO already created for this line"/>
             </xpath>
 
         </field>

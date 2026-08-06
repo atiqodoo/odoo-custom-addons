@@ -73,8 +73,65 @@ class AccountMoveLine(models.Model):
         currency_field='currency_id',
     )
 
+    vendor_promised_cost_vat_incl = fields.Monetary(
+        string="Vendor Promised Cost (VAT Incl.)",
+        related='purchase_line_id.vendor_promised_cost_vat_incl',
+        store=True,
+        readonly=True,
+        currency_field='currency_id',
+    )
+
+    unit_price_vat_incl = fields.Monetary(
+        string="Unit Price + VAT",
+        compute='_compute_promised_cost_amounts',
+        store=True,
+        readonly=True,
+        currency_field='currency_id',
+    )
+
+    promised_cost_difference_vat_incl = fields.Monetary(
+        string="Promised Cost Diff. (VAT Incl.)",
+        compute='_compute_promised_cost_amounts',
+        store=True,
+        readonly=True,
+        currency_field='currency_id',
+    )
+
     @api.depends('price_subtotal', 'price_total')
     def _compute_line_subtotal_incl_vat(self):
         for line in self:
             # price_total = price_subtotal + tax
             line.line_subtotal_incl_vat = line.price_total
+
+    @api.depends(
+        'price_unit',
+        'tax_ids',
+        'currency_id',
+        'product_id',
+        'partner_id',
+        'move_id.partner_id',
+        'vendor_promised_cost_vat_incl',
+    )
+    def _compute_promised_cost_amounts(self):
+        for line in self:
+            taxes = line.tax_ids
+            partner = line.partner_id or line.move_id.partner_id
+            if taxes:
+                tax_res = taxes.compute_all(
+                    line.price_unit or 0.0,
+                    currency=line.currency_id,
+                    quantity=1.0,
+                    product=line.product_id,
+                    partner=partner,
+                )
+                unit_price_vat_incl = tax_res['total_included']
+            else:
+                unit_price_vat_incl = line.price_unit or 0.0
+
+            promised_cost = line.vendor_promised_cost_vat_incl or 0.0
+            line.unit_price_vat_incl = unit_price_vat_incl
+            line.promised_cost_difference_vat_incl = (
+                unit_price_vat_incl - promised_cost
+                if promised_cost
+                else 0.0
+            )

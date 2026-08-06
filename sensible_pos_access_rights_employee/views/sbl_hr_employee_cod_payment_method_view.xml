@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sbl_hr_employee_form_cod_payment_method_inherit" model="ir.ui.view">
+        <field name="name">hr.employee.form.cod.payment.method.authorization.inherit</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="sensible_pos_access_rights_employee.sbl_hr_employee_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='sbl_pos_payment_screen']/group[2]/field[@name='sbl_deposit_settle_payment_method_ids']" position="after">
+                <field name="sbl_cod_payment_method_ids" widget="many2many_tags"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

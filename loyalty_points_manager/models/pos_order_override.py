@@ -16,47 +16,446 @@ class PosOrderLoyaltyOverride(models.Model):
     # -------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------
+    # sync_from_ui override — loyalty deduction for sbl-intercepted orders
+    #
+    # sensible_pos_offline_sale_order.sync_from_ui intercepts zero-payment
+    # orders (state='paid', payment_ids=[]) and converts them to sale.order,
+    # returning pos.order: [] to the frontend.  Because confirm_coupon_programs
+    # is only called after a pos.order record is created, it never runs for
+    # these orders and loyalty.card.points is never reduced.
+    #
+    # Fix: pre-scan before super(), let sbl intercept, then apply deductions.
+    # -------------------------------------------------------------------------
+
+    @api.model
+    def sync_from_ui(self, orders):
+        """
+        Pre-scan orders for loyalty redemptions on zero-payment orders that
+        sensible_pos_offline_sale_order will intercept, then apply the point
+        deductions directly after super() returns.
+        """
+        pending_deductions = {}  # { order_name: {'partner_id': int, 'uuid': str, 'deductions': {cid_str: pts}} }
+
+        for order in orders:
+            try:
+                session_id = order.get('session_id')
+                if not session_id:
+                    continue
+                pos_session = self.env['pos.session'].browse(session_id)
+                if not self._loyalty_sbl_will_intercept(order, pos_session):
+                    continue
+            except Exception as exc:
+                _logger.warning(
+                    "[loyalty_sync_fix] pre-scan error for order %s: %s",
+                    order.get('name', '?'), exc,
+                )
+                continue
+
+            # Skip if sale.order already exists for this uuid — duplicate resync,
+            # deduction was already applied on the first sync.
+            order_uuid = order.get('uuid')
+            if order_uuid:
+                existing_so = self.env['sale.order'].sudo().search(
+                    [('sbl_uuid', '=', order_uuid)], limit=1
+                )
+                if existing_so:
+                    _logger.info(
+                        "[loyalty_sync_fix] PRE-SCAN SKIP | order=%s (uuid=%s)"
+                        " sale.order %s already exists — deduction already applied, skipping",
+                        order.get('name', '?'), order_uuid, existing_so.name,
+                    )
+                    continue
+
+            deductions = self._scan_raw_order_loyalty_deductions(order)
+            if not deductions:
+                _logger.debug(
+                    "[loyalty_sync_fix] order=%s will be intercepted but has no loyalty redemptions",
+                    order.get('name', '?'),
+                )
+                continue
+
+            order_name = order.get('name', 'unknown')
+            pending_deductions[order_name] = {
+                'partner_id': order.get('partner_id'),
+                'uuid': order.get('uuid'),
+                'deductions': deductions,
+            }
+            _logger.info(
+                "[loyalty_sync_fix] PRE-SCAN | order=%s | partner_id=%s"
+                " | will be intercepted | redemptions=%s"
+                " → queued for direct loyalty deduction after super()",
+                order_name, order.get('partner_id'), deductions,
+            )
+
+        result = super().sync_from_ui(orders)
+
+        if pending_deductions:
+            _logger.info(
+                "[loyalty_sync_fix] post-super: applying loyalty deductions"
+                " for %d intercepted order(s): %s",
+                len(pending_deductions), list(pending_deductions.keys()),
+            )
+            updated_cards = self._apply_intercepted_loyalty_deductions(pending_deductions)
+            if updated_cards:
+                # Inject updated loyalty.card records into the sync result so the
+                # POS frontend's missingRecursive/loadData pipeline calls
+                # oldRecord.update({id, points}) and refreshes the local cache.
+                # This makes the receipt and customer-search balance correct in real-time.
+                result.setdefault('loyalty.card', []).extend(updated_cards)
+                _logger.info(
+                    "[loyalty_sync_fix] injected %d updated loyalty.card record(s) into sync result: %s",
+                    len(updated_cards),
+                    [{'id': c['id'], 'points': c['points']} for c in updated_cards],
+                )
+        else:
+            _logger.debug(
+                "[loyalty_sync_fix] post-super: no intercepted loyalty orders — nothing to apply"
+            )
+
+        return result
+
+    def _loyalty_sbl_will_intercept(self, order, pos_session):
+        """
+        Predict whether sensible_pos_offline_sale_order will intercept this order.
+        Replicates _sbl_should_create_sale_order_from_unpaid_pos_payload exactly.
+        Returns False if sbl feature is not enabled or module is not installed.
+        """
+        config = pos_session.config_id if pos_session else None
+        if not config:
+            return False
+        if not getattr(config, 'sbl_create_sale_order', False):
+            return False
+        if order.get('is_cod'):
+            return False
+        if order.get('state') != 'paid':
+            return False
+        if order.get('payment_ids'):
+            return False
+        if not order.get('partner_id') or not order.get('lines'):
+            return False
+        return True
+
+    def _scan_raw_order_loyalty_deductions(self, order):
+        """
+        Extract { str(coupon_id): float(pts_cost) } from a raw POS order dict.
+        Only includes reward lines with points_cost > 0 and a positive coupon_id.
+        """
+        deductions = {}
+        for entry in order.get('lines', []):
+            if isinstance(entry, (list, tuple)) and len(entry) == 3:
+                vals = entry[2]
+            elif isinstance(entry, dict):
+                vals = entry
+            else:
+                continue
+
+            if not vals.get('is_reward_line'):
+                continue
+
+            pts_cost = float(vals.get('points_cost') or 0)
+            if pts_cost <= 0:
+                continue
+
+            coupon_id = vals.get('coupon_id')
+            if not coupon_id:
+                continue
+            try:
+                cid_int = int(coupon_id)
+            except (ValueError, TypeError):
+                continue
+            if cid_int <= 0:
+                continue
+
+            cid_str = str(cid_int)
+            deductions[cid_str] = deductions.get(cid_str, 0) + pts_cost
+            _logger.debug(
+                "[loyalty_sync_fix]   reward line: coupon_id=%s | points_cost=%.2f | running_total=%.2f",
+                cid_str, pts_cost, deductions[cid_str],
+            )
+
+        return deductions
+
+    def _apply_intercepted_loyalty_deductions(self, pending_deductions):
+        """
+        Directly deduct loyalty.card.points for orders intercepted by
+        sensible_pos_offline_sale_order.  Uses SELECT FOR UPDATE to serialise
+        concurrent redemptions and prevent over-deduction.
+
+        Args:
+            pending_deductions: {
+                order_name: {
+                    'partner_id': int,
+                    'uuid': str,
+                    'deductions': { str(coupon_id): float(pts) }
+                }
+            }
+
+        Returns:
+            list of {'id': int, 'points': float} for each card updated,
+            so the caller can inject these into the sync_from_ui result and
+            trigger a real-time POS frontend cache refresh.
+        """
+        LoyaltyCard = self.env['loyalty.card'].sudo()
+        updated_cards = []
+
+        for order_name, info in pending_deductions.items():
+            partner_id = info['partner_id']
+            order_uuid = info.get('uuid')
+            deductions = info['deductions']
+            sale_order = self.env['sale.order'].sudo().search(
+                [('sbl_uuid', '=', order_uuid)], limit=1
+            ) if order_uuid else self.env['sale.order']
+
+            _logger.info(
+                "[loyalty_sync_fix] _apply_intercepted_loyalty_deductions"
+                " | order=%s | partner_id=%s | deductions=%s",
+                order_name, partner_id, deductions,
+            )
+
+            for cid_str, pts_to_deduct in deductions.items():
+                if pts_to_deduct <= 0:
+                    _logger.debug(
+                        "[loyalty_sync_fix]   SKIP coupon=%s pts_to_deduct=%.2f <= 0",
+                        cid_str, pts_to_deduct,
+                    )
+                    continue
+
+                try:
+                    cid_int = int(cid_str)
+                except (ValueError, TypeError):
+                    _logger.error(
+                        "[loyalty_sync_fix]   SKIP invalid coupon_id=%s | order=%s",
+                        cid_str, order_name,
+                    )
+                    continue
+
+                card = LoyaltyCard.browse(cid_int)
+                if not card.exists():
+                    _logger.error(
+                        "[loyalty_sync_fix]   SKIP coupon_id=%s not found in loyalty.card | order=%s",
+                        cid_str, order_name,
+                    )
+                    continue
+
+                # Row-level lock — serialise concurrent redemptions for the same card
+                self.env.cr.execute(
+                    "SELECT points FROM loyalty_card WHERE id = %s FOR UPDATE",
+                    (cid_int,),
+                )
+                row = self.env.cr.fetchone()
+                locked_balance = float(row[0]) if row else 0.0
+
+                _logger.info(
+                    "[loyalty_sync_fix]   PRE-DEDUCT | order=%s | coupon_id=%s"
+                    " | partner=%s | locked_balance=%.4f | pts_to_deduct=%.4f",
+                    order_name, cid_str,
+                    card.partner_id.name if card.partner_id else str(partner_id),
+                    locked_balance, pts_to_deduct,
+                )
+
+                if pts_to_deduct > locked_balance + 0.001:
+                    _logger.warning(
+                        "[loyalty_sync_fix]   OVER-DEDUCTION GUARD | order=%s | coupon_id=%s"
+                        " | requested=%.4f > locked=%.4f → capping to locked_balance",
+                        order_name, cid_str, pts_to_deduct, locked_balance,
+                    )
+                    pts_to_deduct = locked_balance
+
+                new_balance = round(max(0.0, locked_balance - pts_to_deduct), 6)
+                card.write({'points': new_balance})
+                self._create_intercepted_loyalty_history(
+                    card, sale_order, order_name, pts_to_deduct
+                )
+                updated_cards.append({'id': cid_int, 'points': new_balance})
+
+                _logger.info(
+                    "[loyalty_sync_fix]   DEDUCTED | order=%s | coupon_id=%s"
+                    " | locked_before=%.4f | deducted=%.4f | new_balance=%.4f",
+                    order_name, cid_str,
+                    locked_balance, pts_to_deduct, new_balance,
+                )
+
+        return updated_cards
+
+    def _create_intercepted_loyalty_history(self, card, sale_order, order_name, points_used):
+        """Mirror pos_loyalty history for Sensible sale-order intercepted redemptions."""
+        history_vals = {
+            'card_id': card.id,
+            'description': "Onsite %s" % (sale_order.display_name if sale_order else order_name),
+            'used': points_used,
+            'issued': 0.0,
+        }
+        if sale_order:
+            history_vals.update({
+                'order_model': sale_order._name,
+                'order_id': sale_order.id,
+            })
+        self.env['loyalty.history'].sudo().create(history_vals)
+
+    # -------------------------------------------------------------------------
     # Zero-payment earning guard — mirrors frontend order_model_patch.js
     # -------------------------------------------------------------------------
 
     def confirm_coupon_programs(self, coupon_data):
         """
-        Backend safety net for the zero-payment earning rule:
-        if the order total is 0 (entire bill covered by loyalty redemption),
-        strip any earning (positive point changes) from coupon_data before
-        the parent method applies them to loyalty.card records.
+        Backend authority for loyalty point earning and spending.
 
-        The frontend already zeroes earning via pointsForPrograms() when
-        scaleFactor = 0.  This override is the server-side defence against
-        any bypass or race condition.
+        Three-step pipeline:
+          1. Build an authoritative spending map from the saved reward order lines
+             (points_cost per coupon_id).  This is the ground truth — it does not
+             depend on whatever the frontend sent in coupon_data.
+          2. Inject the authoritative spending into coupon_data so that
+             points = won − authoritative_spent (correct net delta).
+          3. Zero-payment earning guard: when amount_total = 0, zero the earning
+             portion (won → 0) while PRESERVING the spending deduction
+             (points stays at −spent).  The previous implementation set points = 0
+             which wiped both earning AND spending, causing the card balance to
+             remain unchanged instead of being reduced.
 
-        coupon_data structure (from frontend, keys may be strings or ints):
-          { coupon_id: { 'points': net_change, 'won': earned, 'spent': redeemed, ... } }
-        'points' = earned − redeemed  (positive = net gain, negative = net spend)
+        coupon_data keys may be str or int (JSON always sends str; Odoo internals
+        may pass int).  All key comparisons are normalised to str.
         """
         precision = (self.currency_id.rounding if self.currency_id else None) or 0.01
 
+        _logger.info(
+            "[loyalty_backend] confirm_coupon_programs START"
+            " | order=%s | amount_total=%.4f | coupon_data_keys=%s",
+            self.name, self.amount_total, list(coupon_data.keys()),
+        )
         _logger.debug(
-            "[loyalty_backend] confirm_coupon_programs | order=%s | amount_total=%.4f",
-            self.name, self.amount_total,
+            "[loyalty_backend] confirm_coupon_programs | raw coupon_data=%s",
+            {k: {fk: fv for fk, fv in v.items() if fk in ('points', 'won', 'spent')}
+             for k, v in coupon_data.items()},
         )
 
+        # ── Step 1: Build authoritative spending map from saved order lines ──────
+        # By the time confirm_coupon_programs is called, self.lines are in the DB.
+        # points_cost on each reward line is the exact points the customer redeemed.
+        # We use this to correct the coupon_data the frontend sent, which may be
+        # wrong due to stale balance, scale-factor bugs, or over-zeroing.
+        spending_by_coupon = {}   # { str(coupon_id): float }
+        for line in self.lines:
+            if not line.is_reward_line or not line.coupon_id:
+                continue
+            pts_cost = float(line.points_cost or 0)
+            if pts_cost <= 0:
+                continue
+            cid_str = str(line.coupon_id.id)
+            prev = spending_by_coupon.get(cid_str, 0)
+            spending_by_coupon[cid_str] = prev + pts_cost
+            _logger.debug(
+                "[loyalty_backend]   spending line | order=%s | coupon=%s"
+                " | product=%s | points_cost=%.2f | running_total=%.2f",
+                self.name, cid_str,
+                line.product_id.name if line.product_id else '?',
+                pts_cost, spending_by_coupon[cid_str],
+            )
+
+        _logger.info(
+            "[loyalty_backend] authoritative spending map | order=%s | map=%s",
+            self.name, spending_by_coupon,
+        )
+
+        # ── Step 2: Inject authoritative spending into coupon_data ───────────────
+        # For each coupon that has reward lines on this order, recalculate:
+        #   points = won − authoritative_spent
+        # If coupon_data already reflects the correct spending, the values stay the
+        # same.  If the frontend sent earning-only (spent = 0), this corrects it.
+        # Negative coupon IDs are temporary client-side IDs for new cards not yet
+        # in the DB; skip them (no card record to deduct from).
+        corrected = {}
+        for k, vals in coupon_data.items():
+            # Normalise key to str for lookup
+            k_str = str(k)
+            try:
+                k_int = int(k_str)
+            except (ValueError, TypeError):
+                k_int = None
+
+            if k_int is not None and k_int < 0:
+                # Temporary client-side ID — new card not yet persisted; leave unchanged
+                _logger.debug(
+                    "[loyalty_backend]   coupon=%s: negative ID (new card) — skipping correction",
+                    k_str,
+                )
+                corrected[k] = vals
+                continue
+
+            authoritative_spent = spending_by_coupon.get(k_str, 0)
+            original_points = vals.get('points', 0)
+            original_spent  = vals.get('spent', 0)
+            # Derive 'won' if absent: won = points + spent (since points = won − spent)
+            derived_spent = authoritative_spent or float(original_spent)
+            original_won = vals.get('won', max(0.0, float(original_points) + derived_spent))
+
+            if authoritative_spent > 0:
+                corrected_points = original_won - authoritative_spent
+                _logger.info(
+                    "[loyalty_backend]   CORRECTING coupon=%s"
+                    " | original: points=%.2f  won=%.2f  spent=%.2f"
+                    " | authoritative_spent=%.2f"
+                    " | corrected: points=%.2f  won=%.2f  spent=%.2f",
+                    k_str,
+                    original_points, original_won, original_spent,
+                    authoritative_spent,
+                    corrected_points, original_won, authoritative_spent,
+                )
+                corrected[k] = {**vals,
+                                'points': corrected_points,
+                                'won':    original_won,
+                                'spent':  authoritative_spent}
+            else:
+                _logger.debug(
+                    "[loyalty_backend]   coupon=%s: no authoritative spending"
+                    " | keeping original: points=%.2f  won=%.2f  spent=%.2f",
+                    k_str, original_points, original_won, original_spent,
+                )
+                corrected[k] = vals
+
+        coupon_data = corrected
+
+        # ── Step 3: Zero-payment earning guard (fixed) ───────────────────────────
+        # When amount_total = 0 the entire bill was covered by loyalty redemption.
+        # Zero ONLY the earning (won → 0).  The spending deduction must survive so
+        # the card balance is actually reduced.
+        # Bug that existed before this fix: setting points = 0 cancelled BOTH
+        # earning AND spending, leaving the card balance unchanged.
         if float_is_zero(self.amount_total, precision_rounding=precision):
             _logger.info(
                 "[loyalty_backend] ZERO-PAYMENT guard | order=%s | amount_total=%.4f"
-                " → zeroing all earning points in coupon_data",
+                " → zeroing earning, preserving spending deductions",
                 self.name, self.amount_total,
             )
             cleaned = {}
             for k, vals in coupon_data.items():
-                pts = vals.get('points', 0)
-                if pts > 0:
-                    _logger.debug(
-                        "[loyalty_backend]   coupon %s: earned %.2f pts → zeroed", k, pts,
+                won   = float(vals.get('won',   0))
+                spent = float(vals.get('spent', 0))
+                pts   = float(vals.get('points', 0))
+                if won > 0:
+                    # Zero the earning; spending deduction (−spent) is preserved
+                    new_pts = -spent if spent > 0 else 0.0
+                    _logger.info(
+                        "[loyalty_backend]   zero-pay coupon=%s:"
+                        " won=%.2f → 0 | spent=%.2f | points: %.2f → %.2f",
+                        k, won, spent, pts, new_pts,
                     )
-                    vals = {**vals, 'points': 0, 'won': 0}
+                    vals = {**vals, 'points': new_pts, 'won': 0.0}
+                else:
+                    _logger.debug(
+                        "[loyalty_backend]   zero-pay coupon=%s:"
+                        " won already 0 | points=%.2f (unchanged)",
+                        k, pts,
+                    )
                 cleaned[k] = vals
             coupon_data = cleaned
+
+        _logger.info(
+            "[loyalty_backend] confirm_coupon_programs FINAL coupon_data | order=%s | data=%s",
+            self.name,
+            {k: {fk: round(fv, 4) if isinstance(fv, float) else fv
+                 for fk, fv in v.items() if fk in ('points', 'won', 'spent')}
+             for k, v in coupon_data.items()},
+        )
 
         return super().confirm_coupon_programs(coupon_data)
 

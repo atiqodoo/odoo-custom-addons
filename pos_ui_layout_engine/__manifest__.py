@@ -10,11 +10,17 @@
         "views/pos_settings_view.xml",
     ],
     "assets": {
+        "web.assets_backend": [
+            "pos_ui_layout_engine/static/src/js/color_picker_field.js",
+            "pos_ui_layout_engine/static/src/xml/color_picker_field.xml",
+            "pos_ui_layout_engine/static/src/scss/color_picker_field.scss",
+        ],
         "point_of_sale._assets_pos": [
             "pos_ui_layout_engine/static/src/js/pos_data_loader.js",
             "pos_ui_layout_engine/static/src/js/product_screen_patch.js",
             "pos_ui_layout_engine/static/src/js/product_sales_sort_patch.js",
             "pos_ui_layout_engine/static/src/xml/product_screen.xml",
+            "pos_ui_layout_engine/static/src/xml/navbar.xml",
             "pos_ui_layout_engine/static/src/scss/pos_ui.scss",
         ],
     },

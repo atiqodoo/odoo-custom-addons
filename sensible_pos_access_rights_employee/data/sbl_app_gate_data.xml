@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Common Odoo main-app menu entries for the App Gate configuration.
+         xmlid values are stored as plain strings; no external ref() is used,
+         so these records are safe even if a listed app is not installed. -->
+
+    <record id="sbl_app_gate_pos" model="sbl.app.gate.config">
+        <field name="name">Point of Sale</field>
+        <field name="xmlid">point_of_sale.menu_point_root</field>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="sbl_app_gate_accounting" model="sbl.app.gate.config">
+        <field name="name">Accounting</field>
+        <field name="xmlid">accountant.menu_accounting</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="sbl_app_gate_inventory" model="sbl.app.gate.config">
+        <field name="name">Inventory</field>
+        <field name="xmlid">stock.menu_stock_root</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="sbl_app_gate_sales" model="sbl.app.gate.config">
+        <field name="name">Sales</field>
+        <field name="xmlid">sale.sale_menu_root</field>
+        <field name="sequence">40</field>
+    </record>
+
+    <record id="sbl_app_gate_purchase" model="sbl.app.gate.config">
+        <field name="name">Purchase</field>
+        <field name="xmlid">purchase.menu_purchase_root</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="sbl_app_gate_employees" model="sbl.app.gate.config">
+        <field name="name">Employees</field>
+        <field name="xmlid">hr.menu_hr_root</field>
+        <field name="sequence">60</field>
+    </record>
+
+    <record id="sbl_app_gate_manufacturing" model="sbl.app.gate.config">
+        <field name="name">Manufacturing</field>
+        <field name="xmlid">mrp.menu_mrp_root</field>
+        <field name="sequence">70</field>
+    </record>
+
+    <record id="sbl_app_gate_crm" model="sbl.app.gate.config">
+        <field name="name">CRM</field>
+        <field name="xmlid">crm.crm_menu_root</field>
+        <field name="sequence">80</field>
+    </record>
+
+    <record id="sbl_app_gate_project" model="sbl.app.gate.config">
+        <field name="name">Project</field>
+        <field name="xmlid">project.menu_main_pm</field>
+        <field name="sequence">90</field>
+    </record>
+
+    <record id="sbl_app_gate_website" model="sbl.app.gate.config">
+        <field name="name">Website</field>
+        <field name="xmlid">website.menu_website_configuration</field>
+        <field name="sequence">100</field>
+    </record>
+
+    <record id="sbl_app_gate_discuss" model="sbl.app.gate.config">
+        <field name="name">Discuss</field>
+        <field name="xmlid">mail.menu_root_discuss</field>
+        <field name="sequence">110</field>
+    </record>
+
+    <record id="sbl_app_gate_mpesa" model="sbl.app.gate.config">
+        <field name="name">M-Pesa SMS</field>
+        <field name="xmlid">mpesa_c2b_sms.menu_mpesa_root</field>
+        <field name="sequence">120</field>
+    </record>
+
+</odoo>

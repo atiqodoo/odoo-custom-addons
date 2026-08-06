@@ -122,6 +122,10 @@ class ProductTemplate(models.Model):
         _logger.debug("❌ UoM Validation: Not identified as tinting product: %s", product_name)
         return False
 
+    def _get_uom_validation_setting(self):
+        ICP = self.env['ir.config_parameter'].sudo()
+        return ICP.get_param('product_template_uom.require_uom') == 'True'
+
     def _validate_uom_required(self, vals, operation_type="create"):
         """
         Validate that UoM is provided for non-loyalty and non-tinting products.
@@ -172,13 +176,16 @@ class ProductTemplate(models.Model):
         product_name = vals.get('name', 'New Product Template')
         _logger.info("🛠️ UoM: Starting product template creation for: %s", product_name)
 
-        # Validate UoM for standard products only (skip for loyalty and tinting products)
-        if not self._is_loyalty_product(vals) and not self._is_tinting_product(vals):
-            _logger.debug("🔧 UoM: Validating UoM for standard product: %s", product_name)
-            self._validate_uom_required(vals, "create")
+        # Validate UoM for standard products only when the setting is enabled
+        if self._get_uom_validation_setting():
+            if not self._is_loyalty_product(vals) and not self._is_tinting_product(vals):
+                _logger.debug("🔧 UoM: Validating UoM for standard product: %s", product_name)
+                self._validate_uom_required(vals, "create")
+            else:
+                skip_reason = "loyalty product" if self._is_loyalty_product(vals) else "tinting product"
+                _logger.info("🎯 UoM: Skipping UoM validation for %s: %s", skip_reason, product_name)
         else:
-            skip_reason = "loyalty product" if self._is_loyalty_product(vals) else "tinting product"
-            _logger.info("🎯 UoM: Skipping UoM validation for %s: %s", skip_reason, product_name)
+            _logger.debug("🔧 UoM: UoM validation disabled by settings — skipping for: %s", product_name)
 
         # Proceed with creation
         try:
@@ -204,14 +211,20 @@ class ProductTemplate(models.Model):
         """
         _logger.debug("📝 UoM: Starting write operation on %s product templates", len(self))
 
+        require_uom = self._get_uom_validation_setting()
+
         for record in self:
             product_name = record.name or f"ID_{record.id}"
-            
+
+            if not require_uom:
+                _logger.debug("🔧 UoM: UoM validation disabled by settings — skipping write check for: %s", product_name)
+                continue
+
             # Skip UoM validation for loyalty products
             if self._is_loyalty_product({'name': product_name}):
                 _logger.debug("🎯 UoM: Skipping UoM validation for loyalty product during write: %s", product_name)
                 continue
-                
+
             # Skip UoM validation for tinting products
             # Use hasattr guard: is_tinted_product belongs to paint_colour_master
             # which may not be loaded during module upgrades or in other environments
@@ -219,14 +232,14 @@ class ProductTemplate(models.Model):
             if self._is_tinting_product({'name': product_name, 'is_tinted_product': is_tinted}):
                 _logger.debug("🎯 UoM: Skipping UoM validation for tinting product during write: %s", product_name)
                 continue
-                
+
             _logger.debug("🔧 UoM: Validating UoM for standard product during write: %s", product_name)
-            
+
             # If UoM is being explicitly set to False/None
             if 'uom_id' in vals and not vals.get('uom_id'):
                 _logger.warning("🚫 UoM: Attempt to set empty UoM for product during write: %s", product_name)
                 raise ValidationError(_("Please select a Unit of Measure (UoM) before saving the product."))
-            
+
             # If we're checking existing record and it doesn't have UoM
             current_uom_id = vals.get('uom_id', record.uom_id.id)
             if not current_uom_id:
@@ -274,17 +287,16 @@ class ProductTemplate(models.Model):
         
         if is_loyalty_context:
             _logger.info("🎯 UoM: Loyalty context detected in default_get - setting UoM to False")
-            # For loyalty products, set UoM to False to allow creation without UoM
             defaults['uom_id'] = False
         elif is_tinting_context:
             _logger.info("🎯 UoM: Tinting context detected in default_get - setting UoM to False")
-            # For tinting products, set UoM to False to allow creation without UoM
+            defaults['uom_id'] = False
+        elif self._get_uom_validation_setting():
+            _logger.debug("🔧 UoM: Validation enabled — clearing default UoM to force explicit selection")
+            # Blank out the default UoM so the user is forced to pick one explicitly
             defaults['uom_id'] = False
         else:
-            _logger.debug("🔧 UoM: Standard product context - setting UoM to False by default")
-            # Override default uom_id to be blank for standard products
-            # Validation will enforce UoM selection during create/write
-            defaults['uom_id'] = False
+            _logger.debug("🔧 UoM: Validation disabled — leaving system default UoM in place")
             
         _logger.debug("✅ UoM: Default values processing completed")
         return defaults
@@ -336,7 +348,11 @@ class ProductTemplate(models.Model):
         This provides an additional layer of validation.
         """
         _logger.debug("🔍 UoM: Running UoM constraint check on %s product templates", len(self))
-        
+
+        if not self._get_uom_validation_setting():
+            _logger.debug("🔧 UoM: Validation disabled by settings — skipping constraint check")
+            return
+
         for record in self:
             product_name = record.name or f"ID_{record.id}"
             

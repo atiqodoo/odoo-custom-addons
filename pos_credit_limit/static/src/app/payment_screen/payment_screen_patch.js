@@ -38,7 +38,10 @@ import { validateCreditLimit }  from "@pos_credit_limit/app/validators/credit_li
 import { ReturnBlockedPopup }   from "@pos_credit_limit/app/dialogs/return_blocked_popup";
 import { NoPaymentTermsPopup }     from "@pos_credit_limit/app/dialogs/no_payment_terms_popup";
 import { OverdueInvoicesPopup }    from "@pos_credit_limit/app/dialogs/overdue_invoices_popup";
-import { formatMoney }             from "@pos_credit_limit/app/calculators/true_balance_calculator";
+import {
+    calculateUnsyncedAmount,
+    formatMoney,
+} from "@pos_credit_limit/app/calculators/true_balance_calculator";
 
 /** Filter devtools output: type [PCL-Screen] in the console filter box */
 const LOG_PREFIX = "[PCL-Screen]";
@@ -579,6 +582,14 @@ patch(PaymentScreen.prototype, {
             return false;
         }
 
+        const accountAmount = accountLines.reduce(
+            (sum, line) => sum + Math.abs(line.get_amount?.() ?? line.amount ?? 0),
+            0
+        );
+        const otherOrders = (this.pos.models?.["pos.order"]?.getAll?.() || []).filter(
+            (candidate) => candidate !== order
+        );
+
         if (liveCredit.has_overdue) {
             await new Promise((resolve) => {
                 this.dialog.add(
@@ -596,6 +607,30 @@ patch(PaymentScreen.prototype, {
             return false;
         }
 
+        // Deposit-backed Customer Account payments use the customer's own prepaid
+        // funds, so they must not be blocked just because payment terms are absent.
+        const unsyncedCreditCharges = calculateUnsyncedAmount(
+            otherOrders,
+            partner.id,
+            accountLines[0].payment_method_id.id
+        );
+        const trueBalance = (
+            (liveCredit.total_due || 0) +
+            unsyncedCreditCharges -
+            (liveCredit.session_incoming_payments || 0)
+        );
+        const effectiveDepositBalance = Math.max(0, Math.round(-trueBalance * 100) / 100);
+
+        if (liveCredit.credit_limit <= 0 && effectiveDepositBalance > 0 && accountAmount <= effectiveDepositBalance) {
+            console.warn(
+                `${LOG_PREFIX} Final guard ALLOW via deposit` +
+                ` | accountAmount=${accountAmount}` +
+                ` | effectiveDeposit=${effectiveDepositBalance}` +
+                ` | skipping payment terms`
+            );
+            return true;
+        }
+
         const gate1Passed = await validatePaymentTerms(
             partner,
             liveCredit.payment_term_id,
@@ -606,18 +641,12 @@ patch(PaymentScreen.prototype, {
             return false;
         }
 
-        const accountAmount = accountLines.reduce(
-            (sum, line) => sum + Math.abs(line.get_amount?.() ?? line.amount ?? 0),
-            0
-        );
         const gate2Result = await validateCreditLimit({
             backendTotalDue:          liveCredit.total_due,
             creditLimit:              liveCredit.credit_limit,
             depositBalance:           liveCredit.deposit_balance || 0,
             orderTotal:               accountAmount,
-            allOrders:                (this.pos.models?.["pos.order"]?.getAll?.() || []).filter(
-                (candidate) => candidate !== order
-            ),
+            allOrders:                otherOrders,
             partnerId:                partner.id,
             creditMethodId:           accountLines[0].payment_method_id.id,
             sessionIncomingPayments:  liveCredit.session_incoming_payments || 0,

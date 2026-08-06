@@ -9,10 +9,15 @@
                     <group>
                         <field name="purchase_id" readonly="1"/>
                         <field name="bill_id" readonly="1" invisible="1"/>
+                        <field name="currency_id" invisible="1"/>
+                        <field name="has_promised_cost_discrepancy" invisible="1"/>
+                        <field name="promised_cost_discrepancy_approved" invisible="1"/>
                     </group>
                     <group string="Bill Lines">
                         <field name="line_ids" nolabel="1">
-                            <list editable="bottom">
+                            <list editable="bottom"
+                                  decoration-danger="promised_cost_difference_vat_incl &gt; 0"
+                                  decoration-success="promised_cost_difference_vat_incl &lt; 0">
                                 <field name="product_id" readonly="1"/>
                                 <field name="product_qty" readonly="1"/>
                                 <field name="price_unit" readonly="1" widget="monetary"/>
@@ -21,16 +26,31 @@
                                 <field name="applied_discount"/>
                                 <field name="applied_freight"/>
                                 <field name="calculated_subtotal" readonly="1" widget="monetary"/>
-                                <field name="discrepancy_note" readonly="1"/>
-                                <field name="purchase_line_id" invisible="1"/>
-                                <field name="currency_id" invisible="1"/>
+                                <field name="unit_price_vat_incl" readonly="1" widget="monetary"/>
+                                <field name="vendor_promised_cost_vat_incl" readonly="1" widget="monetary"/>
+                                <field name="promised_cost_difference_vat_incl"
+                                       readonly="1"
+                                       widget="monetary"
+                                       decoration-danger="promised_cost_difference_vat_incl &gt; 0"
+                                       decoration-success="promised_cost_difference_vat_incl &lt; 0"/>
+                                <field name="line_total_vat_incl" readonly="1" widget="monetary" sum="Invoice Total (VAT Incl.)"/>
+                                <field name="purchase_line_id" column_invisible="1"/>
+                                <field name="currency_id" column_invisible="1"/>
                             </list>
                         </field>
+                    </group>
+                    <group class="oe_subtotal_footer oe_right">
+                        <field name="invoice_total_vat_incl" readonly="1" widget="monetary"/>
                     </group>
                 </sheet>
                 <div class="oe_chatter"/>
                 <footer>
                     <button string="Create/Update Bill &amp; Validate Prices" name="action_create_bill" type="object" class="btn-primary"/>
+                    <button string="Approve Promised Cost Difference"
+                            name="action_approve_promised_cost_discrepancy"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="not has_promised_cost_discrepancy or promised_cost_discrepancy_approved"/>
                     <button string="Cancel" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
