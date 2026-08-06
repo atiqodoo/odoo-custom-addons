@@ -48,3 +48,7 @@ access_formula_import_batch_manager,tinting.formula.import.batch.manager,model_t
 access_formula_import_row_manager,tinting.formula.import.row.manager,model_tinting_formula_import_row,paint_tinting.group_tint_formula_manager,1,1,1,1
 access_formula_import_wizard_manager,tinting.formula.import.wizard.manager,model_tinting_formula_import_wizard,paint_tinting.group_tint_formula_manager,1,1,1,1
 access_formula_bulk_approve_wizard_manager,tinting.formula.bulk.approve.wizard.manager,model_tinting_formula_bulk_approve_wizard,paint_tinting.group_tint_formula_manager,1,1,1,1
+access_paint_tinting_mistake_user,paint.tinting.mistake.user,model_paint_tinting_mistake,base.group_user,1,1,1,0
+access_paint_tinting_mistake_manager,paint.tinting.mistake.manager,model_paint_tinting_mistake,mrp.group_mrp_manager,1,1,1,1
+access_paint_tinting_mistake_employee_line_user,paint.tinting.mistake.employee.line.user,model_paint_tinting_mistake_employee_line,base.group_user,1,1,1,0
+access_paint_tinting_mistake_employee_line_manager,paint.tinting.mistake.employee.line.manager,model_paint_tinting_mistake_employee_line,mrp.group_mrp_manager,1,1,1,1

@@ -1,6 +1,7 @@
 from . import ir_ui_view
 from . import res_partner
 from . import vendor_invoice_profile
+from . import vendor_reference_type
 from . import res_company
 from . import res_users
 from . import res_config_settings
@@ -16,5 +17,6 @@ from . import purchase_order_attachment_requirement
 from . import stock_move
 from . import stock_picking
 from . import stock_picking_attachment_requirement
+from . import account_move
 from . import account_move_line
 from . import account_move_attachment_requirement

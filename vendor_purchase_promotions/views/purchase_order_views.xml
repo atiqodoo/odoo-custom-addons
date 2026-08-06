@@ -34,6 +34,10 @@
                 <field name="vendor_invoice_profile" column_invisible="1"/>
                 <field name="is_promotion_foc" optional="show" readonly="1"/>
                 <field name="promotion_parent_line_id" column_invisible="1"/>
+                <field name="promotion_qualifying_line_ids"
+                       widget="many2many_tags"
+                       optional="hide"
+                       readonly="1"/>
                 <field name="promotion_id" optional="show" readonly="state not in ('draft', 'sent')"/>
                 <field name="promotion_foc_qty"
                        string="Promised FOC"

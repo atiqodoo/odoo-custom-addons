@@ -101,6 +101,59 @@ class TestVendorPromotions(TransactionCase):
         self.assertEqual(application.outstanding_foc_qty, 2)
         self.assertEqual(application.fulfillment_state, 'awaiting')
 
+    def test_grouped_gamma_tiers_select_highest_slab(self):
+        second_product = self.env['product.product'].search([
+            ('purchase_ok', '=', True),
+            ('active', '=', True),
+            ('is_storable', '=', True),
+            ('id', '!=', self.product.id),
+        ], limit=1)
+        self.assertTrue(second_product, 'A second purchasable stock product is required')
+        deal_key = 'gamma_test_slab'
+        self.promotion.write({
+            'deal_group_key': deal_key,
+            'product_tmpl_ids': [(4, second_product.product_tmpl_id.id)],
+            'min_charged_qty': 22,
+            'buy_qty': 22,
+            'free_qty': 2,
+        })
+        second_tier = self.env['vendor.purchase.promotion'].create({
+            'name': 'Gamma Buy 48 Get 5',
+            'company_id': self.env.company.id,
+            'partner_id': self.vendor.id,
+            'calculation_profile': 'gamma_paints',
+            'deal_group_key': deal_key,
+            'product_tmpl_ids': [(6, 0, [
+                self.product.product_tmpl_id.id,
+                second_product.product_tmpl_id.id,
+            ])],
+            'min_charged_qty': 48,
+            'buy_qty': 48,
+            'free_qty': 5,
+            'repeat_offer': True,
+        })
+        order, first_line = self._create_order(qty=24)
+        second_line = self.env['purchase.order.line'].with_context(
+            skip_rfq_bill_price=True
+        ).create({
+            'order_id': order.id,
+            'product_id': second_product.id,
+            'name': second_product.display_name,
+            'product_qty': 24,
+            'product_uom': second_product.uom_po_id.id,
+            'price_unit': 100,
+            'date_planned': fields.Datetime.now(),
+            'gamma_list_unit_price': 100,
+        })
+
+        order._sync_vendor_promotions()
+
+        foc_lines = order.order_line.filtered('is_promotion_foc')
+        self.assertEqual(len(foc_lines), 1)
+        self.assertEqual(foc_lines.promotion_id, second_tier)
+        self.assertEqual(foc_lines.product_qty, 5)
+        self.assertEqual(set(foc_lines.promotion_qualifying_line_ids.ids), set((first_line | second_line).ids))
+
     def test_outstanding_foc_blocks_bill_payment_until_waiver(self):
         order, _line = self._create_order()
         order._sync_vendor_promotions()

@@ -6,12 +6,20 @@
         <field name="inherit_id" ref="pos_cod.view_pos_order_tree_inherit_cod"/>
         <field name="arch" type="xml">
 
-            <!-- Append Grand Total Profit and Profit Margin (%) columns right after COD State -->
+            <!-- Append frozen cost, profit, and margin columns right after COD State -->
             <xpath expr="//field[@name='cod_state']" position="after">
+                <field name="wizard_total_cost_price_incl_vat"
+                       optional="show"
+                       string="Cost Price (Inclusive)"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       sum="Total Cost"/>
                 <field name="wizard_grand_total_profit"
                        optional="show"
-                       string="Grand Total Profit"
+                       string="Profit Amount"
                        widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       sum="Total Profit"
                        decoration-success="wizard_grand_total_profit &gt; 0"
                        decoration-danger="wizard_grand_total_profit &lt; 0"
                        decoration-muted="wizard_grand_total_profit == 0"/>
@@ -23,6 +31,37 @@
                        decoration-muted="wizard_profit_margin_pct == 0"/>
             </xpath>
 
+        </field>
+    </record>
+
+    <record id="view_pos_cod_orders_list_profit_columns" model="ir.ui.view">
+        <field name="name">pos.order.cod.list.profit.columns</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="pos_cod.view_pos_cod_orders_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='cod_state']" position="after">
+                <field name="wizard_total_cost_price_incl_vat"
+                       optional="show"
+                       string="Cost Price (Inclusive)"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       sum="Total Cost"/>
+                <field name="wizard_grand_total_profit"
+                       optional="show"
+                       string="Profit Amount"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       sum="Total Profit"
+                       decoration-success="wizard_grand_total_profit &gt; 0"
+                       decoration-danger="wizard_grand_total_profit &lt; 0"
+                       decoration-muted="wizard_grand_total_profit == 0"/>
+                <field name="wizard_profit_margin_pct"
+                       optional="show"
+                       string="Profit Margin (%)"
+                       decoration-success="wizard_profit_margin_pct &gt; 0"
+                       decoration-danger="wizard_profit_margin_pct &lt; 0"
+                       decoration-muted="wizard_profit_margin_pct == 0"/>
+            </xpath>
         </field>
     </record>
 </odoo>

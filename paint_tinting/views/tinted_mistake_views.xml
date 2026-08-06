@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tinted_mistake_search" model="ir.ui.view">
+        <field name="name">paint.tinting.mistake.search</field>
+        <field name="model">paint.tinting.mistake</field>
+        <field name="arch" type="xml">
+            <search string="Mistaken Tinted Products">
+                <field name="name"/>
+                <field name="actual_product_id"/>
+                <field name="actual_lot_id"/>
+                <field name="intended_product_id"/>
+                <field name="mismatch_type"/>
+                <field name="detection_source"/>
+                <field name="employee_ids"/>
+                <filter name="active_cases" string="Active Cases" domain="[('state', 'not in', ('closed', 'cancelled'))]"/>
+                <filter name="reported_on_time" string="Reported On Time" domain="[('reported_on_time', '=', True)]"/>
+                <filter name="hidden" string="Hidden/Suspected" domain="['|', ('concealment_suspected', '=', True), ('days_hidden', '&gt;', 0)]"/>
+                <filter name="wrong_uom" string="Wrong UoM" domain="[('mismatch_type', '=', 'wrong_uom')]"/>
+                <filter name="wrong_base" string="Wrong Base" domain="[('mismatch_type', '=', 'wrong_base')]"/>
+                <filter name="wrong_category" string="Wrong Category" domain="[('mismatch_type', '=', 'wrong_category')]"/>
+                <filter name="employee_recovery" string="Employee Recovery" domain="[('financial_decision', 'in', ('employee_recovery', 'shared'))]"/>
+                <filter name="company_absorb" string="Company Absorbed/Forgiven" domain="[('financial_decision', 'in', ('company_absorb', 'forgiven'))]"/>
+                <separator/>
+                <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                <filter name="group_mismatch" string="Mismatch Type" context="{'group_by': 'mismatch_type'}"/>
+                <filter name="group_detection" string="Detection Source" context="{'group_by': 'detection_source'}"/>
+                <filter name="group_stock_decision" string="Stock Decision" context="{'group_by': 'stock_decision'}"/>
+                <filter name="group_financial_decision" string="Financial Decision" context="{'group_by': 'financial_decision'}"/>
+                <filter name="group_month" string="Month" context="{'group_by': 'mistake_date:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_tinted_mistake_list" model="ir.ui.view">
+        <field name="name">paint.tinting.mistake.list</field>
+        <field name="model">paint.tinting.mistake</field>
+        <field name="arch" type="xml">
+            <list string="Mistaken Tinted Products" decoration-danger="concealment_suspected" decoration-muted="state in ('closed', 'cancelled')">
+                <field name="name"/>
+                <field name="state" widget="badge"/>
+                <field name="mistake_date"/>
+                <field name="actual_product_id"/>
+                <field name="actual_lot_id"/>
+                <field name="actual_qty"/>
+                <field name="actual_uom_id"/>
+                <field name="mismatch_type"/>
+                <field name="detection_source"/>
+                <field name="stock_decision"/>
+                <field name="financial_decision"/>
+                <field name="employee_ids" widget="many2many_tags"/>
+                <field name="total_cost_incl_vat" sum="Total Cost"/>
+                <field name="estimated_loss_amount" sum="Estimated Loss"/>
+                <field name="recommended_recovery_amount" sum="Recommended Recovery"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_tinted_mistake_form" model="ir.ui.view">
+        <field name="name">paint.tinting.mistake.form</field>
+        <field name="model">paint.tinting.mistake</field>
+        <field name="arch" type="xml">
+            <form string="Mistaken Tinted Product">
+                <header>
+                    <button name="action_submit_review" string="Submit Review" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_confirm_mistake" string="Confirm Mistake" type="object" class="oe_highlight" invisible="state != 'under_review'"/>
+                    <button name="action_quarantine" string="Quarantine" type="object" invisible="state not in ('confirmed', 'under_review')"/>
+                    <button name="action_resolve" string="Resolve" type="object" class="oe_highlight" invisible="state not in ('confirmed', 'quarantined')"/>
+                    <button name="action_close" string="Close" type="object" invisible="state != 'resolved'"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state in ('closed', 'cancelled')"/>
+                    <button name="action_open_spreadsheet_source" string="Spreadsheet Source" type="object"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,under_review,confirmed,quarantined,resolved,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Discovery">
+                            <field name="mistake_date"/>
+                            <field name="discovered_date"/>
+                            <field name="days_hidden" readonly="1"/>
+                            <field name="detection_source"/>
+                            <field name="reported_on_time"/>
+                            <field name="concealment_suspected"/>
+                            <field name="reported_by_employee_id"/>
+                        </group>
+                        <group string="Stock">
+                            <field name="actual_product_id"/>
+                            <field name="actual_lot_id"/>
+                            <field name="actual_qty"/>
+                            <field name="actual_uom_id"/>
+                            <field name="warehouse_id"/>
+                            <field name="location_id"/>
+                            <field name="stock_decision"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Actual vs Intended" name="mapping">
+                            <group>
+                                <group string="Actual Mistaken Tint">
+                                    <field name="actual_mo_id" readonly="1"/>
+                                    <field name="actual_bom_id" readonly="1"/>
+                                    <field name="actual_base_product_id" readonly="1"/>
+                                    <field name="actual_base_category_id" readonly="1"/>
+                                    <field name="actual_colour_code_id" readonly="1"/>
+                                    <field name="actual_fandeck_id" readonly="1"/>
+                                </group>
+                                <group string="Customer Intended">
+                                    <field name="intended_product_id"/>
+                                    <field name="intended_base_product_id"/>
+                                    <field name="intended_base_category_id"/>
+                                    <field name="intended_uom_id"/>
+                                    <field name="intended_colour_code_id"/>
+                                    <field name="intended_fandeck_id"/>
+                                    <field name="mismatch_type" readonly="1"/>
+                                </group>
+                            </group>
+                            <group string="Order Links">
+                                <field name="sale_order_id"/>
+                                <field name="sale_order_line_id"/>
+                                <field name="pos_order_id"/>
+                            </group>
+                        </page>
+                        <page string="Employees" name="employees">
+                            <field name="employee_line_ids">
+                                <list editable="bottom">
+                                    <field name="employee_id"/>
+                                    <field name="user_id" readonly="1"/>
+                                    <field name="role"/>
+                                    <field name="responsibility_percent"/>
+                                    <field name="recommended_penalty_amount" readonly="1" sum="Recommended"/>
+                                    <field name="final_penalty_amount" sum="Final"/>
+                                    <field name="forgiven"/>
+                                    <field name="forgiveness_reason"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Cost and Resolution" name="costs">
+                            <group>
+                                <group string="VAT Policy">
+                                    <field name="amount_source"/>
+                                    <field name="vat_percent"/>
+                                </group>
+                                <group string="Decision">
+                                    <field name="financial_decision"/>
+                                    <field name="expected_recoverable_value"/>
+                                    <field name="final_recovery_amount"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="Computed Cost">
+                                    <field name="wrong_base_cost_excl_vat" readonly="1"/>
+                                    <field name="wrong_base_cost_incl_vat" readonly="1"/>
+                                    <field name="wrong_colorant_cost_excl_vat" readonly="1"/>
+                                    <field name="wrong_colorant_cost_incl_vat" readonly="1"/>
+                                </group>
+                                <group string="Loss">
+                                    <field name="total_cost_excl_vat" readonly="1"/>
+                                    <field name="total_cost_incl_vat" readonly="1"/>
+                                    <field name="estimated_loss_amount" readonly="1"/>
+                                    <field name="recommended_recovery_amount" readonly="1"/>
+                                </group>
+                            </group>
+                            <field name="resolution_notes" placeholder="Manager/HR decision notes..."/>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="notes" placeholder="Stock count notes, shelf details, customer context, or investigation details..."/>
+                        </page>
+                    </notebook>
+                    <group string="Review">
+                        <field name="reviewed_by_id"/>
+                        <field name="reviewed_date"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_tinted_mistake_pivot" model="ir.ui.view">
+        <field name="name">paint.tinting.mistake.pivot</field>
+        <field name="model">paint.tinting.mistake</field>
+        <field name="arch" type="xml">
+            <pivot string="Mistake Cost Dashboard">
+                <field name="mistake_date" interval="month" type="row"/>
+                <field name="mismatch_type" type="col"/>
+                <field name="total_cost_incl_vat" type="measure"/>
+                <field name="estimated_loss_amount" type="measure"/>
+                <field name="recommended_recovery_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_tinted_mistake_graph" model="ir.ui.view">
+        <field name="name">paint.tinting.mistake.graph</field>
+        <field name="model">paint.tinting.mistake</field>
+        <field name="arch" type="xml">
+            <graph string="Mistaken Tint Losses" type="bar">
+                <field name="mismatch_type"/>
+                <field name="estimated_loss_amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_tinted_mistakes" model="ir.actions.act_window">
+        <field name="name">Mistaken Tinted Products</field>
+        <field name="res_model">paint.tinting.mistake</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="search_view_id" ref="view_tinted_mistake_search"/>
+        <field name="context">{'search_default_active_cases': 1}</field>
+    </record>
+
+    <record id="action_tinted_mistake_dashboard" model="ir.actions.act_window">
+        <field name="name">Mistake Dashboard</field>
+        <field name="res_model">paint.tinting.mistake</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="search_view_id" ref="view_tinted_mistake_search"/>
+    </record>
+
+    <record id="action_tinted_mistake_spreadsheet_source" model="ir.actions.act_window">
+        <field name="name">Mistake Spreadsheet Source</field>
+        <field name="res_model">paint.tinting.mistake</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="search_view_id" ref="view_tinted_mistake_search"/>
+    </record>
+</odoo>

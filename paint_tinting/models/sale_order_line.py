@@ -386,14 +386,19 @@ class SaleOrderLine(models.Model):
             _logger.info("  ✅ Marked UoM category %s as POS-groupable", uom.category_id.name)
 
         # ── STEP 4: CATEGORY ──────────────────────────────────────────────
-        categ = self.env['product.category'].search([('name', '=', 'Tinted Paint')], limit=1)
-        if not categ:
-            categ = self.env['product.category'].create({
-                'name': 'Tinted Paint',
-                'property_cost_method': 'fifo',
-                'property_valuation': 'real_time',
-            })
-        _logger.info("  ✅ Category: %s (ID: %s)", categ.name, categ.id)
+        # STEP 4: CATEGORY
+        _logger.info("STEP 4: Resolving tinted product category policy...")
+        base_category = line.base_product_id.categ_id
+        categ = self.env[
+            'product.category'
+        ]._paint_tinting_get_tinted_product_category(base_category)
+        _logger.info(
+            "Category resolved: id=%s name=%s parent_id=%s base_category_id=%s",
+            categ.id,
+            categ.complete_name,
+            categ.parent_id.id if categ.parent_id else False,
+            base_category.id if base_category else False,
+        )
 
         # ── STEP 5: COST CALCULATIONS ──────────────────────────────────────
         total_cost_excl_vat = line.quoted_cost_at_creation / 1.16

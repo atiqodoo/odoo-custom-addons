@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_promotion_substitution_override_log_search" model="ir.ui.view">
+        <field name="name">vendor.promotion.substitution.override.log.search</field>
+        <field name="model">vendor.promotion.substitution.override.log</field>
+        <field name="arch" type="xml">
+            <search string="FOC Substitute Mismatch Overrides">
+                <field name="name"/>
+                <field name="picking_id"/>
+                <field name="purchase_id"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <filter name="override_used" string="Override Used" domain="[('override_used', '=', True)]"/>
+                <filter name="pending_review" string="Pending Review" domain="[('review_state', '=', 'pending')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_picking" string="Receipt" context="{'group_by': 'picking_id'}"/>
+                    <filter name="group_purchase" string="Purchase" context="{'group_by': 'purchase_id'}"/>
+                    <filter name="group_user" string="User" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_review_state" string="Review State" context="{'group_by': 'review_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_vendor_promotion_substitution_override_log_list" model="ir.ui.view">
+        <field name="name">vendor.promotion.substitution.override.log.list</field>
+        <field name="model">vendor.promotion.substitution.override.log</field>
+        <field name="arch" type="xml">
+            <list string="FOC Substitute Mismatch Overrides" create="false" delete="false"
+                  decoration-danger="override_used">
+                <field name="name"/>
+                <field name="picking_id"/>
+                <field name="purchase_id"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="warning_shown_count"/>
+                <field name="dismissal_count"/>
+                <field name="override_available"/>
+                <field name="override_used"/>
+                <field name="override_confirmed_at"/>
+                <field name="review_state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_promotion_substitution_override_log_form" model="ir.ui.view">
+        <field name="name">vendor.promotion.substitution.override.log.form</field>
+        <field name="model">vendor.promotion.substitution.override.log</field>
+        <field name="arch" type="xml">
+            <form string="FOC Substitute Mismatch Override" create="false" delete="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="picking_id"/>
+                            <field name="purchase_id"/>
+                            <field name="partner_id"/>
+                            <field name="user_id"/>
+                            <field name="fingerprint"/>
+                        </group>
+                        <group>
+                            <field name="warning_shown_count"/>
+                            <field name="dismissal_count"/>
+                            <field name="override_available"/>
+                            <field name="override_used"/>
+                            <field name="override_confirmed_at"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Mismatch Lines">
+                            <field name="line_ids" readonly="1">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="foc_line_id"/>
+                                    <field name="source_move_id"/>
+                                    <field name="expected_product_id"/>
+                                    <field name="substitute_product_id"/>
+                                    <field name="substitute_qty"/>
+                                    <field name="substitute_uom_id"/>
+                                    <field name="substitute_category_id"/>
+                                    <field name="charged_line_ids" widget="many2many_tags"/>
+                                    <field name="charged_uom_ids" widget="many2many_tags"/>
+                                    <field name="charged_category_ids" widget="many2many_tags"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Audit Events">
+                            <field name="event_ids" readonly="1">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="event_at"/>
+                                    <field name="event_type"/>
+                                    <field name="user_id"/>
+                                    <field name="details"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Review" groups="purchase.group_purchase_manager">
+                            <group>
+                                <field name="review_state"/>
+                                <field name="review_notes"/>
+                                <field name="reviewed_by"/>
+                                <field name="reviewed_at"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vendor_promotion_substitution_override_logs" model="ir.actions.act_window">
+        <field name="name">FOC Substitute Mismatch Overrides</field>
+        <field name="res_model">vendor.promotion.substitution.override.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vendor_promotion_substitution_override_log_search"/>
+        <field name="context">{'create': False, 'delete': False}</field>
+    </record>
+
+    <menuitem id="menu_vendor_promotion_substitution_override_logs"
+              name="FOC Substitute Mismatch Overrides"
+              parent="menu_vendor_purchase_promotions"
+              action="action_vendor_promotion_substitution_override_logs"
+              sequence="35"/>
+</odoo>

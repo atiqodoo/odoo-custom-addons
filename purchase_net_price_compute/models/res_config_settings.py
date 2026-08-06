@@ -4,6 +4,13 @@ from odoo import fields, models
 class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
 
+    _vendor_reference_required_params = {
+        'vendor_reference_required_rfq': 'purchase_net_price_compute.vendor_reference_required_rfq',
+        'vendor_reference_required_lpo': 'purchase_net_price_compute.vendor_reference_required_lpo',
+        'vendor_reference_required_receipt': 'purchase_net_price_compute.vendor_reference_required_receipt',
+        'vendor_reference_required_invoice': 'purchase_net_price_compute.vendor_reference_required_invoice',
+    }
+
     lpo_rubber_stamp_png = fields.Binary(
         related='company_id.lpo_rubber_stamp_png',
         readonly=False,
@@ -69,3 +76,43 @@ class ResConfigSettings(models.TransientModel):
             'ranking and show primary contacts first.'
         ),
     )
+    vendor_reference_required_rfq = fields.Boolean(
+        string='RFQ Vendor Reference Required',
+        config_parameter='purchase_net_price_compute.vendor_reference_required_rfq',
+        default=True,
+    )
+    vendor_reference_required_lpo = fields.Boolean(
+        string='LPO Vendor Reference Required',
+        config_parameter='purchase_net_price_compute.vendor_reference_required_lpo',
+        default=True,
+    )
+    vendor_reference_required_receipt = fields.Boolean(
+        string='Receipt Vendor Reference Required',
+        config_parameter='purchase_net_price_compute.vendor_reference_required_receipt',
+        default=True,
+    )
+    vendor_reference_required_invoice = fields.Boolean(
+        string='Vendor Bill Reference Required',
+        config_parameter='purchase_net_price_compute.vendor_reference_required_invoice',
+        default=True,
+    )
+
+    def _get_config_bool(self, key, default=True):
+        value = self.env['ir.config_parameter'].sudo().get_param(key)
+        if value is False:
+            return default
+        return str(value).lower() not in ('false', '0', 'no', 'off')
+
+    def get_values(self):
+        values = super().get_values()
+        values.update({
+            field_name: self._get_config_bool(param_key, default=True)
+            for field_name, param_key in self._vendor_reference_required_params.items()
+        })
+        return values
+
+    def set_values(self):
+        super().set_values()
+        config = self.env['ir.config_parameter'].sudo()
+        for field_name, param_key in self._vendor_reference_required_params.items():
+            config.set_param(param_key, '1' if self[field_name] else '0')

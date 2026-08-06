@@ -1,5 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="stock_picking_form_vendor_reference" model="ir.ui.view">
+        <field name="name">stock.picking.form.vendor.reference</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="vendor_reference_required" invisible="1"/>
+                <field name="vendor_reference_type_id"
+                       invisible="picking_type_code != 'incoming'"
+                       required="vendor_reference_required"
+                       options="{'no_create_edit': True}"/>
+                <field name="vendor_reference"
+                       invisible="picking_type_code != 'incoming'"
+                       required="vendor_reference_required"
+                       placeholder="Vendor document reference"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="stock_picking_search_vendor_reference" model="ir.ui.view">
+        <field name="name">stock.picking.search.vendor.reference</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="vendor_reference_type_id"/>
+                <field name="vendor_reference"/>
+            </xpath>
+            <xpath expr="//group" position="inside">
+                <filter string="Vendor Reference Type"
+                        name="group_by_vendor_reference_type"
+                        context="{'group_by': 'vendor_reference_type_id'}"/>
+                <filter string="Vendor Reference"
+                        name="group_by_vendor_reference"
+                        context="{'group_by': 'vendor_reference'}"/>
+            </xpath>
+        </field>
+    </record>
+
     <record id="stock_picking_form_inherit_lpo_grade_receipt" model="ir.ui.view">
         <field name="name">stock.picking.form.inherit.lpo.grade.receipt</field>
         <field name="model">stock.picking</field>

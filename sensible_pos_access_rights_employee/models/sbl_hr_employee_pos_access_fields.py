@@ -237,3 +237,13 @@ class HrEmployee(models.Model):
         help='If checked, this employee can authorize use of an M-Pesa SMS payment outside the current POS session time window by entering their POS PIN.',
         default=False,
     )
+    sbl_allow_mpesa_sms_freeze = fields.Boolean(
+        string='Allow M-Pesa SMS Freeze',
+        help='If checked, this employee can authorize freezing the remaining balance of an M-Pesa SMS transaction by entering their POS PIN.',
+        default=False,
+    )
+    sbl_allow_mpesa_sms_unfreeze = fields.Boolean(
+        string='Allow M-Pesa SMS Unfreeze',
+        help='If checked, this employee can authorize releasing a manual freeze on an M-Pesa SMS transaction by entering their POS PIN.',
+        default=False,
+    )

@@ -5,7 +5,7 @@
     'summary':  'Receive, parse and store M-Pesa BuyGoods C2B SMS payments',
     'author':   'Custom Development',
     'website':  '',
-    'depends':  ['base', 'base_setup', 'mail', 'account', 'point_of_sale'],
+    'depends':  ['base', 'base_setup', 'mail', 'account', 'hr', 'point_of_sale'],
     'data': [
         'security/mpesa_groups.xml',
         'security/ir.model.access.csv',

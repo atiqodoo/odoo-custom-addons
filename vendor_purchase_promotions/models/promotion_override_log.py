@@ -105,6 +105,15 @@ class VendorPromotionOverrideLog(models.Model):
             'details': details or {},
         })
 
+    def _dismissal_limit(self):
+        self.ensure_one()
+        limits = self.line_ids.mapped('promotion_id').mapped(
+            lambda rule: rule.effective_profile().dismissal_limit
+            if rule.effective_profile() and rule.effective_profile().recommendation_enabled
+            else 3
+        )
+        return max(limits or [3])
+
     def action_register_dismissal(self, fingerprint):
         """Called by the notification X button; two valid dismissals arm override."""
         self.ensure_one()
@@ -127,12 +136,15 @@ class VendorPromotionOverrideLog(models.Model):
         if log.purchase_id.state not in ('draft', 'sent'):
             return {
                 'dismissal_count': log.dismissal_count,
+                'dismissal_limit': log._dismissal_limit(),
                 'override_available': log.override_available,
                 'ignored': True,
             }
-        if log.override_used or log.dismissal_count >= 2:
+        dismissal_limit = log._dismissal_limit()
+        if log.override_used or log.dismissal_count >= dismissal_limit:
             return {
                 'dismissal_count': log.dismissal_count,
+                'dismissal_limit': dismissal_limit,
                 'override_available': log.override_available,
                 'ignored': True,
             }
@@ -141,28 +153,31 @@ class VendorPromotionOverrideLog(models.Model):
         dismissal_count = log.dismissal_count + 1
         values = {
             'dismissal_count': dismissal_count,
-            'override_available': dismissal_count >= 2,
+            'override_available': dismissal_count >= dismissal_limit,
         }
         if dismissal_count == 1:
             values['first_dismissed_at'] = dismissed_at
-        else:
+        elif dismissal_count == 2:
             values['second_dismissed_at'] = dismissed_at
         log.sudo().with_context(**{SYSTEM_CONTEXT_KEY: True}).write(values)
         log._create_event('dismissed', {
             'dismissal_count': dismissal_count,
-            'override_available': dismissal_count >= 2,
+            'dismissal_limit': dismissal_limit,
+            'override_available': dismissal_count >= dismissal_limit,
         })
         _logger.warning(
-            '[VPP_CHECKER_DISMISS] log_id=%s po_id=%s user_id=%s count=%s override_available=%s',
+            '[VPP_CHECKER_DISMISS] log_id=%s po_id=%s user_id=%s count=%s limit=%s override_available=%s',
             log.id,
             log.purchase_id.id,
             self.env.user.id,
             dismissal_count,
-            dismissal_count >= 2,
+            dismissal_limit,
+            dismissal_count >= dismissal_limit,
         )
         return {
             'dismissal_count': dismissal_count,
-            'override_available': dismissal_count >= 2,
+            'dismissal_limit': dismissal_limit,
+            'override_available': dismissal_count >= dismissal_limit,
             'ignored': False,
         }
 

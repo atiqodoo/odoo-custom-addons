@@ -38,6 +38,7 @@
         'sale_stock',  # Warehouse-aware real-time tinted stock confirmation guard
         'paint_colour_master',  # Existing colour/fandeck module
         'point_of_sale',
+        'hr',
     ],
     'data': [
         # Security
@@ -51,6 +52,7 @@
         # 'data/colorant_products_data.xml',
         'data/deferred_valuation_sequence.xml',
         'data/pos_lot_cost_audit_sequence.xml',
+        'data/tinted_mistake_sequence.xml',
 
         # Wizard Views
         'views/colorant_mapping_wizard_views.xml',
@@ -76,6 +78,7 @@
         'views/tint_formula_search_views.xml',
         'views/tint_new_aps_formula_views.xml',
         'views/stock_deferred_valuation_views.xml',
+        'views/tinted_mistake_views.xml',
         # 'views/retint_analytics_views.xml',
         # 'views/colour_code_views.xml',
 

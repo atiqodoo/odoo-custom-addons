@@ -47,6 +47,14 @@ class PurchaseOrderLine(models.Model):
         index=True,
         ondelete='cascade',
     )
+    promotion_qualifying_line_ids = fields.Many2many(
+        'purchase.order.line',
+        'vendor_promotion_foc_qualifying_line_rel',
+        'foc_line_id',
+        'charged_line_id',
+        string='Qualifying Charged Lines',
+        copy=False,
+    )
     promotion_foc_line_ids = fields.One2many(
         'purchase.order.line',
         'promotion_parent_line_id',
@@ -122,12 +130,16 @@ class PurchaseOrderLine(models.Model):
     def _compute_promotion_application_id(self):
         applications = self.env['vendor.purchase.promotion.application'].search([
             '|',
+            '|',
             ('charged_line_id', 'in', self.ids),
+            ('charged_line_ids', 'in', self.ids),
             ('foc_line_id', 'in', self.ids),
         ]) if self.ids else self.env['vendor.purchase.promotion.application']
         by_line = {}
         for application in applications:
             by_line[application.charged_line_id.id] = application
+            for charged_line in application.charged_line_ids:
+                by_line[charged_line.id] = application
             by_line[application.foc_line_id.id] = application
         for line in self:
             line.promotion_application_id = by_line.get(line.id, False)
@@ -263,4 +275,3 @@ class PurchaseOrderLine(models.Model):
         super()._compute_qty_invoiced()
         for line in self.filtered('is_promotion_foc'):
             line.qty_to_invoice = 0.0
-

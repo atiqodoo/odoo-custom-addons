@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="ir_config_parameter_split_promotion_groups_by_uom" model="ir.config_parameter">
+        <field name="key">vendor_purchase_promotions.split_groups_by_uom</field>
+        <field name="value">1</field>
+    </record>
+    <record id="ir_config_parameter_split_promotion_groups_by_category" model="ir.config_parameter">
+        <field name="key">vendor_purchase_promotions.split_groups_by_category</field>
+        <field name="value">1</field>
+    </record>
+
+    <record id="vendor_promotion_profile_gamma" model="vendor.promotion.profile">
+        <field name="name">Gamma Paints</field>
+        <field name="code">gamma_paints</field>
+        <field name="qualification_mode">across_eligible_variants</field>
+        <field name="tier_method">highest_slab</field>
+        <field name="substitution_policy">eligible_variants</field>
+        <field name="foc_selection_policy">first_line</field>
+        <field name="recommendation_enabled">1</field>
+        <field name="dismissal_limit">3</field>
+    </record>
+</odoo>

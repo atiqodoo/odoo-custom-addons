@@ -15,6 +15,7 @@ class PurchaseOrder(models.Model):
     def action_create_invoice_wizard(self):
         """Open wizard to enter vendor bill prices"""
         self.ensure_one()
+        self._validate_vendor_reference_ready('vendor_reference_required_lpo')
         profile = self.partner_id.get_vendor_invoice_profile()
         _logger.info(
             '[VPC_OPEN] wizard_open_start po_id=%s po=%s vendor_id=%s profile=%s',

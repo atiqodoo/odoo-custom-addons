@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_promotion_foc_substitution_wizard_form" model="ir.ui.view">
+        <field name="name">vendor.promotion.foc.substitution.wizard.form</field>
+        <field name="model">vendor.promotion.foc.substitution.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Choose FOC Substitute">
+                <group>
+                    <field name="picking_id" invisible="1"/>
+                    <field name="available_move_ids" invisible="1"/>
+                    <field name="total_substitute_qty"/>
+                    <field name="substitution_reason"/>
+                </group>
+                <field name="foc_line_ids" mode="list,form">
+                    <list create="0" delete="0">
+                        <field name="eligible_product_ids" column_invisible="1"/>
+                        <field name="available_move_ids" column_invisible="1"/>
+                        <field name="move_id"/>
+                        <field name="expected_product_id"/>
+                        <field name="promotion_id"/>
+                        <field name="promised_foc_qty"/>
+                        <field name="total_substitute_qty"/>
+                        <field name="delivered_summary"/>
+                    </list>
+                    <form string="FOC Line Substitutes">
+                        <group>
+                            <field name="available_move_ids" invisible="1"/>
+                            <field name="eligible_product_ids" invisible="1"/>
+                            <field name="move_id"/>
+                            <field name="expected_product_id"/>
+                            <field name="promotion_id"/>
+                            <field name="promised_foc_qty"/>
+                            <field name="total_substitute_qty"/>
+                            <field name="eligible_product_ids"
+                                   widget="many2many_tags"
+                                   readonly="1"
+                                   string="Eligible Variants"/>
+                        </group>
+                        <field name="substitute_line_ids">
+                            <list editable="bottom" create="0" delete="0">
+                                <field name="product_id" readonly="1" force_save="1"/>
+                                <field name="quantity"/>
+                            </list>
+                        </field>
+                    </form>
+                </field>
+                <footer>
+                    <button name="action_apply_substitution"
+                            type="object"
+                            string="Apply Substitute"
+                            class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_stock_picking_form_vendor_promotion_substitution" model="ir.ui.view">
+        <field name="name">stock.picking.form.vendor.promotion.substitution</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='button_validate'][1]" position="before">
+                <field name="promotion_foc_substitution_count" invisible="1"/>
+                <button name="action_open_promotion_foc_substitution"
+                        type="object"
+                        string="FOC Substitute"
+                        class="btn-secondary"
+                        invisible="picking_type_code != 'incoming' or state in ('done', 'cancel') or promotion_foc_substitution_count == 0"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

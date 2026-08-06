@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_pos_order_line_profit_log_list" model="ir.ui.view">
+        <field name="name">pos.order.line.profit.log.list</field>
+        <field name="model">pos.order.line</field>
+        <field name="arch" type="xml">
+            <list string="POS Order Line Profit Log"
+                  create="0"
+                  delete="0"
+                  duplicate="0"
+                  sample="1"
+                  default_order="wizard_log_date_order desc, id desc"
+                  decoration-success="wizard_log_profit_amount_incl &gt; 0"
+                  decoration-danger="wizard_log_profit_amount_incl &lt; 0"
+                  decoration-muted="wizard_log_profit_amount_incl == 0">
+                <button name="action_open_profit_log_order"
+                        type="object"
+                        icon="fa-external-link"
+                        title="Open source order"/>
+                <field name="wizard_log_order_ref_id" string="Order Ref"/>
+                <field name="wizard_log_date_order" string="Date"/>
+                <field name="wizard_log_session_id" string="Session" optional="show"/>
+                <field name="product_id" string="Product"/>
+                <field name="qty" string="Qty" sum="Total Qty"/>
+                <field name="price_unit" string="Unit Price" widget="monetary"
+                       options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="wizard_log_price_incl" string="Price" widget="monetary"
+                       options="{'currency_field': 'currency_id'}" sum="Total Price"/>
+                <field name="wizard_log_cost_price_incl" string="Cost Price (Inclusive)" widget="monetary"
+                       options="{'currency_field': 'currency_id'}" sum="Total Cost"/>
+                <field name="wizard_log_cost_snapshot_at" string="Cost Snapshot At" optional="show"/>
+                <field name="wizard_log_profit_amount_incl" string="Profit Amount (Incl)" widget="monetary"
+                       options="{'currency_field': 'currency_id'}" sum="Total Profit"/>
+                <field name="wizard_log_profit_margin_pct"
+                       string="Profit Margin %"
+                       decoration-success="wizard_log_profit_margin_pct &gt; 0"
+                       decoration-danger="wizard_log_profit_margin_pct &lt; 0"
+                       decoration-muted="wizard_log_profit_margin_pct == 0"/>
+                <field name="wizard_log_cashier_id" string="Cashier" widget="many2one_avatar_user"/>
+                <field name="wizard_log_partner_id" string="Customer" optional="hide"/>
+                <field name="wizard_log_config_id" string="Point of Sale" optional="hide"/>
+                <field name="wizard_log_state" string="POS State" widget="badge"
+                       decoration-success="wizard_log_state in ('paid', 'done', 'invoiced')"
+                       decoration-warning="wizard_log_state == 'draft'"
+                       decoration-danger="wizard_log_state == 'cancel'"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pos_order_line_profit_log_form" model="ir.ui.view">
+        <field name="name">pos.order.line.profit.log.form</field>
+        <field name="model">pos.order.line</field>
+        <field name="arch" type="xml">
+            <form string="POS Order Line Profit Log" create="0" delete="0" duplicate="0">
+                <header>
+                    <button name="action_open_profit_log_order"
+                            string="Open Source Order"
+                            type="object"
+                            class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Order">
+                            <field name="wizard_log_order_ref_id" readonly="1"/>
+                            <field name="wizard_log_date_order" readonly="1"/>
+                            <field name="wizard_log_session_id" readonly="1"/>
+                            <field name="wizard_log_cashier_id" readonly="1" widget="many2one_avatar_user"/>
+                            <field name="wizard_log_state" readonly="1"/>
+                        </group>
+                        <group string="Line">
+                            <field name="product_id" readonly="1"/>
+                            <field name="qty" readonly="1"/>
+                            <field name="price_unit" readonly="1" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="wizard_log_price_incl" readonly="1" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                        </group>
+                    </group>
+                    <group string="Profit">
+                        <group>
+                            <field name="wizard_log_cost_price_incl" readonly="1" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="wizard_log_cost_snapshot_at" readonly="1"/>
+                            <field name="wizard_log_profit_amount_incl" readonly="1" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="wizard_log_profit_margin_pct" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="wizard_log_partner_id" readonly="1"/>
+                            <field name="wizard_log_config_id" readonly="1"/>
+                            <field name="currency_id" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pos_order_line_profit_log_search" model="ir.ui.view">
+        <field name="name">pos.order.line.profit.log.search</field>
+        <field name="model">pos.order.line</field>
+        <field name="arch" type="xml">
+            <search string="Order List">
+                <field name="wizard_log_order_ref_id" string="Order Ref"/>
+                <field name="product_id" string="Product"/>
+                <field name="wizard_log_cashier_id" string="Cashier"/>
+                <field name="wizard_log_partner_id" string="Customer"/>
+                <field name="wizard_log_session_id" string="Session"/>
+                <field name="wizard_log_config_id" string="Point of Sale"/>
+                <filter string="Receipted" name="receipted"
+                        domain="[('wizard_log_state', 'in', ['paid', 'invoiced', 'done'])]"/>
+                <filter string="Paid" name="paid"
+                        domain="[('wizard_log_state', '=', 'paid')]"/>
+                <filter string="Posted" name="posted"
+                        domain="[('wizard_log_state', '=', 'done')]"/>
+                <filter string="Invoiced" name="invoiced"
+                        domain="[('wizard_log_state', '=', 'invoiced')]"/>
+                <separator/>
+                <filter string="Profit" name="profitable"
+                        domain="[('wizard_log_profit_amount_incl', '&gt;', 0)]"/>
+                <filter string="Loss" name="loss"
+                        domain="[('wizard_log_profit_amount_incl', '&lt;', 0)]"/>
+                <filter string="Zero Profit" name="zero_profit"
+                        domain="[('wizard_log_profit_amount_incl', '=', 0)]"/>
+                <separator/>
+                <filter string="Order Date" name="order_date" date="wizard_log_date_order"/>
+                <filter string="Cost Snapshot Date" name="cost_snapshot_date" date="wizard_log_cost_snapshot_at"/>
+                <group expand="0" string="Group By">
+                    <filter string="Order Ref" name="group_order"
+                            context="{'group_by': 'wizard_log_order_ref_id'}"/>
+                    <filter string="Cashier" name="group_cashier"
+                            context="{'group_by': 'wizard_log_cashier_id'}"/>
+                    <filter string="Product" name="group_product"
+                            context="{'group_by': 'product_id'}"/>
+                    <filter string="Session" name="group_session"
+                            context="{'group_by': 'wizard_log_session_id'}"/>
+                    <filter string="Customer" name="group_customer"
+                            context="{'group_by': 'wizard_log_partner_id'}"/>
+                    <filter string="Point of Sale" name="group_config"
+                            context="{'group_by': 'wizard_log_config_id'}"/>
+                    <filter string="Order Date" name="group_date"
+                            context="{'group_by': 'wizard_log_date_order:day'}"/>
+                    <filter string="Cost Snapshot Date" name="group_cost_snapshot_date"
+                            context="{'group_by': 'wizard_log_cost_snapshot_at:day'}"/>
+                    <filter string="POS State" name="group_state"
+                            context="{'group_by': 'wizard_log_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_pos_order_line_profit_log_pivot" model="ir.ui.view">
+        <field name="name">pos.order.line.profit.log.pivot</field>
+        <field name="model">pos.order.line</field>
+        <field name="arch" type="xml">
+            <pivot string="POS Order Line Profit Analysis" sample="1">
+                <field name="wizard_log_date_order" type="row" interval="day"/>
+                <field name="wizard_log_cashier_id" type="col"/>
+                <field name="wizard_log_price_incl" type="measure"/>
+                <field name="wizard_log_cost_price_incl" type="measure"/>
+                <field name="wizard_log_profit_amount_incl" type="measure"/>
+                <field name="wizard_log_profit_margin_pct" invisible="1"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_pos_order_line_profit_log_graph" model="ir.ui.view">
+        <field name="name">pos.order.line.profit.log.graph</field>
+        <field name="model">pos.order.line</field>
+        <field name="arch" type="xml">
+            <graph string="POS Order Line Profit Trend" type="bar" sample="1">
+                <field name="wizard_log_date_order" interval="day"/>
+                <field name="wizard_log_profit_amount_incl" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_pos_order_line_profit_log" model="ir.actions.act_window">
+        <field name="name">Order List</field>
+        <field name="res_model">pos.order.line</field>
+        <field name="path">pos-order-line-profit-log</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="domain">[('wizard_log_state', 'in', ['paid', 'invoiced', 'done'])]</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_pos_order_line_profit_log_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_pos_order_line_profit_log_form')}),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_pos_order_line_profit_log_pivot')}),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('view_pos_order_line_profit_log_graph')})]"/>
+        <field name="search_view_id" ref="view_pos_order_line_profit_log_search"/>
+        <field name="context">{'search_default_receipted': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_empty_folder">
+                No receipted POS order lines found.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_pos_order_line_profit_log"
+              name="Order List"
+              parent="point_of_sale.menu_point_root"
+              action="action_pos_order_line_profit_log"
+              sequence="24"
+              groups="point_of_sale.group_pos_manager,point_of_sale.group_pos_user"/>
+
+</odoo>

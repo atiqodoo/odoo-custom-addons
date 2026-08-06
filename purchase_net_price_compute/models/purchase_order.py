@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 from odoo.tools.misc import html_escape
 from odoo.tools.float_utils import float_is_zero
 import logging
@@ -8,6 +9,27 @@ _logger = logging.getLogger(__name__)
 
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
+
+    partner_ref = fields.Char(index=True)
+
+    vendor_reference_type_id = fields.Many2one(
+        'purchase.vendor.reference.type',
+        string='Vendor Reference Type',
+        tracking=True,
+        index=True,
+        copy=False,
+        domain=[('active', '=', True)],
+    )
+    vendor_reference_required = fields.Boolean(
+        compute='_compute_vendor_reference_required',
+    )
+    vendor_reference_normalized = fields.Char(
+        string='Vendor Reference Search Key',
+        compute='_compute_vendor_reference_normalized',
+        store=True,
+        index=True,
+        copy=False,
+    )
 
     vendor_promised_cost_contact = fields.Char(
         string="Vendor Sales/Customer Service Contact",
@@ -40,6 +62,90 @@ class PurchaseOrder(models.Model):
         readonly=True,
         help="Stored grade-wise volume and VAT-inclusive value snapshot for later vendor bill comparison.",
     )
+
+    @api.depends('partner_ref')
+    def _compute_vendor_reference_normalized(self):
+        for order in self:
+            order.vendor_reference_normalized = (order.partner_ref or '').strip().casefold() or False
+
+    @api.depends('state')
+    def _compute_vendor_reference_required(self):
+        for order in self:
+            order.vendor_reference_required = order._is_vendor_reference_required_for_state()
+
+    def _is_vendor_reference_param_enabled(self, key):
+        value = self.env['ir.config_parameter'].sudo().get_param(
+            f'purchase_net_price_compute.{key}',
+            default='True',
+        )
+        return str(value).lower() not in ('false', '0', 'no', 'off')
+
+    def _is_vendor_reference_required_for_state(self):
+        self.ensure_one()
+        if self.state in ('draft', 'sent', 'to approve'):
+            return self._is_vendor_reference_param_enabled('vendor_reference_required_rfq')
+        if self.state in ('purchase', 'done'):
+            return self._is_vendor_reference_param_enabled('vendor_reference_required_lpo')
+        return False
+
+    def _get_vendor_reference_normalized(self):
+        self.ensure_one()
+        return (self.partner_ref or '').strip().casefold()
+
+    @api.constrains('partner_ref', 'vendor_reference_type_id', 'company_id')
+    def _check_vendor_reference_required_unique(self):
+        for order in self:
+            normalized_reference = order._get_vendor_reference_normalized()
+            has_partial_reference = bool(order.vendor_reference_type_id) != bool(normalized_reference)
+            if order._is_vendor_reference_required_for_state() and (
+                not order.vendor_reference_type_id or not normalized_reference
+            ):
+                raise ValidationError(_('Vendor Reference Type and Vendor Reference are mandatory.'))
+            if has_partial_reference:
+                raise ValidationError(_('Vendor Reference Type and Vendor Reference must be entered together.'))
+            if not normalized_reference:
+                continue
+            duplicate = self.search([
+                ('id', '!=', order.id),
+                ('company_id', '=', order.company_id.id),
+                ('vendor_reference_type_id', '=', order.vendor_reference_type_id.id),
+                ('vendor_reference_normalized', '=', normalized_reference),
+            ], limit=1)
+            if duplicate:
+                raise ValidationError(_(
+                    'Vendor Reference "%(reference)s" already exists for type "%(type)s".',
+                    reference=order.partner_ref,
+                    type=order.vendor_reference_type_id.display_name,
+                ))
+
+    def _validate_vendor_reference_ready(self, document_key='vendor_reference_required_lpo'):
+        if not self._is_vendor_reference_param_enabled(document_key):
+            self._check_vendor_reference_required_unique()
+            return
+        for order in self:
+            if not order.vendor_reference_type_id or not order._get_vendor_reference_normalized():
+                raise ValidationError(_('Vendor Reference Type and Vendor Reference are mandatory.'))
+        self._check_vendor_reference_required_unique()
+
+    def _prepare_invoice(self):
+        invoice_vals = super()._prepare_invoice()
+        invoice_vals.update({
+            'vendor_reference_type_id': False,
+            'ref': '',
+            'payment_reference': '',
+        })
+        return invoice_vals
+
+    def _prepare_picking(self):
+        return super()._prepare_picking()
+
+    def button_confirm(self):
+        self._validate_vendor_reference_ready('vendor_reference_required_lpo')
+        return super().button_confirm()
+
+    def button_approve(self, force=False):
+        self._validate_vendor_reference_ready('vendor_reference_required_lpo')
+        return super().button_approve(force=force)
 
     @api.depends('order_line.use_custom_pricing')
     def _compute_has_custom_pricing_lines(self):
@@ -157,6 +263,7 @@ class PurchaseOrder(models.Model):
 
     def action_create_invoice_wizard(self):
         self.ensure_one()
+        self._validate_vendor_reference_ready('vendor_reference_required_lpo')
         _logger.info(f"Creating invoice wizard for PO {self.name}")
         line_vals = []
         for line in self.order_line.filtered(lambda l: l.product_id):
