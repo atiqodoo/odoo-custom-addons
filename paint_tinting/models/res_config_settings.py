@@ -54,7 +54,7 @@ class ResConfigSettings(models.TransientModel):
             'when the child-category policy is enabled.'
         ),
     )
-    default_vat_percent = fields.Float(
+    tinting_vat_percent = fields.Float(
         string='Tinting VAT %',
         default=16.0,
         config_parameter='paint_tinting.default_vat_percent',

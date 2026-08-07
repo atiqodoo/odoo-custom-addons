@@ -33,10 +33,10 @@
                             Child category mode creates or reuses Tinted Paint under the selected base product category and copies the parent category accounting setup.
                         </div>
                     </setting>
-                    <setting id="default_vat_percent"
+                    <setting id="tinting_vat_percent"
                              string="Tinting VAT %"
                              help="VAT percentage used when operational tinting costs need VAT-inclusive reporting.">
-                        <field name="default_vat_percent"/>
+                        <field name="tinting_vat_percent"/>
                     </setting>
                 </block>
             </xpath>
