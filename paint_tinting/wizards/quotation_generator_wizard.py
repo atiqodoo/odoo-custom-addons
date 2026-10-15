@@ -23,6 +23,7 @@ import json
 import logging
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+from markupsafe import Markup, escape
 
 _logger = logging.getLogger(__name__)
 
@@ -880,6 +881,7 @@ class QuotationGeneratorWizard(models.TransientModel):
         _logger.info("-" * 80)
         
         lines_created = 0
+        next_sequence = max(sale_order.order_line.mapped('sequence') or [0]) + 10
 
         for idx, quot_line in enumerate(self.line_ids, 1):
             if not quot_line.selected:
@@ -954,6 +956,7 @@ class QuotationGeneratorWizard(models.TransientModel):
             
             line_vals = {
                 'order_id': sale_order.id,
+                'sequence': next_sequence,
                 'product_id': comp_line.product_id.id,
                 'name': description,
                 'product_uom_qty': 1.0,
@@ -999,6 +1002,7 @@ class QuotationGeneratorWizard(models.TransientModel):
                 )
 
             order_line = self.env['sale.order.line'].create(line_vals)
+            next_sequence += 10
             
             lines_created += 1
             
@@ -1028,9 +1032,9 @@ class QuotationGeneratorWizard(models.TransientModel):
         _logger.info("📋 STEP 5: CHATTER MESSAGE")
         _logger.info("-" * 80)
         
-        action_label = "Tinted Paint Products Added" if self.quotation_mode == 'existing' else "Tinted Paint Quotation Created"
+        action_label = "Tinted items added to quotation" if self.quotation_mode == 'existing' else "Tinted quotation created"
         sale_order.message_post(
-            body=f"""
+            body=Markup(f"""
             <strong>{action_label}</strong><br/>
             <ul>
                 <li>Colour: {self.colour_code_id.code} - {self.colour_code_id.name}</li>
@@ -1041,7 +1045,7 @@ class QuotationGeneratorWizard(models.TransientModel):
                 <li>Base product tracking enabled for all lines</li>
                 {f'<li>Volume scaled: {source_wizard.source_volume_litres:.0f}L → {source_wizard.target_volume_litres:.0f}L ({source_wizard.scale_factor:.2f}×)</li>' if source_wizard.show_scaled_products else ''}
             </ul>
-            """,
+            """),
             subject=action_label
         )
         

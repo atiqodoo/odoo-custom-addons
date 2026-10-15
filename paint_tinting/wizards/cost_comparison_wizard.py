@@ -457,6 +457,7 @@ class CostComparisonLine(models.TransientModel):
             UserError: If parent wizard has expired or update fails
         """
         self.ensure_one()
+        self.env['cost.comparison.use.this.policy'].assert_can_use_this(self)
 
         _logger.info("=" * 80)
         _logger.info("🎯 ACTION: action_use_this_product")
@@ -830,6 +831,11 @@ class CostComparisonWizard(models.TransientModel):
              'create() after the wizard record exists so child records '
              'can reference a valid parent wizard_id.'
     )
+    block_use_this_button = fields.Boolean(
+        string='Block Use This Button',
+        compute='_compute_block_use_this_button',
+        help='Technical flag controlled by Manufacturing settings.'
+    )
 
     # ============================================
     # VOLUME SCALING FIELDS
@@ -930,6 +936,16 @@ class CostComparisonWizard(models.TransientModel):
         digits=(16, 2),
         help='Maximum profit amount achievable at the default 30% markup'
     )
+
+    def _compute_block_use_this_button(self):
+        policy = self.env['cost.comparison.use.this.policy']
+        blocked = policy.is_block_enabled()
+        for wizard in self:
+            wizard.block_use_this_button = blocked
+            _logger.debug(
+                'COST_COMPARISON_USE_THIS_UI_STATE wizard_id=%s blocked=%s user_id=%s',
+                wizard.id, blocked, self.env.user.id,
+            )
 
     # ============================================
     # DEFAULT_GET — CONFIGURATION ONLY (NO LINES)

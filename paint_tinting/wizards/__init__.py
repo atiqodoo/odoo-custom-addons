@@ -19,4 +19,5 @@ from . import tint_formula_search
 from . import tint_aps_product_naming
 from . import tint_new_aps_formula
 from . import quotation_aps_bridge
+from . import sale_order_line_tint_edit_wizard
 

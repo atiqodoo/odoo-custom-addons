@@ -32,6 +32,12 @@
               action="action_retint_wizard"
               sequence="20"/>
 
+    <menuitem id="menu_tinted_mistakes"
+              name="Mistaken Tinted Products"
+              parent="menu_paint_tinting_operations"
+              action="action_tinted_mistakes"
+              sequence="30"/>
+
     <!-- ================================================================ -->
     <!-- PRODUCTS MENU                                                    -->
     <!-- ================================================================ -->
@@ -82,6 +88,12 @@
               parent="menu_paint_tinting_accounting"
               action="action_pt_deferred_valuation"
               sequence="10"/>
+
+    <menuitem id="menu_tinted_mistake_dashboard"
+              name="Mistake Dashboard"
+              parent="menu_paint_tinting_accounting"
+              action="action_tinted_mistake_dashboard"
+              sequence="20"/>
 
     <!-- ================================================================ -->
     <!-- CONFIGURATION MENU                                               -->

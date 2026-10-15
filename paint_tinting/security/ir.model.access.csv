@@ -30,6 +30,11 @@ access_quotation_generator_wizard_manager,quotation.generator.wizard.manager,mod
 access_quotation_generator_line_user,quotation.generator.line.user,model_quotation_generator_line,base.group_user,1,1,1,1
 access_quotation_generator_line_sales,quotation.generator.line.sales,model_quotation_generator_line,sales_team.group_sale_salesman,1,1,1,1
 access_quotation_generator_line_manager,quotation.generator.line.manager,model_quotation_generator_line,sales_team.group_sale_manager,1,1,1,1
+access_sale_order_line_tint_edit_wizard_user,sale.order.line.tint.edit.wizard.user,model_sale_order_line_tint_edit_wizard,base.group_user,1,1,1,1
+access_sale_order_line_tint_edit_wizard_line_user,sale.order.line.tint.edit.wizard.line.user,model_sale_order_line_tint_edit_wizard_line,base.group_user,1,1,1,1
+access_paint_tinting_sale_line_revision_user,paint.tinting.sale.line.revision.user,model_paint_tinting_sale_line_revision,base.group_user,1,0,0,0
+access_paint_tinting_sale_line_revision_sales,paint.tinting.sale.line.revision.sales,model_paint_tinting_sale_line_revision,sales_team.group_sale_salesman,1,1,1,0
+access_paint_tinting_sale_line_revision_manager,paint.tinting.sale.line.revision.manager,model_paint_tinting_sale_line_revision,sales_team.group_sale_manager,1,1,1,1
 access_sale_order_line_inherit,sale.order.line.inherit,model_sale_order_line,base.group_user,1,1,1,0
 access_pt_deferred_valuation_user,pt.deferred.valuation.user,model_paint_tinting_deferred_valuation,base.group_user,1,0,0,0
 access_pt_deferred_valuation_manager,pt.deferred.valuation.manager,model_paint_tinting_deferred_valuation,mrp.group_mrp_user,1,1,1,0
@@ -48,3 +53,7 @@ access_formula_import_batch_manager,tinting.formula.import.batch.manager,model_t
 access_formula_import_row_manager,tinting.formula.import.row.manager,model_tinting_formula_import_row,paint_tinting.group_tint_formula_manager,1,1,1,1
 access_formula_import_wizard_manager,tinting.formula.import.wizard.manager,model_tinting_formula_import_wizard,paint_tinting.group_tint_formula_manager,1,1,1,1
 access_formula_bulk_approve_wizard_manager,tinting.formula.bulk.approve.wizard.manager,model_tinting_formula_bulk_approve_wizard,paint_tinting.group_tint_formula_manager,1,1,1,1
+access_paint_tinting_mistake_user,paint.tinting.mistake.user,model_paint_tinting_mistake,base.group_user,1,1,1,0
+access_paint_tinting_mistake_manager,paint.tinting.mistake.manager,model_paint_tinting_mistake,mrp.group_mrp_manager,1,1,1,1
+access_paint_tinting_mistake_employee_line_user,paint.tinting.mistake.employee.line.user,model_paint_tinting_mistake_employee_line,base.group_user,1,1,1,0
+access_paint_tinting_mistake_employee_line_manager,paint.tinting.mistake.employee.line.manager,model_paint_tinting_mistake_employee_line,mrp.group_mrp_manager,1,1,1,1

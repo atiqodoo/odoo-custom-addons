@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="report_saleorder_section_totals_tax_included" inherit_id="sale.report_saleorder_document">
+        <xpath expr="//t[@t-set='current_subtotal' and @t-value='current_subtotal + line.price_subtotal']" position="attributes">
+            <attribute name="t-value">current_subtotal + line.price_total</attribute>
+        </xpath>
+        <xpath expr="//td[@name='td_subtotal']/span[@t-field='line.price_subtotal']" position="attributes">
+            <attribute name="t-field">line.price_total</attribute>
+        </xpath>
+    </template>
+
+    <template id="sale_order_portal_section_totals_tax_included" inherit_id="sale.sale_order_portal_content">
+        <xpath expr="//t[@t-set='current_subtotal' and @t-value='current_subtotal + line.price_subtotal']" position="attributes">
+            <attribute name="t-value">current_subtotal + line.price_total</attribute>
+        </xpath>
+        <xpath expr="//span[contains(@class, 'oe_order_line_price_subtotal') and @t-field='line.price_subtotal']" position="attributes">
+            <attribute name="t-field">line.price_total</attribute>
+        </xpath>
+    </template>
+
+</odoo>

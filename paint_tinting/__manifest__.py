@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Paint Tinting Module',
-    'version': '18.0.2.1.1',
+    'version': '18.0.2.1.4',
     'category': 'Manufacturing',
     'summary': 'Custom paint tinting module with LargoTint integration for Crown Kenya PLC',
     'description': """
@@ -38,6 +38,7 @@
         'sale_stock',  # Warehouse-aware real-time tinted stock confirmation guard
         'paint_colour_master',  # Existing colour/fandeck module
         'point_of_sale',
+        'hr',
     ],
     'data': [
         # Security
@@ -51,6 +52,7 @@
         # 'data/colorant_products_data.xml',
         'data/deferred_valuation_sequence.xml',
         'data/pos_lot_cost_audit_sequence.xml',
+        'data/tinted_mistake_sequence.xml',
 
         # Wizard Views
         'views/colorant_mapping_wizard_views.xml',
@@ -59,9 +61,11 @@
         'views/tint_product_exists_wizard_views.xml',
         'views/cost_comparison_wizard_views.xml',
         'views/quotation_generator_wizard_views.xml',
+        'views/sale_order_line_tint_edit_wizard_views.xml',
         'views/mrp_production_duplicate_wizard_views.xml',
         'views/formula_import_views.xml',
         'views/sale_order_views.xml',
+        'views/sale_section_subtotal_views.xml',
 
         # Model Views
         'views/product_template_views.xml',
@@ -76,6 +80,7 @@
         'views/tint_formula_search_views.xml',
         'views/tint_new_aps_formula_views.xml',
         'views/stock_deferred_valuation_views.xml',
+        'views/tinted_mistake_views.xml',
         # 'views/retint_analytics_views.xml',
         # 'views/colour_code_views.xml',
 
@@ -85,6 +90,8 @@
     'assets': {
         'web.assets_backend': [
             'paint_tinting/static/src/js/colorant_sort.js',
+            'paint_tinting/static/src/js/sale_order_line_resequence_fix.js',
+            'paint_tinting/static/src/js/sale_section_tax_included_subtotal.js',
         ],
         'point_of_sale._assets_pos': [
             'paint_tinting/static/src/js/pos_sale_fix.js',

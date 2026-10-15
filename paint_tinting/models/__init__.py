@@ -2,6 +2,7 @@
 
 from . import sale_order_line
 from . import product_template
+from . import tinted_product_category_policy
 from . import mrp_bom
 from . import mrp_bom_line
 from . import mrp_production
@@ -18,6 +19,7 @@ from . import pos_order
 from . import res_config_settings
 from . import formula_recipe_service
 from . import formula_auto_approval_policy
+from . import cost_comparison_use_this_policy
 from . import tinting_formula_version
 from . import tinting_formula_family
 from . import formula_import_batch
@@ -27,3 +29,8 @@ from . import formula_duplicate_context
 from . import formula_aps
 from . import sale_order_aps
 from . import sale_order_tinted_stock_guard
+from . import sale_order_tint_revision
+from . import tinting_cost_policy
+from . import tinted_mistake
+from . import tinted_mistake_employee_line
+from . import product_product_mistake_mapping

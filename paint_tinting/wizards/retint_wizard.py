@@ -818,16 +818,20 @@ class RetintWizard(models.TransientModel):
             # ============================================
             _logger.info("📋 [CREATE ADJUSTED] STEP 2: Creating new product...")
             
-            # Get Tinted Paint category
-            categ = self.env['product.category'].search([('name', '=', 'Tinted Paint')], limit=1)
-            if not categ:
-                categ = self.env['product.category'].create({
-                    'name': 'Tinted Paint',
-                    'property_cost_method': 'fifo',
-                    'property_valuation': 'real_time',
-                })
-                _logger.info(f"  [CREATE ADJUSTED] Created Tinted Paint category")
-            
+            # Resolve category using the same policy as new tinted products.
+            _logger.info("[CREATE ADJUSTED] Resolving tinted product category policy...")
+            base_category = self.original_product_id.categ_id
+            categ = self.env[
+                'product.category'
+            ]._paint_tinting_get_tinted_product_category(base_category)
+            _logger.info(
+                "[CREATE ADJUSTED] Category resolved: id=%s name=%s parent_id=%s "
+                "base_category_id=%s",
+                categ.id,
+                categ.complete_name,
+                categ.parent_id.id if categ.parent_id else False,
+                base_category.id if base_category else False,
+            )
             # ✅ CRITICAL: Determine correct product type (same logic as tint_wizard)
             _logger.info("📋 [CREATE ADJUSTED] STEP 2A: Determining product type configuration...")
             

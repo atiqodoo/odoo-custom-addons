@@ -33,6 +33,7 @@
                     <!-- CURRENT FORMULA INFORMATION                    -->
                     <!-- ============================================== -->
                     <field name="quotation_generator_id" invisible="1"/>
+                    <field name="block_use_this_button" invisible="1"/>
                     <group string="Current Formula">
                         <group>
                             <field name="base_category_id" readonly="1"/>
@@ -132,6 +133,7 @@
                                     string="Use This"
                                     type="object"
                                     class="btn-primary"
+                                    column_invisible="parent.block_use_this_button"
                                     help="Switch to this product in the tint wizard"/>
                             
                             <!-- ========================================== -->

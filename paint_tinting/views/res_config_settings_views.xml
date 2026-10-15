@@ -15,6 +15,29 @@
                             APS remains an intentional auto-approval exception. Enabling this setting does not retroactively approve existing Draft or Validated versions.
                         </div>
                     </setting>
+                    <setting id="block_cost_comparison_use_this"
+                             string="Block Cost Comparison Use This"
+                             help="Prevent users from switching the base product by clicking Use This inside the cost comparison wizard.">
+                        <field name="block_cost_comparison_use_this"/>
+                        <div class="text-muted">
+                            On by default. Turn this off to allow the existing Use This workflow in the cost comparison wizard.
+                        </div>
+                    </setting>
+                    <setting id="tinted_product_category_policy"
+                             string="Tinted Product Category"
+                             help="Choose where dynamically created tinted products are placed.">
+                        <field name="tinted_product_category_policy"/>
+                        <field name="tinted_product_child_category_name"
+                               invisible="tinted_product_category_policy != 'child_base'"/>
+                        <div class="text-muted">
+                            Child category mode creates or reuses Tinted Paint under the selected base product category and copies the parent category accounting setup.
+                        </div>
+                    </setting>
+                    <setting id="tinting_vat_percent"
+                             string="Tinting VAT %"
+                             help="VAT percentage used when operational tinting costs need VAT-inclusive reporting.">
+                        <field name="tinting_vat_percent"/>
+                    </setting>
                 </block>
             </xpath>
         </field>

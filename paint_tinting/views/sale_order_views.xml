@@ -8,6 +8,16 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
 
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_tint_mos"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-industry"
+                        invisible="tint_mo_count == 0">
+                    <field name="tint_mo_count" widget="statinfo" string="Tinting MOs"/>
+                </button>
+            </xpath>
+
             <!-- Position the smart button inside the header -->
             <xpath expr="//header" position="inside">
 
@@ -56,6 +66,22 @@
     </record>
 
 
+    <!-- Keep all sales order line drag/drop behavior on Odoo's sequence field. -->
+    <record id="view_order_form_inherit_tinting_order_line_sequence_order" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.tinting.order.line.sequence.order</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list" position="attributes">
+                <attribute name="default_order">sequence,id</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']" position="attributes">
+                <attribute name="order">sequence ASC, id ASC</attribute>
+            </xpath>
+        </field>
+    </record>
+
+
     <!-- Per-line "Create Tinted Product & MO" button + done indicator -->
     <record id="view_order_form_inherit_tinting_line_button" model="ir.ui.view">
         <field name="name">sale.order.form.inherit.tinting.line.button</field>
@@ -63,10 +89,15 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
 
-            <xpath expr="//field[@name='order_line']//field[@name='price_subtotal']" position="after">
+            <xpath expr="//field[@name='order_line']/list//field[@name='product_id']" position="after">
                 <!-- Load flags as invisible columns so they can drive visibility conditions -->
                 <field name="is_tinted_product_line" column_invisible="1"/>
                 <field name="tinted_product_created" column_invisible="1"/>
+                <field name="tint_mo_count" column_invisible="1"/>
+                <field name="tint_revision_count"
+                       string="Tint Edits"
+                       readonly="1"
+                       optional="hide"/>
                 <field name="tinted_stock_available_qty"
                        string="Tinted Available"
                        readonly="1"
@@ -86,6 +117,20 @@
                         invisible="not is_tinted_product_line or tinted_product_created"
                         title="Create tinted product, BOM and manufacturing order for this line"/>
 
+                <button name="action_edit_tint_colourants"
+                        string="Edit Tint / Colourants"
+                        type="object"
+                        class="btn-secondary btn-sm"
+                        invisible="not is_tinted_product_line or tinted_product_created"
+                        title="Edit colourant shots before creating the tinted product and manufacturing order"/>
+
+                <button name="action_view_tint_revisions"
+                        string="Tint History"
+                        type="object"
+                        class="btn-secondary btn-sm"
+                        invisible="not is_tinted_product_line or tint_revision_count == 0"
+                        title="Open the audit history for tint changes on this line"/>
+
                 <!-- Done badge — visible only on already-processed tinted lines -->
                 <button string="✓ MO Created"
                         type="object"
@@ -94,6 +139,13 @@
                         invisible="not is_tinted_product_line or not tinted_product_created"
                         disabled="1"
                         title="Tinted product and MO already created for this line"/>
+
+                <button name="action_view_tint_mos"
+                        string="View MO"
+                        type="object"
+                        class="btn-secondary btn-sm"
+                        invisible="not is_tinted_product_line or tint_mo_count == 0"
+                        title="Open manufacturing order(s) linked to this sale order line"/>
 
                 <button name="action_produce_missing_tinted_qty"
                         string="Produce Missing Qty"

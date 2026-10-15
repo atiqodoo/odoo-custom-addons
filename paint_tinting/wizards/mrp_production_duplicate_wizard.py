@@ -172,20 +172,30 @@ class MrpProductionDuplicateWizard(models.TransientModel):
                 'Please enter a selling price greater than zero before duplicating.'
             ))
 
+        source_sale_order = self.source_sale_order_id or self.source_mo_id.source_sale_order_id
+        source_sale_order_line = (
+            self.source_sale_order_line_id
+            or self.source_mo_id.source_sale_order_line_id
+        )
+        partner = source_sale_order.partner_id or self.source_mo_id.partner_id
         created_mos = self.env['mrp.production']
         duplicate_bom = self._prepare_duplicate_bom()
         uses_recipe_revision = duplicate_bom != self.source_mo_id.bom_id
         _logger.info(
-            "TINT_DUPLICATE_BATCH_START wizard_id=%s source_mo_id=%s source_bom_id=%s "
-            "duplicate_bom_id=%s recipe_revision=%s quantity=%s user_id=%s",
+            "[PAINT_TINTING][TINT_DUPLICATE_BATCH][START] wizard_id=%s "
+            "source_mo_id=%s source_bom_id=%s duplicate_bom_id=%s "
+            "recipe_revision=%s quantity=%s source_sale_order_id=%s "
+            "source_sale_order_line_id=%s partner_id=%s user_id=%s",
             self.id, self.source_mo_id.id, self.source_mo_id.bom_id.id,
-            duplicate_bom.id, uses_recipe_revision, self.quantity, self.env.user.id,
+            duplicate_bom.id, uses_recipe_revision, self.quantity,
+            source_sale_order.id, source_sale_order_line.id, partner.id,
+            self.env.user.id,
         )
 
         # Update the originating SO line before manufacturing so the delivery
         # move is for the tinted product and can reserve the new finished lot.
-        if self.source_sale_order_line_id:
-            sol = self.source_sale_order_line_id
+        if source_sale_order_line:
+            sol = source_sale_order_line
             tinted_product = self.source_mo_id.product_id
             update_vals = {'tinted_product_created': True}
             if sol.product_id != tinted_product:
@@ -202,6 +212,9 @@ class MrpProductionDuplicateWizard(models.TransientModel):
                 'state': 'draft',
                 'mo_selling_price': self.selling_price,
                 'bom_id': duplicate_bom.id,
+                'partner_id': partner.id,
+                'source_sale_order_id': source_sale_order.id,
+                'source_sale_order_line_id': source_sale_order_line.id,
             }
             if uses_recipe_revision:
                 # A done MO normally copies its historical raw moves. Clear
@@ -233,23 +246,26 @@ class MrpProductionDuplicateWizard(models.TransientModel):
             # needs a real finished lot before returning to the order/POS.
             # Creating only a confirmed MO leaves the order line pointing to
             # stock that does not exist yet.
-            if self.source_sale_order_line_id and new_mo.state != 'done':
+            if source_sale_order_line and new_mo.state != 'done':
                 self._produce_tinting_duplicate_now(new_mo)
 
             created_mos |= new_mo
 
         _logger.info(
-            "TINT_DUPLICATE_BATCH_DONE wizard_id=%s created_mo_ids=%s duplicate_bom_id=%s",
+            "[PAINT_TINTING][TINT_DUPLICATE_BATCH][END] wizard_id=%s "
+            "created_mo_ids=%s duplicate_bom_id=%s source_sale_order_id=%s "
+            "source_sale_order_line_id=%s",
             self.id, created_mos.ids, duplicate_bom.id,
+            source_sale_order.id, source_sale_order_line.id,
         )
 
         # If triggered from an SO flow, return to that SO after duplication
-        if self.source_sale_order_id:
+        if source_sale_order:
             return {
                 'type': 'ir.actions.act_window',
-                'name': self.source_sale_order_id.name,
+                'name': source_sale_order.name,
                 'res_model': 'sale.order',
-                'res_id': self.source_sale_order_id.id,
+                'res_id': source_sale_order.id,
                 'view_mode': 'form',
                 'target': 'current',
             }

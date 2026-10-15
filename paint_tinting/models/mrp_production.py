@@ -42,6 +42,25 @@ class MrpProduction(models.Model):
         tracking=True,
         domain="['|', ('customer_rank', '>', 0), ('supplier_rank', '>', 0)]"
     )
+
+    source_sale_order_id = fields.Many2one(
+        'sale.order',
+        string='Sales Order',
+        help='Sales order that requested this tinting manufacturing order',
+        copy=False,
+        index=True,
+        tracking=True,
+        ondelete='set null',
+    )
+
+    source_sale_order_line_id = fields.Many2one(
+        'sale.order.line',
+        string='Sales Order Line',
+        help='Sales order line that requested this tinting manufacturing order',
+        copy=False,
+        index=True,
+        ondelete='set null',
+    )
     
       # ============================================================
     # NEW: FORMULA TRACKING FIELDS
@@ -443,10 +462,13 @@ class MrpProduction(models.Model):
             'default_selling_price': self.mo_selling_price or 0.0,
         }
         # Carry SO reference and SO line forward if opened from the exists-wizard
-        so_id = self.env.context.get('source_sale_order_id')
+        so_id = self.env.context.get('source_sale_order_id') or self.source_sale_order_id.id
         if so_id:
             ctx['default_source_sale_order_id'] = so_id
-        sol_id = self.env.context.get('source_sale_order_line_id')
+        sol_id = (
+            self.env.context.get('source_sale_order_line_id')
+            or self.source_sale_order_line_id.id
+        )
         if sol_id:
             ctx['default_source_sale_order_line_id'] = sol_id
             sol = self.env['sale.order.line'].browse(sol_id).exists()
@@ -492,8 +514,11 @@ class MrpProduction(models.Model):
 
         # If triggered from an SO flow, open the duplicate wizard to capture selling price
         # rather than jumping directly to the new MO (price is required per lot)
-        so_id = self.env.context.get('source_sale_order_id')
-        sol_id = self.env.context.get('source_sale_order_line_id')
+        so_id = self.env.context.get('source_sale_order_id') or self.source_sale_order_id.id
+        sol_id = (
+            self.env.context.get('source_sale_order_line_id')
+            or self.source_sale_order_line_id.id
+        )
         if so_id or sol_id:
             ctx = {
                 'default_source_mo_id': self.id,
@@ -542,6 +567,8 @@ class MrpProduction(models.Model):
         new_mo = self.copy({
             'origin': f"Copy of {self.name}",
             'source_mo_id': self.id,
+            'source_sale_order_id': self.source_sale_order_id.id,
+            'source_sale_order_line_id': self.source_sale_order_line_id.id,
             'product_qty': 1.0,  # Always 1.0 for tinting
             'state': 'draft',
             'mo_selling_price': self.mo_selling_price,

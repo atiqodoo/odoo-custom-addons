@@ -930,18 +930,21 @@ class TintWizard(models.TransientModel):
         uom = self.base_variant_id.uom_id
         _logger.info(f"  Using UoM: {uom.name}")
         
-        # STEP 3: Get or create Tinted Paint category
-        _logger.info("📋 STEP 3: Setting up product category...")
-        categ = self.env['product.category'].search([('name', '=', 'Tinted Paint')], limit=1)
-        if not categ:
-            categ = self.env['product.category'].create({
-                'name': 'Tinted Paint',
-                'property_cost_method': 'fifo',
-                'property_valuation': 'real_time',
-            })
-            _logger.info(f"✅ Created Tinted Paint category with ID: {categ.id}")
-        else:
-            _logger.info(f"✅ Using existing Tinted Paint category: {categ.id}")
+        # STEP 3: Resolve tinted product category from Manufacturing settings.
+        _logger.info("STEP 3: Resolving tinted product category policy...")
+        base_category = self.base_variant_id.categ_id
+        categ = self.env[
+            'product.category'
+        ]._paint_tinting_get_tinted_product_category(base_category)
+        _logger.info(
+            "Tinted product category resolved: id=%s name=%s parent_id=%s "
+            "base_category_id=%s base_category=%s",
+            categ.id,
+            categ.complete_name,
+            categ.parent_id.id if categ.parent_id else False,
+            base_category.id if base_category else False,
+            base_category.complete_name if base_category else False,
+        )
 
         # STEP 4: Debug product types available
         _logger.info("📋 STEP 4: Checking product type configuration...")

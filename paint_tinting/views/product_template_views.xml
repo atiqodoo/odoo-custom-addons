@@ -76,6 +76,91 @@
         </field>
     </record>
 
+    <record id="view_product_product_list_tinted_mistakes" model="ir.ui.view">
+        <field name="name">product.product.list.tinted.mistakes</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_product_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-warning">has_tinted_mistake_mapping</attribute>
+            </xpath>
+            <field name="name" position="after">
+                <field name="has_tinted_mistake_mapping" optional="hide"/>
+                <field name="tinted_mistake_mapping_count" optional="show"/>
+                <field name="tinted_mistake_open_count" optional="hide"/>
+                <field name="tinted_mistake_state" optional="show"/>
+                <field name="tinted_mistake_mismatch_type" optional="show"/>
+                <field name="tinted_mistake_stock_decision" optional="hide"/>
+                <field name="tinted_mistake_financial_decision" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_product_product_kanban_tinted_mistakes" model="ir.ui.view">
+        <field name="name">product.product.kanban.tinted.mistakes</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_kanban_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//kanban/templates" position="before">
+                <field name="has_tinted_mistake_mapping"/>
+                <field name="tinted_mistake_mapping_count"/>
+                <field name="tinted_mistake_state"/>
+                <field name="tinted_mistake_mismatch_type"/>
+            </xpath>
+            <xpath expr="//templates/t[@t-name='card']/main" position="inside">
+                <div t-if="record.has_tinted_mistake_mapping.raw_value" class="mt-1">
+                    <span class="badge rounded-pill text-bg-warning">
+                        Mistake <field name="tinted_mistake_state"/>
+                    </span>
+                    <span class="badge rounded-pill text-bg-light ms-1">
+                        <field name="tinted_mistake_mapping_count"/> mapped
+                    </span>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_product_product_search_tinted_mistakes" model="ir.ui.view">
+        <field name="name">product.product.search.tinted.mistakes</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_search_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter string="Mistaken Tint Mapped"
+                        name="tinted_mistake_mapped"
+                        domain="[('has_tinted_mistake_mapping', '=', True)]"/>
+                <filter string="Draft Mistake Mapping"
+                        name="tinted_mistake_draft"
+                        domain="[('tinted_mistake_state', '=', 'draft')]"/>
+                <filter string="Open Mistake Mapping"
+                        name="tinted_mistake_open"
+                        domain="[('tinted_mistake_state', 'in', ('draft', 'under_review', 'confirmed', 'quarantined', 'resolved'))]"/>
+                <filter string="Wrong UoM Mistake"
+                        name="tinted_mistake_wrong_uom"
+                        domain="[('tinted_mistake_mismatch_type', '=', 'wrong_uom')]"/>
+                <filter string="Wrong Base/Category Mistake"
+                        name="tinted_mistake_wrong_base_category"
+                        domain="[('tinted_mistake_mismatch_type', 'in', ('wrong_base', 'wrong_category'))]"/>
+                <separator/>
+                <group expand="0" string="Mistake Group By">
+                    <filter string="Mistake Status"
+                            name="group_tinted_mistake_state"
+                            context="{'group_by': 'tinted_mistake_state'}"/>
+                    <filter string="Mismatch Type"
+                            name="group_tinted_mistake_mismatch_type"
+                            context="{'group_by': 'tinted_mistake_mismatch_type'}"/>
+                    <filter string="Stock Decision"
+                            name="group_tinted_mistake_stock_decision"
+                            context="{'group_by': 'tinted_mistake_stock_decision'}"/>
+                    <filter string="Financial Decision"
+                            name="group_tinted_mistake_financial_decision"
+                            context="{'group_by': 'tinted_mistake_financial_decision'}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
     <!-- Tinted Products Action -->
     <record id="action_tinted_products" model="ir.actions.act_window">
         <field name="name">Tinted Products</field>

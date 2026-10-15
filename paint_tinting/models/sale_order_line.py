@@ -2,6 +2,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare
+from markupsafe import Markup, escape
 import json
 import logging
 
@@ -32,6 +33,19 @@ class SaleOrder(models.Model):
         store=False,
     )
 
+    tint_mo_ids = fields.One2many(
+        'mrp.production',
+        'source_sale_order_id',
+        string='Tinting Manufacturing Orders',
+        readonly=True,
+    )
+
+    tint_mo_count = fields.Integer(
+        string='Tinting MOs',
+        compute='_compute_tint_mo_count',
+        store=False,
+    )
+
     @api.depends('order_line.is_tinted_product_line', 'order_line.tinted_product_created')
     def _compute_pending_tinted_lines(self):
         for order in self:
@@ -41,6 +55,47 @@ class SaleOrder(models.Model):
             order.pending_tinted_line_count = len(pending)
             order.has_pending_tinted_lines = bool(pending)
             order.has_exactly_one_tinted_line = bool(pending)
+
+    @api.depends('tint_mo_ids')
+    def _compute_tint_mo_count(self):
+        grouped = self.env['mrp.production'].read_group(
+            [('source_sale_order_id', 'in', self.ids)],
+            ['source_sale_order_id'],
+            ['source_sale_order_id'],
+        )
+        counts = {
+            item['source_sale_order_id'][0]: item['source_sale_order_id_count']
+            for item in grouped
+        }
+        for order in self:
+            order.tint_mo_count = counts.get(order.id, 0)
+
+    def action_view_tint_mos(self):
+        self.ensure_one()
+        _logger.info(
+            "[PAINT_TINTING][SO_TINT_MO_OPEN][START] order_id=%s mo_count=%s user_id=%s",
+            self.id, self.tint_mo_count, self.env.user.id,
+        )
+        action = {
+            'type': 'ir.actions.act_window',
+            'name': _('Tinting Manufacturing Orders'),
+            'res_model': 'mrp.production',
+            'view_mode': 'list,form',
+            'domain': [('source_sale_order_id', '=', self.id)],
+            'context': {'create': False},
+            'target': 'current',
+        }
+        if self.tint_mo_count == 1:
+            mo = self.tint_mo_ids[:1]
+            action.update({
+                'view_mode': 'form',
+                'res_id': mo.id,
+            })
+        _logger.info(
+            "[PAINT_TINTING][SO_TINT_MO_OPEN][END] order_id=%s mo_count=%s",
+            self.id, self.tint_mo_count,
+        )
+        return action
 
     def action_create_tinted_product_from_line(self):
         """Process the next pending tinted line. Delegates to the line-level method."""
@@ -284,6 +339,128 @@ class SaleOrderLine(models.Model):
         help='Set after tinted product, BOM and MO have been created for this line'
     )
 
+    tint_mo_ids = fields.One2many(
+        'mrp.production',
+        'source_sale_order_line_id',
+        string='Tinting Manufacturing Orders',
+        readonly=True,
+    )
+
+    tint_mo_count = fields.Integer(
+        string='Tinting MOs',
+        compute='_compute_tint_mo_count',
+        store=False,
+    )
+
+    tint_revision_count = fields.Integer(
+        string='Tint Revisions',
+        compute='_compute_tint_revision_count',
+        store=False,
+    )
+
+    def _compute_tint_revision_count(self):
+        grouped = self.env['paint.tinting.sale.line.revision'].read_group(
+            [('sale_order_line_id', 'in', self.ids)],
+            ['sale_order_line_id'],
+            ['sale_order_line_id'],
+        )
+        counts = {
+            item['sale_order_line_id'][0]: item['sale_order_line_id_count']
+            for item in grouped
+        }
+        for line in self:
+            line.tint_revision_count = counts.get(line.id, 0)
+
+    @api.depends('tint_mo_ids')
+    def _compute_tint_mo_count(self):
+        grouped = self.env['mrp.production'].read_group(
+            [('source_sale_order_line_id', 'in', self.ids)],
+            ['source_sale_order_line_id'],
+            ['source_sale_order_line_id'],
+        )
+        counts = {
+            item['source_sale_order_line_id'][0]: item['source_sale_order_line_id_count']
+            for item in grouped
+        }
+        for line in self:
+            line.tint_mo_count = counts.get(line.id, 0)
+
+    def action_view_tint_mos(self):
+        self.ensure_one()
+        _logger.info(
+            "[PAINT_TINTING][SO_LINE_TINT_MO_OPEN][START] order_id=%s line_id=%s "
+            "mo_count=%s user_id=%s",
+            self.order_id.id, self.id, self.tint_mo_count, self.env.user.id,
+        )
+        action = {
+            'type': 'ir.actions.act_window',
+            'name': _('Tinting Manufacturing Orders'),
+            'res_model': 'mrp.production',
+            'view_mode': 'list,form',
+            'domain': [('source_sale_order_line_id', '=', self.id)],
+            'context': {'create': False},
+            'target': 'current',
+        }
+        if self.tint_mo_count == 1:
+            mo = self.tint_mo_ids[:1]
+            action.update({
+                'view_mode': 'form',
+                'res_id': mo.id,
+            })
+        _logger.info(
+            "[PAINT_TINTING][SO_LINE_TINT_MO_OPEN][END] order_id=%s line_id=%s "
+            "mo_count=%s",
+            self.order_id.id, self.id, self.tint_mo_count,
+        )
+        return action
+
+    def action_edit_tint_colourants(self):
+        self.ensure_one()
+
+        _logger.info(
+            "[PAINT_TINTING][SO_LINE_TINT_EDIT_OPEN][START] order_id=%s line_id=%s user_id=%s",
+            self.order_id.id, self.id, self.env.user.id,
+        )
+
+        if not self.is_tinted_product_line:
+            raise UserError(_("This order line is not a tinted product line."))
+        if self.tinted_product_created:
+            raise UserError(_(
+                "This tinted line already has product/BOM/MO created. "
+                "Use a correction workflow instead of editing quotation shots."
+            ))
+        if self.order_id.state not in ('draft', 'sent'):
+            raise UserError(_("Tint colourants can only be edited while the quotation is draft or sent."))
+
+        _logger.info(
+            "[PAINT_TINTING][SO_LINE_TINT_EDIT_OPEN][END] order_id=%s line_id=%s",
+            self.order_id.id, self.id,
+        )
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Edit Tint / Colourants'),
+            'res_model': 'sale.order.line.tint.edit.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'active_model': self._name,
+                'active_id': self.id,
+            },
+        }
+
+    def action_view_tint_revisions(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Tint Revisions'),
+            'res_model': 'paint.tinting.sale.line.revision',
+            'view_mode': 'list,form',
+            'target': 'current',
+            'domain': [('sale_order_line_id', '=', self.id)],
+            'context': {'create': False},
+        }
+
     @api.model
     def _load_pos_data_fields(self, config_id):
         try:
@@ -386,14 +563,19 @@ class SaleOrderLine(models.Model):
             _logger.info("  ✅ Marked UoM category %s as POS-groupable", uom.category_id.name)
 
         # ── STEP 4: CATEGORY ──────────────────────────────────────────────
-        categ = self.env['product.category'].search([('name', '=', 'Tinted Paint')], limit=1)
-        if not categ:
-            categ = self.env['product.category'].create({
-                'name': 'Tinted Paint',
-                'property_cost_method': 'fifo',
-                'property_valuation': 'real_time',
-            })
-        _logger.info("  ✅ Category: %s (ID: %s)", categ.name, categ.id)
+        # STEP 4: CATEGORY
+        _logger.info("STEP 4: Resolving tinted product category policy...")
+        base_category = line.base_product_id.categ_id
+        categ = self.env[
+            'product.category'
+        ]._paint_tinting_get_tinted_product_category(base_category)
+        _logger.info(
+            "Category resolved: id=%s name=%s parent_id=%s base_category_id=%s",
+            categ.id,
+            categ.complete_name,
+            categ.parent_id.id if categ.parent_id else False,
+            base_category.id if base_category else False,
+        )
 
         # ── STEP 5: COST CALCULATIONS ──────────────────────────────────────
         total_cost_excl_vat = line.quoted_cost_at_creation / 1.16
@@ -533,15 +715,28 @@ class SaleOrderLine(models.Model):
         })
 
         # ── STEP 10: MANUFACTURING ORDER ──────────────────────────────────
+        _logger.info(
+            "[PAINT_TINTING][MO_SO_LINK][START] order_id=%s line_id=%s partner_id=%s",
+            self.order_id.id, self.id, self.order_id.partner_id.id,
+        )
         mo = self.env['mrp.production'].create({
             'product_id': tmpl.product_variant_id.id,
             'bom_id': bom.id,
             'product_qty': 1.0,
             'product_uom_id': uom.id,
             'origin': self.order_id.name,
+            'partner_id': self.order_id.partner_id.id,
+            'source_sale_order_id': self.order_id.id,
+            'source_sale_order_line_id': self.id,
             'is_tinting_mo': True,
         })
         mo.action_confirm()
+        _logger.info(
+            "[PAINT_TINTING][MO_SO_LINK][END] mo_id=%s order_id=%s line_id=%s "
+            "partner_id=%s",
+            mo.id, mo.source_sale_order_id.id, mo.source_sale_order_line_id.id,
+            mo.partner_id.id,
+        )
         _logger.info("  ✅ MO created & confirmed: %s (ID: %s)", mo.name, mo.id)
 
         # Exact colorant quantities on stock moves
@@ -571,23 +766,32 @@ class SaleOrderLine(models.Model):
         # ── STEP 12: MARK LINE AS DONE ────────────────────────────────────
         line.write({'tinted_product_created': True})
 
-        # Chatter note on the sale order
         self.order_id.message_post(
-            body=_(
-                "<strong>Tinted Product Created</strong><br/>"
-                "<ul>"
-                "<li>Was: %s</li>"
-                "<li>Now: %s</li>"
-                "<li>MO: %s</li>"
-                "<li>BOM: 1 base + %d colorant(s)</li>"
-                "<li>Selling price preserved: %.2f KES</li>"
-                "<li>Profit: %.2f KES (%.1f%%)</li>"
-                "</ul>"
+            body=Markup(
+                "<div>"
+                "<p><strong>Tinted product ready for fulfilment</strong></p>"
+                "<p>We created the tinted item, BOM, and manufacturing order for this quotation line.</p>"
+                "<table class='table table-sm o_main_table' style='width:auto;'>"
+                "<tbody>"
+                "<tr><td><strong>Original line</strong></td><td>%s</td></tr>"
+                "<tr><td><strong>Tinted product</strong></td><td>%s</td></tr>"
+                "<tr><td><strong>Manufacturing order</strong></td><td>%s</td></tr>"
+                "<tr><td><strong>Recipe</strong></td><td>1 base + %d colourant(s)</td></tr>"
+                "<tr><td><strong>Selling price</strong></td><td>%.2f KES</td></tr>"
+                "<tr><td><strong>Expected profit</strong></td><td>%.2f KES (%.1f%%)</td></tr>"
+                "</tbody>"
+                "</table>"
+                "</div>"
             ) % (
-                old_product_name, tmpl.name, mo.name,
-                colorant_count, original_selling_price, profit, margin
+                escape(old_product_name),
+                escape(tmpl.name),
+                escape(mo.name),
+                colorant_count,
+                original_selling_price,
+                profit,
+                margin,
             ),
-            subject=_("Tinted Product Created: %s") % tmpl.name,
+            subject=_("Tinted product ready: %s") % tmpl.name,
         )
 
         _logger.info(
@@ -607,25 +811,42 @@ class SaleOrderLine(models.Model):
 
     # === DIAGNOSTIC LOGGING FOR PRICE SWAPPING ISSUE ===
 
-    @api.model
-    def create(self, vals):
-        _logger.info(
-            "[PRICE DIAG] Creating sale order line - initial vals: price_unit=%s, product_id=%s, sequence=%s, price_locked=%s",
-            vals.get('price_unit'),
-            vals.get('product_id'),
-            vals.get('sequence'),
-            vals.get('price_locked')
-        )
-        line = super(SaleOrderLine, self).create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        next_sequence_by_order = {}
+        for vals in vals_list:
+            order_id = vals.get('order_id')
+            if order_id and not vals.get('sequence'):
+                if order_id not in next_sequence_by_order:
+                    last_line = self.search(
+                        [('order_id', '=', order_id)],
+                        order='sequence desc, id desc',
+                        limit=1,
+                    )
+                    next_sequence_by_order[order_id] = (last_line.sequence or 0) + 10
+                vals['sequence'] = next_sequence_by_order[order_id]
+                next_sequence_by_order[order_id] += 10
 
-        _logger.info(
-            "[PRICE DIAG] Line created (ID %s) - product=%s, price_unit=%.2f, price_locked=%s",
-            line.id,
-            line.product_id.display_name if line.product_id else "None",
-            line.price_unit,
-            line.price_locked
-        )
-        return line
+            _logger.info(
+                "[PRICE DIAG] Creating sale order line - initial vals: price_unit=%s, product_id=%s, sequence=%s, price_locked=%s",
+                vals.get('price_unit'),
+                vals.get('product_id'),
+                vals.get('sequence'),
+                vals.get('price_locked')
+            )
+
+        lines = super(SaleOrderLine, self).create(vals_list)
+
+        for line in lines:
+            _logger.info(
+                "[PRICE DIAG] Line created (ID %s) - product=%s, price_unit=%.2f, sequence=%s, price_locked=%s",
+                line.id,
+                line.product_id.display_name if line.product_id else "None",
+                line.price_unit,
+                line.sequence,
+                line.price_locked
+            )
+        return lines
 
     def write(self, vals):
         if 'price_unit' in vals or 'product_id' in vals or 'order_id' in vals or 'price_locked' in vals:
