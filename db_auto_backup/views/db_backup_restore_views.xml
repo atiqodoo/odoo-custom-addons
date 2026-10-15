@@ -1,0 +1,152 @@
+<odoo>
+    <record id="view_db_backup_restore_wizard_form" model="ir.ui.view">
+        <field name="name">db.backup.restore.wizard.form</field>
+        <field name="model">db.backup.restore.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Restore External Backup to Test Database">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="backup_history_id" readonly="1"/>
+                            <field name="source_backup_path"/>
+                            <field name="target_db_name"/>
+                            <field name="database_exists" readonly="1"/>
+                            <field name="neutralize_database"/>
+                        </group>
+                        <group>
+                            <field name="current_db_name" readonly="1"/>
+                            <field name="data_dir" readonly="1"/>
+                            <field name="target_filestore_path" readonly="1"/>
+                            <field name="addons_path" readonly="1"/>
+                            <field name="logfile" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="expected_confirmation_phrase" readonly="1"/>
+                        <field name="confirmation_phrase"
+                               placeholder="Type the expected confirmation exactly"/>
+                        <field name="master_pwd" password="True"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_restore_backup"
+                            string="Restore as New Test Database"
+                            type="object"
+                            class="btn-primary"
+                            groups="base.group_system"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_db_backup_restore_wizard" model="ir.actions.act_window">
+        <field name="name">Restore External Backup</field>
+        <field name="res_model">db.backup.restore.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_db_backup_restore_log_tree" model="ir.ui.view">
+        <field name="name">db.backup.restore.log.tree</field>
+        <field name="model">db.backup.restore.log</field>
+        <field name="arch" type="xml">
+            <list string="Restore Logs"
+                  decoration-success="status == 'success'"
+                  decoration-danger="status == 'failed'"
+                  decoration-warning="status == 'pending'">
+                <field name="restore_date"/>
+                <field name="status"/>
+                <field name="integrity_status"/>
+                <field name="expected_filestore_files" optional="hide"/>
+                <field name="restored_filestore_files" optional="hide"/>
+                <field name="missing_filestore_files"/>
+                <field name="target_db_name"/>
+                <field name="backup_config_id"/>
+                <field name="backup_history_id"/>
+                <field name="source_backup_path"/>
+                <field name="neutralize_database"/>
+                <field name="duration"/>
+                <field name="error_message" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_db_backup_restore_log_form" model="ir.ui.view">
+        <field name="name">db.backup.restore.log.form</field>
+        <field name="model">db.backup.restore.log</field>
+        <field name="arch" type="xml">
+            <form string="Restore Log">
+                <header>
+                    <button name="action_open_target_database"
+                            string="Open Restored DB"
+                            type="object"
+                            class="btn-primary"
+                            invisible="status != 'success'"
+                            groups="base.group_system"/>
+                    <button name="action_open_backup_history"
+                            string="Open Backup"
+                            type="object"
+                            invisible="not backup_history_id"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="status" readonly="1"/>
+                            <field name="restore_mode" readonly="1"/>
+                            <field name="restore_date" readonly="1"/>
+                            <field name="user_id" readonly="1"/>
+                            <field name="duration" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="target_db_name" readonly="1"/>
+                            <field name="source_backup_path" readonly="1"/>
+                            <field name="backup_config_id" readonly="1"/>
+                            <field name="backup_history_id" readonly="1"/>
+                            <field name="neutralize_database" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="target_filestore_path" readonly="1"/>
+                        <field name="addons_path" readonly="1"/>
+                        <field name="logfile" readonly="1"/>
+                        <field name="error_message" readonly="1"
+                               invisible="status != 'failed'"/>
+                    </group>
+                    <group string="Integrity Check">
+                        <field name="integrity_status" readonly="1"/>
+                        <field name="expected_filestore_files" readonly="1"/>
+                        <field name="restored_filestore_files" readonly="1"/>
+                        <field name="missing_filestore_files" readonly="1"/>
+                        <field name="missing_filestore_sample" readonly="1"
+                               invisible="missing_filestore_files == 0"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_db_backup_restore_log" model="ir.actions.act_window">
+        <field name="name">Restore Logs</field>
+        <field name="res_model">db.backup.restore.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_db_backup_restore_external"
+              name="Restore External Backup"
+              parent="db_backup_menu_root"
+              action="action_db_backup_restore_wizard"
+              sequence="2"
+              groups="base.group_system"/>
+
+    <menuitem id="menu_db_backup_restore_log"
+              name="Restore Logs"
+              parent="db_backup_menu_root"
+              action="action_db_backup_restore_log"
+              sequence="3"/>
+</odoo>
