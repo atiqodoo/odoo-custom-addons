@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_payment_audit_finding_list" model="ir.ui.view">
+        <field name="name">vendor.payment.audit.finding.list</field>
+        <field name="model">vendor.payment.audit.finding</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="requires_payment_block and state == 'open'"
+                  decoration-warning="state == 'open' and not requires_payment_block"
+                  decoration-muted="state in ('resolved', 'waived', 'obsolete')">
+                <field name="requires_payment_block"/>
+                <field name="name"/>
+                <field name="variance_type_id"/>
+                <field name="vendor_id"/>
+                <field name="bill_id"/>
+                <field name="case_state"/>
+                <field name="state"/>
+                <field name="severity"/>
+                <field name="product_id" optional="show"/>
+                <field name="expected_amount" optional="show"/>
+                <field name="actual_amount" optional="show"/>
+                <field name="variance_amount" optional="show"/>
+                <field name="variance_percent" optional="show"/>
+                <field name="remaining_resolution_amount" optional="hide"/>
+                <field name="source_code" optional="show"/>
+                <field name="source_model" optional="hide"/>
+                <field name="source_record_id" optional="hide"/>
+                <button name="action_open_source"
+                        type="object"
+                        string="Open Source"
+                        invisible="not source_model or not source_record_id"/>
+                <button name="action_open_bill"
+                        type="object"
+                        string="Open Bill"
+                        invisible="not bill_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_payment_audit_finding_form" model="ir.ui.view">
+        <field name="name">vendor.payment.audit.finding.form</field>
+        <field name="model">vendor.payment.audit.finding</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_open_source"
+                            type="object"
+                            string="Open Source"
+                            class="btn-primary"
+                            invisible="not source_model or not source_record_id"/>
+                    <button name="action_open_bill"
+                            type="object"
+                            string="Open Bill"
+                            class="btn-secondary"
+                            invisible="not bill_id"/>
+                    <button name="action_open_case"
+                            type="object"
+                            string="Open Audit Case"
+                            class="btn-secondary"
+                            invisible="not case_id"/>
+                    <button name="action_mark_resolved"
+                            type="object"
+                            string="Mark Resolved"
+                            class="btn-secondary"
+                            invisible="state != 'open'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-danger" role="alert" invisible="not requires_payment_block or state != 'open'">
+                        <strong>Bill locked:</strong>
+                        <field name="block_reason" readonly="1"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="variance_type_id" readonly="1"/>
+                            <field name="severity" readonly="1"/>
+                            <field name="requires_payment_block" readonly="1"/>
+                            <field name="case_state" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="case_id" readonly="1"/>
+                            <field name="bill_id" readonly="1"/>
+                            <field name="vendor_id" readonly="1"/>
+                            <field name="company_id" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Variance">
+                        <group>
+                            <field name="product_id" readonly="1"/>
+                            <field name="invoice_line_id" readonly="1"/>
+                            <field name="expected_amount" readonly="1"/>
+                            <field name="actual_amount" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="variance_amount" readonly="1"/>
+                            <field name="variance_percent" readonly="1"/>
+                            <field name="matched_credit_note_amount" readonly="1"/>
+                            <field name="remaining_resolution_amount" readonly="1"/>
+                            <field name="resolution_tolerance_amount" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Resolution">
+                        <group>
+                            <field name="policy_line_id" readonly="1"/>
+                            <field name="resolution_requirement" readonly="1"/>
+                            <field name="credit_note_id"/>
+                        </group>
+                        <group>
+                            <field name="resolved_by_id" readonly="1"/>
+                            <field name="resolved_at" readonly="1"/>
+                            <field name="waived_by_id" readonly="1"/>
+                            <field name="waived_at" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="waiver_reason"/>
+                    </group>
+                    <group string="Linked Source">
+                        <group>
+                            <field name="source_code" readonly="1"/>
+                            <field name="source_model" readonly="1"/>
+                            <field name="source_record_id" readonly="1"/>
+                            <field name="source_key" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="debug_payload_json" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_vendor_payment_audit_finding_search" model="ir.ui.view">
+        <field name="name">vendor.payment.audit.finding.search</field>
+        <field name="model">vendor.payment.audit.finding</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="bill_id"/>
+                <field name="vendor_id"/>
+                <field name="variance_type_id"/>
+                <field name="product_id"/>
+                <field name="source_code"/>
+                <filter name="open" string="Open" domain="[('state', '=', 'open')]"/>
+                <filter name="locked_bills" string="Locked Bills" domain="[('requires_payment_block', '=', True), ('state', '=', 'open')]"/>
+                <filter name="promised_cost" string="Promised Cost" domain="[('variance_type_id.code', '=', 'promised_cost_difference')]"/>
+                <filter name="price_discrepancy" string="Price Discrepancy" domain="[('variance_type_id.code', '=', 'price_discrepancy')]"/>
+                <filter name="invoice_variance" string="Invoice Variance" domain="[('variance_type_id.code', '=', 'invoice_variance')]"/>
+                <separator/>
+                <filter name="unresolved" string="Unresolved" domain="[('state', 'in', ('open', 'waived'))]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_vendor" string="Vendor" context="{'group_by': 'vendor_id'}"/>
+                    <filter name="group_bill" string="Bill" context="{'group_by': 'bill_id'}"/>
+                    <filter name="group_variance_type" string="Variance Type" context="{'group_by': 'variance_type_id'}"/>
+                    <filter name="group_state" string="Finding Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_audit_status" string="Audit Status" context="{'group_by': 'case_state'}"/>
+                    <filter name="group_locked" string="Locked" context="{'group_by': 'requires_payment_block'}"/>
+                    <filter name="group_severity" string="Severity" context="{'group_by': 'severity'}"/>
+                    <filter name="group_company" string="Company" context="{'group_by': 'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_vendor_payment_audit_finding" model="ir.actions.act_window">
+        <field name="name">Vendor Variance Audit</field>
+        <field name="res_model">vendor.payment.audit.finding</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vendor_payment_audit_finding_search"/>
+        <field name="context">{'search_default_open': 1}</field>
+    </record>
+</odoo>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_payment_audit_policy_list" model="ir.ui.view">
+        <field name="name">vendor.payment.audit.policy.list</field>
+        <field name="model">vendor.payment.audit.policy</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="default_behavior"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_payment_audit_policy_form" model="ir.ui.view">
+        <field name="name">vendor.payment.audit.policy.form</field>
+        <field name="model">vendor.payment.audit.policy</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="company_id"/>
+                        </group>
+                        <group>
+                            <field name="default_behavior"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Rules">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <control>
+                                        <create string="Add Audit Rule"/>
+                                    </control>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="variance_type_id"/>
+                                    <field name="severity_min"/>
+                                    <field name="tolerance_amount"/>
+                                    <field name="tolerance_percent"/>
+                                    <field name="action"/>
+                                    <field name="resolution_requirement"/>
+                                    <field name="approval_group_ids" widget="many2many_tags"/>
+                                    <field name="active"/>
+                                </list>
+                                <form>
+                                    <sheet>
+                                        <group>
+                                            <group>
+                                                <field name="policy_id"/>
+                                                <field name="sequence"/>
+                                                <field name="active"/>
+                                            </group>
+                                            <group>
+                                                <field name="variance_type_id"/>
+                                                <field name="severity_min"/>
+                                            </group>
+                                        </group>
+                                        <group>
+                                            <group>
+                                                <field name="tolerance_amount"/>
+                                                <field name="tolerance_percent"/>
+                                            </group>
+                                            <group>
+                                                <field name="action"/>
+                                                <field name="resolution_requirement"/>
+                                                <field name="approval_group_ids" widget="many2many_tags"/>
+                                            </group>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </page>
+                        <page string="Notes">
+                            <field name="notes" placeholder="Internal policy notes..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vendor_payment_audit_policy" model="ir.actions.act_window">
+        <field name="name">Vendor Payment Audit Policies</field>
+        <field name="res_model">vendor.payment.audit.policy</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_vendor_payment_audit_policy_line_list" model="ir.ui.view">
+        <field name="name">vendor.payment.audit.policy.line.list</field>
+        <field name="model">vendor.payment.audit.policy.line</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="policy_id"/>
+                <field name="variance_type_id"/>
+                <field name="severity_min"/>
+                <field name="tolerance_amount"/>
+                <field name="tolerance_percent"/>
+                <field name="action"/>
+                <field name="resolution_requirement"/>
+                <field name="approval_group_ids" widget="many2many_tags"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_payment_audit_policy_line_form" model="ir.ui.view">
+        <field name="name">vendor.payment.audit.policy.line.form</field>
+        <field name="model">vendor.payment.audit.policy.line</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="policy_id"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="variance_type_id"/>
+                            <field name="severity_min"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="tolerance_amount"/>
+                            <field name="tolerance_percent"/>
+                        </group>
+                        <group>
+                            <field name="action"/>
+                            <field name="resolution_requirement"/>
+                            <field name="approval_group_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vendor_payment_audit_policy_line" model="ir.actions.act_window">
+        <field name="name">Vendor Payment Audit Policy Rules</field>
+        <field name="res_model">vendor.payment.audit.policy.line</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

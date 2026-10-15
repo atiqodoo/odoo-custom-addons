@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_vendor_payment_audit" model="ir.ui.view">
+        <field name="name">res.partner.form.vendor.payment.audit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='sales_purchases']//group" position="inside">
+                <group string="Vendor Payment Auditing">
+                    <field name="vendor_payment_audit_enabled"/>
+                    <field name="vendor_payment_audit_policy_id"
+                           invisible="not vendor_payment_audit_enabled"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

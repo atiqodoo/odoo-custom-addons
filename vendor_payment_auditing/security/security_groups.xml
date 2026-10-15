@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_vendor_payment_audit_user" model="res.groups">
+        <field name="name">Vendor Payment Audit User</field>
+        <field name="category_id" ref="base.module_category_accounting_accounting"/>
+        <field name="implied_ids" eval="[(4, ref('account.group_account_user'))]"/>
+    </record>
+
+    <record id="group_vendor_payment_audit_manager" model="res.groups">
+        <field name="name">Vendor Payment Audit Manager</field>
+        <field name="category_id" ref="base.module_category_accounting_accounting"/>
+        <field name="implied_ids" eval="[(4, ref('vendor_payment_auditing.group_vendor_payment_audit_user'))]"/>
+    </record>
+</odoo>

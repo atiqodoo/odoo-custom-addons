@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_vendor_payment_auditing_root"
+              name="Vendor Payment Auditing"
+              parent="account.menu_finance"
+              sequence="85"
+              groups="vendor_payment_auditing.group_vendor_payment_audit_user"/>
+
+    <menuitem id="menu_vendor_payment_audit_cases"
+              name="Audit Cases"
+              parent="menu_vendor_payment_auditing_root"
+              action="action_vendor_payment_audit_case"
+              sequence="10"
+              groups="vendor_payment_auditing.group_vendor_payment_audit_user"/>
+
+    <menuitem id="menu_vendor_variance_audit_payables"
+              name="Vendor Variance Audit"
+              parent="account.menu_finance_payables"
+              action="action_vendor_payment_audit_finding"
+              sequence="1"
+              groups="vendor_payment_auditing.group_vendor_payment_audit_user"/>
+
+    <menuitem id="menu_vendor_payment_audit_findings"
+              name="Variance Audit Log"
+              parent="menu_vendor_payment_auditing_root"
+              action="action_vendor_payment_audit_finding"
+              sequence="15"
+              groups="vendor_payment_auditing.group_vendor_payment_audit_user"/>
+
+    <menuitem id="menu_vendor_payment_audit_policies"
+              name="Audit Policies"
+              parent="menu_vendor_payment_auditing_root"
+              action="action_vendor_payment_audit_policy"
+              sequence="20"
+              groups="vendor_payment_auditing.group_vendor_payment_audit_manager"/>
+
+    <menuitem id="menu_vendor_payment_audit_policy_rules"
+              name="Policy Rules"
+              parent="menu_vendor_payment_auditing_root"
+              action="action_vendor_payment_audit_policy_line"
+              sequence="30"
+              groups="vendor_payment_auditing.group_vendor_payment_audit_manager"/>
+</odoo>

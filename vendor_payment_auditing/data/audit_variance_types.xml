@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="variance_type_price_discrepancy" model="vendor.payment.audit.variance.type">
+        <field name="name">Price Discrepancy</field>
+        <field name="code">price_discrepancy</field>
+        <field name="default_severity">medium</field>
+    </record>
+    <record id="variance_type_promised_cost_difference" model="vendor.payment.audit.variance.type">
+        <field name="name">Vendor Promised Cost Difference</field>
+        <field name="code">promised_cost_difference</field>
+        <field name="default_severity">high</field>
+    </record>
+    <record id="variance_type_invoice_variance" model="vendor.payment.audit.variance.type">
+        <field name="name">Invoice Variance Audit</field>
+        <field name="code">invoice_variance</field>
+        <field name="default_severity">high</field>
+    </record>
+    <record id="variance_type_promotion_commitment" model="vendor.payment.audit.variance.type">
+        <field name="name">Vendor Promotion Commitment</field>
+        <field name="code">promotion_commitment</field>
+        <field name="default_severity">high</field>
+    </record>
+</odoo>
