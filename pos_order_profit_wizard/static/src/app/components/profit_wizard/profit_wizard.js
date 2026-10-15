@@ -116,7 +116,7 @@ export class PosOrderProfitWizard extends Component {
             const qty = parseNumber(row.qty, 0);
             const sellingPrice = parseNumber(row.sellingPrice, 0);
             if (row.line?.set_quantity) {
-                row.line.set_quantity(qty);
+                row.line.set_quantity(qty, true);
             } else {
                 row.line.qty = qty;
                 row.line.quantity = qty;
@@ -126,6 +126,8 @@ export class PosOrderProfitWizard extends Component {
             } else {
                 row.line.price_unit = sellingPrice;
             }
+            row.line.price_type = "manual";
+            row.line.setDirty?.();
         }
         this.props.order?.recomputeOrderData?.();
         this.props.close();

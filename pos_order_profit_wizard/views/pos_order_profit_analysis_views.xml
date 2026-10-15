@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_order_search_profit_metrics" model="ir.ui.view">
+        <field name="name">pos.order.search.profit.metrics</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='config_id']" position="after">
+                <field name="wizard_total_cost_price_incl_vat" string="Cost Price (Inclusive)"/>
+                <field name="wizard_grand_total_profit" string="Profit Amount"/>
+                <field name="wizard_profit_margin_pct" string="Profit Margin (%)"/>
+            </xpath>
+            <xpath expr="//search" position="inside">
+                <filter string="Profit" name="wizard_profitable_orders"
+                        domain="[('wizard_grand_total_profit', '&gt;', 0)]"/>
+                <filter string="Loss" name="wizard_loss_orders"
+                        domain="[('wizard_grand_total_profit', '&lt;', 0)]"/>
+                <filter string="Zero Profit" name="wizard_zero_profit_orders"
+                        domain="[('wizard_grand_total_profit', '=', 0)]"/>
+                <separator/>
+                <filter string="Order Date" name="wizard_order_date" date="date_order"/>
+                <group expand="0" string="Group By">
+                    <filter string="Session" name="wizard_group_session"
+                            context="{'group_by': 'session_id'}"/>
+                    <filter string="Customer" name="wizard_group_customer"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter string="Cashier" name="wizard_group_cashier"
+                            context="{'group_by': 'user_id'}"/>
+                    <filter string="Point of Sale" name="wizard_group_config"
+                            context="{'group_by': 'config_id'}"/>
+                    <filter string="POS State" name="wizard_group_state"
+                            context="{'group_by': 'state'}"/>
+                    <filter string="Order Date" name="wizard_group_date"
+                            context="{'group_by': 'date_order:day'}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_pos_order_pivot_profit_metrics" model="ir.ui.view">
+        <field name="name">pos.order.pivot.profit.metrics</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_pivot"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="wizard_total_cost_price_incl_vat" type="measure"/>
+                <field name="wizard_grand_total_profit" type="measure"/>
+                <field name="wizard_profit_margin_pct" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_pos_order_kanban_profit_metrics" model="ir.ui.view">
+        <field name="name">pos.order.kanban.profit.metrics</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='currency_id']" position="after">
+                <field name="wizard_total_cost_price_incl_vat"/>
+                <field name="wizard_grand_total_profit"/>
+                <field name="wizard_profit_margin_pct"/>
+            </xpath>
+            <xpath expr="//field[@name='pos_reference']" position="after">
+                <div class="text-muted">
+                    Cost: <field name="wizard_total_cost_price_incl_vat" widget="monetary"/>
+                </div>
+                <div class="text-muted">
+                    Profit: <field name="wizard_grand_total_profit" widget="monetary"/>
+                    (<field name="wizard_profit_margin_pct"/>%)
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_pos_order_graph_profit_metrics" model="ir.ui.view">
+        <field name="name">pos.order.graph.profit.metrics</field>
+        <field name="model">pos.order</field>
+        <field name="arch" type="xml">
+            <graph string="PoS Order Profit" type="bar" sample="1">
+                <field name="date_order" interval="day"/>
+                <field name="amount_total" type="measure"/>
+                <field name="wizard_total_cost_price_incl_vat" type="measure"/>
+                <field name="wizard_grand_total_profit" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="point_of_sale.action_pos_pos_form" model="ir.actions.act_window">
+        <field name="view_mode">list,form,kanban,pivot,graph</field>
+    </record>
+
+    <record id="pos_cod.action_pos_cod_pending_orders" model="ir.actions.act_window">
+        <field name="view_mode">list,form,kanban,pivot,graph</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('pos_cod.view_pos_cod_orders_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('point_of_sale.view_pos_pos_form')}),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('point_of_sale.view_pos_order_kanban')}),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('point_of_sale.view_pos_order_pivot')}),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('view_pos_order_graph_profit_metrics')})]"/>
+    </record>
+</odoo>

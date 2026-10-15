@@ -12,14 +12,22 @@
 
                     <group string="Profit Summary" name="order_profit_summary_group">
                         <group>
+                            <field name="wizard_total_cost_price_incl_vat"
+                                   widget="monetary"
+                                   readonly="1"/>
                             <field name="wizard_grand_total_profit"
                                    widget="monetary"
+                                   readonly="1"
                                    decoration-success="wizard_grand_total_profit &gt; 0"
                                    decoration-danger="wizard_grand_total_profit &lt; 0"/>
+                            <field name="wizard_profit_margin_pct"
+                                   readonly="1"
+                                   decoration-success="wizard_profit_margin_pct &gt; 0"
+                                   decoration-danger="wizard_profit_margin_pct &lt; 0"/>
                         </group>
                     </group>
 
-                    <separator string="Order Lines - Profit Breakdown (Cost incl. VAT vs Selling Price)"/>
+                    <separator string="Order Lines - Profit Breakdown (Frozen Cost incl. VAT vs Selling Price)"/>
 
                     <field name="lines" nolabel="1" mode="tree,form">
                         <form>
@@ -57,10 +65,10 @@
                     <div class="alert alert-info" role="alert" style="margin-top: 15px;">
                         <p><strong>Profit Calculation (Cost incl. VAT vs Selling Price):</strong></p>
                         <ul>
-                            <li>Cost Price (incl. VAT) = Standard Cost × (1 + VAT Rate%)</li>
-                            <li>Profit / Unit = Selling Price − Cost Price (incl. VAT)</li>
-                            <li>Total Profit = Profit / Unit × Quantity</li>
-                            <li>Standard cost sourced from product AVCO/Standard Price</li>
+                            <li>Cost Price (incl. VAT) uses the frozen cost snapshot captured when the POS order was receipted.</li>
+                            <li>Profit / Unit = Profit Amount divided by Quantity</li>
+                            <li>Total Profit = Selling Price (incl. VAT) minus frozen Cost Price (incl. VAT)</li>
+                            <li>Draft or historical lines without a snapshot use the current cost as a fallback only until a snapshot exists.</li>
                         </ul>
                     </div>
 

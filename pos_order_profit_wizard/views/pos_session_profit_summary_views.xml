@@ -20,7 +20,7 @@
                         <field name="session_total_cost_incl_vat"
                                widget="monetary"
                                options="{'currency_field': 'currency_id'}"
-                               string="Total Cost (incl. VAT + Landed Costs)"/>
+                               string="Total Frozen Cost (incl. VAT)"/>
                     </group>
 
                     <group string="Profit" name="session_profit_group">
@@ -41,9 +41,9 @@
                 <div class="alert alert-info" role="alert" style="margin-bottom: 16px;">
                     <strong>Notes:</strong>
                     <ul class="mb-0">
-                        <li>Cost per unit = Standard Price × (1 + VAT%). Standard Price reflects AVCO/landed costs already applied to inventory.</li>
-                        <li>Selling Price = sum of line unit prices × quantities (before session-level discounts).</li>
-                        <li>Values refresh automatically on page reload. For in-progress sessions, reload to see the latest figures.</li>
+                        <li>Cost uses the frozen POS order-line cost snapshot captured when each order was receipted.</li>
+                        <li>Selling Price = sum of line unit prices x quantities (before session-level discounts).</li>
+                        <li>Draft or historical lines without snapshots use current cost as a fallback only until a snapshot exists.</li>
                     </ul>
                 </div>
 

@@ -27,10 +27,10 @@ class PosSession(models.Model):
         digits=(16, 2),
     )
 
-    # --- Non-stored: detailed cost breakdown, computed live on the form view only ---
+    # --- Non-stored: detailed cost breakdown, using frozen POS line snapshots when present ---
 
     session_total_cost_incl_vat = fields.Float(
-        string="Total Cost (incl. VAT + Landed Costs)",
+        string="Total Frozen Cost (incl. VAT)",
         compute="_compute_session_cost_detail",
         digits="Product Price",
     )
@@ -48,24 +48,16 @@ class PosSession(models.Model):
     @api.depends(
         "order_ids.lines",
         "order_ids.lines.product_id",
-        "order_ids.lines.product_id.standard_price",
-        "order_ids.lines.product_id.taxes_id",
-        "order_ids.lines.product_id.taxes_id.amount",
-        "order_ids.lines.product_id.taxes_id.amount_type",
+        "order_ids.lines.tax_ids",
+        "order_ids.lines.tax_ids_after_fiscal_position",
         "order_ids.lines.qty",
+        "order_ids.lines.wizard_log_cost_price_incl",
+        "order_ids.lines.wizard_log_cost_snapshot_at",
     )
     def _compute_session_cost_detail(self):
         for session in self:
             total_cost = 0.0
             for order in session.order_ids:
                 for line in order.lines:
-                    product = line.product_id
-                    if not product:
-                        continue
-                    vat_rate = 0.0
-                    for tax in product.taxes_id:
-                        if tax.amount_type == "percent":
-                            vat_rate += tax.amount
-                    cost_incl_vat = product.standard_price * (1 + vat_rate / 100)
-                    total_cost += cost_incl_vat * line.qty
+                    total_cost += line._wizard_get_cost_total_incl_for_profit()
             session.session_total_cost_incl_vat = total_cost
