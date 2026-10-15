@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_team_kubwa_root" name="Team Kubwa" parent="point_of_sale.menu_point_root" sequence="85" groups="team_kubwa_cashout.group_team_kubwa_cashier"/>
+    <menuitem id="menu_team_kubwa_cashouts" name="Cash-Out Transactions" parent="team_kubwa_cashout.menu_team_kubwa_root" action="team_kubwa_cashout.action_team_kubwa_cashout" sequence="10"/>
+    <menuitem id="menu_team_kubwa_purchase_ledger" name="Purchase Consumption Ledger" parent="team_kubwa_cashout.menu_team_kubwa_root" action="team_kubwa_cashout.action_team_kubwa_purchase_ledger" sequence="20"/>
+    <menuitem id="menu_team_kubwa_logs" name="Cash-Out Logs" parent="team_kubwa_cashout.menu_team_kubwa_root" action="team_kubwa_cashout.action_team_kubwa_cashout_log" sequence="30" groups="team_kubwa_cashout.group_team_kubwa_manager"/>
+    <menuitem id="menu_team_kubwa_config" name="Configuration" parent="team_kubwa_cashout.menu_team_kubwa_root" sequence="90" groups="team_kubwa_cashout.group_team_kubwa_manager"/>
+    <menuitem id="menu_team_kubwa_policies" name="Eligibility Policies" parent="team_kubwa_cashout.menu_team_kubwa_config" action="team_kubwa_cashout.action_team_kubwa_policy" sequence="10"/>
+    <menuitem id="menu_team_kubwa_settings" name="Settings" parent="team_kubwa_cashout.menu_team_kubwa_config" action="team_kubwa_cashout.action_team_kubwa_settings" sequence="20"/>
+</odoo>
+

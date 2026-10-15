@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="team_kubwa_cashout.TeamKubwaCashoutScreen">
+        <div class="team-kubwa-screen screen">
+            <div class="tk-shell">
+                <header class="tk-header">
+                    <button class="btn btn-light tk-icon-button" t-on-click="onBack" title="Back"><i class="fa fa-arrow-left"/></button>
+                    <div class="tk-title"><h2>Team Kubwa Cash-Out</h2><span>Dealer line <t t-esc="config.dealer_line || '-'"/></span></div>
+                    <button class="btn btn-light tk-icon-button" t-on-click="onRefresh" t-att-disabled="state.loading" title="Refresh"><i class="fa fa-refresh"/></button>
+                </header>
+                <t t-if="state.message"><div t-attf-class="tk-message tk-message-#{state.messageType}"><t t-esc="state.message"/></div></t>
+                <t t-if="!config.receivable_configured"><div class="tk-message tk-message-error">Configure the Team Kubwa receivable account before paying fundis.</div></t>
+                <nav class="tk-tabs">
+                    <button t-attf-class="tk-tab #{state.tab === 'new' ? 'is-active' : ''}" t-on-click="() => this.setTab('new')">New Cash-Out</button>
+                    <button t-attf-class="tk-tab #{state.tab === 'drafts' ? 'is-active' : ''}" t-on-click="() => this.setTab('drafts')">
+                        <span>Drafts <t t-if="draftCount">(<t t-esc="draftCount"/>)</t></span>
+                        <small><t t-esc="formatCurrency(draftTotal)"/></small>
+                    </button>
+                    <button t-attf-class="tk-tab #{state.tab === 'paid' ? 'is-active' : ''}" t-on-click="() => this.setTab('paid')">
+                        <span>Paid <t t-if="paidCount">(<t t-esc="paidCount"/>)</t></span>
+                        <small><t t-esc="formatCurrency(paidTotal)"/></small>
+                    </button>
+                    <button t-attf-class="tk-tab #{state.tab === 'pending' ? 'is-active' : ''}" t-on-click="() => this.setTab('pending')">
+                        <span>Pending Recovery <t t-if="pendingRecoveryCount">(<t t-esc="pendingRecoveryCount"/>)</t></span>
+                        <small><t t-esc="formatCurrency(pendingRecoveryTotal)"/></small>
+                    </button>
+                    <button t-attf-class="tk-tab #{state.tab === 'blocked' ? 'is-active' : ''}" t-on-click="() => this.setTab('blocked')">Blocked</button>
+                </nav>
+                <main class="tk-content">
+                    <section t-if="state.tab === 'new'" class="tk-workflow">
+                        <div class="tk-stepper">
+                            <span t-attf-class="#{state.step === 'fundi' ? 'is-active' : ''}">Fundi</span>
+                            <span t-attf-class="#{state.step === 'eligibility' ? 'is-active' : ''}">Eligibility</span>
+                            <span t-attf-class="#{state.step === 'otp' ? 'is-active' : ''}">OTP</span>
+                            <span t-attf-class="#{state.step === 'confirm' ? 'is-active' : ''}">Pay</span>
+                        </div>
+                        <div class="tk-contact-strip">
+                            <span>Contact/Customer</span>
+                            <strong><t t-esc="identifiedCustomerLabel"/></strong>
+                        </div>
+                        <div class="tk-panel">
+                            <t t-if="state.step === 'fundi'">
+                                <div class="tk-form-grid">
+                                    <label>Fundi Name<input class="form-control" t-model="state.fundiName" t-on-change="scheduleDraftAutosave" placeholder="Required if customer is not identified"/></label>
+                                    <label>Fundi Phone<input class="form-control" t-model="state.phone" t-on-change="scheduleDraftAutosave" placeholder="Required if customer is not identified"/></label>
+                                    <label>Requested Amount<input class="form-control" type="number" min="0" step="1" t-model="state.requestedAmount" t-on-change="scheduleDraftAutosave"/></label>
+                                </div>
+                                <div class="tk-actions">
+                                    <button t-if="state.customerNotFound and hasFullFundiIdentifier" class="btn btn-secondary" t-on-click="createCustomer" t-att-disabled="state.loading">
+                                        Create Customer
+                                    </button>
+                                    <button class="btn btn-light" t-on-click="() => this.saveDraft()" t-att-disabled="!canSaveDraft">Save Draft</button>
+                                    <button class="btn btn-primary" t-on-click="checkEligibility" t-att-disabled="!canCheckEligibility">Check Eligibility</button>
+                                </div>
+                            </t>
+                            <t t-if="state.step === 'eligibility' and state.eligibility">
+                                <div class="tk-eligibility">
+                                    <div><span>Requested</span><strong><t t-esc="formatCurrency(requestedAmountNumber)"/></strong></div>
+                                    <div><span>Required Purchases</span><strong><t t-esc="formatCurrency(state.eligibility.required_purchase)"/></strong></div>
+                                    <div><span>Gross Purchases</span><strong><t t-esc="formatCurrency(state.eligibility.gross_purchase || state.eligibility.actual_purchase)"/></strong></div>
+                                    <div><span>Previously Consumed</span><strong><t t-esc="formatCurrency(state.eligibility.consumed_purchase || 0)"/></strong></div>
+                                    <div><span>Available Purchases</span><strong><t t-esc="formatCurrency(state.eligibility.available_purchase || state.eligibility.actual_purchase)"/></strong></div>
+                                    <div><span>After This Cash-Out</span><strong><t t-esc="formatCurrency(state.eligibility.available_after_cashout || 0)"/></strong></div>
+                                    <div><span>Gap</span><strong><t t-esc="formatCurrency(state.eligibility.gap)"/></strong></div>
+                                </div>
+                                <div t-attf-class="tk-decision #{state.eligibility.allowed ? 'is-good' : 'is-bad'}">
+                                    <strong><t t-esc="state.eligibility.message"/></strong>
+                                    <span t-if="state.eligibility.requires_manager">Manager approval is required.</span>
+                                </div>
+                                <div t-if="!state.eligibility.allowed or state.eligibility.requires_manager" class="tk-override">
+                                    <label class="tk-check"><input type="checkbox" t-model="state.managerOverride" t-on-change="scheduleDraftAutosave"/> Manager Override</label>
+                                    <select class="form-select" t-model="state.overrideReason" t-att-disabled="!state.managerOverride" t-on-change="scheduleDraftAutosave">
+                                        <option value="">Override reason</option>
+                                        <option value="known_fundi">Known fundi</option>
+                                        <option value="owner_approved">Owner approved</option>
+                                        <option value="crown_activation">Crown activation</option>
+                                        <option value="first_time_goodwill">First-time goodwill</option>
+                                        <option value="contractor_relationship">Contractor relationship</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                    <input class="form-control" t-model="state.overrideNote" t-att-disabled="!state.managerOverride" t-on-change="scheduleDraftAutosave" placeholder="Override note"/>
+                                    <div t-if="isFirstTimeGoodwillInvalid" class="tk-message tk-message-warning">
+                                        First-time goodwill is only for the first cash-out and must stay within the configured first-time limit.
+                                    </div>
+                                </div>
+                                <div class="tk-actions">
+                                    <button class="btn btn-light" t-on-click="() => this.setStep('fundi')">Back</button>
+                                    <button class="btn btn-light" t-on-click="() => this.saveDraft()" t-att-disabled="!canSaveDraft">Save Draft</button>
+                                    <button class="btn btn-primary" t-on-click="continueToOtp" t-att-disabled="!canContinueOtp">Continue to OTP</button>
+                                </div>
+                            </t>
+                            <t t-if="state.step === 'otp'">
+                                <div class="tk-otp"><i class="fa fa-key"/><div><h3>Waiting for Crown OTP</h3><p>Fundi completes redemption on Crown app/USSD. Mark OTP received after the dealer line receives it.</p></div></div>
+                                <div class="tk-form-grid">
+                                    <label>Crown Member Name<input class="form-control" required="required" t-model="state.crownMemberName" t-on-change="scheduleDraftAutosave" placeholder="Name from SMS"/></label>
+                                    <label>TK Points Redeemed<input class="form-control" required="required" type="number" min="1" step="1" t-model="state.crownPointsRedeemed" t-on-change="scheduleDraftAutosave" placeholder="Points from SMS"/></label>
+                                    <label>OTP / OTP Reference<input class="form-control" required="required" t-model="state.otpReference" t-on-change="scheduleDraftAutosave" placeholder="Required"/></label>
+                                </div>
+                                <div class="tk-actions">
+                                    <button class="btn btn-light" t-on-click="() => this.setStep('eligibility')">Back</button>
+                                    <button class="btn btn-light" t-on-click="() => this.saveDraft()" t-att-disabled="!canSaveDraft">Save Draft</button>
+                                    <button class="btn btn-secondary" t-on-click="markOtpReceived" t-att-disabled="!hasOtpReference or !hasCrownSmsDetails"><i class="fa fa-check me-1"/> Mark OTP Received/Shared</button>
+                                    <button class="btn btn-primary" t-on-click="continueToConfirm" t-att-disabled="!state.otpReceived or !hasOtpReference or !hasCrownSmsDetails">Continue</button>
+                                </div>
+                            </t>
+                            <t t-if="state.step === 'confirm'">
+                                <div class="tk-form-grid">
+                                    <label>Approved Amount<input class="form-control" type="number" min="0" step="1" t-model="state.approvedAmount" t-on-change="scheduleDraftAutosave"/></label>
+                                    <label>Transaction Ref<input class="form-control" t-model="state.transactionRef" t-on-change="scheduleDraftAutosave" t-att-required="requiresTransactionRef" t-att-placeholder="requiresTransactionRef ? 'Required for bank payout' : 'Optional'"/></label>
+                                    <label>Payout Journal<select class="form-select" t-model="state.payoutJournalId" t-on-change="scheduleDraftAutosave"><option value="">Select journal</option><t t-foreach="config.journals || []" t-as="journal" t-key="journal.id"><option t-att-value="journal.id"><t t-esc="journal.name"/></option></t></select></label>
+                                </div>
+                                <div t-if="approvedAmountNumber &gt; requestedAmountNumber" class="tk-message tk-message-error">
+                                    Approved amount cannot exceed the amount checked for eligibility.
+                                </div>
+                                <div class="tk-summary"><span>Pay Fundi</span><strong><t t-esc="formatCurrency(approvedAmountNumber)"/></strong></div>
+                                <div class="tk-actions">
+                                    <button class="btn btn-light" t-on-click="() => this.setStep('otp')">Back</button>
+                                    <button class="btn btn-light" t-on-click="() => this.saveDraft()" t-att-disabled="!canSaveDraft">Save Draft</button>
+                                    <button class="btn btn-primary" t-on-click="payCashout" t-att-disabled="!canPay"><t t-if="state.loading">Posting...</t><t t-else="">Pay &amp; Post Receivable</t></button>
+                                </div>
+                            </t>
+                        </div>
+                    </section>
+                    <section t-if="state.tab !== 'new'" class="tk-list-section">
+                        <div class="tk-search"><i class="fa fa-search"/><input t-model="state.query" placeholder="Search cashout, phone, transaction ref..."/></div>
+                        <div class="tk-card-grid">
+                            <t t-if="!visibleCashouts.length"><div class="tk-empty">No cash-outs found.</div></t>
+                            <article t-foreach="visibleCashouts" t-as="record" t-key="record.id" class="tk-card" t-on-click="() => state.tab === 'drafts' ? this.openDraft(record) : undefined">
+                                <div class="tk-card-head"><strong><t t-esc="record.name"/></strong><span t-attf-class="tk-badge tk-badge-#{record.state}"><t t-esc="record.state"/></span></div>
+                                <div class="tk-card-person"><span><t t-esc="record.fundi_name || '-'"/></span><small><t t-esc="record.fundi_phone"/></small></div>
+                                <div class="tk-card-money"><span><t t-if="state.tab === 'drafts'">Requested</t><t t-else="">Paid</t></span><strong><t t-esc="formatCurrency(state.tab === 'drafts' ? record.requested_amount : record.paid_amount)"/></strong></div>
+                                <div class="tk-card-meta">
+                                    <span t-if="state.tab === 'drafts'">Stage: <t t-esc="draftStage(record)"/></span>
+                                    <span t-if="state.tab !== 'drafts'">Recovery: <t t-esc="record.recovery_status"/></span>
+                                    <span><t t-esc="formatDate(state.tab === 'drafts' ? record.write_date : record.paid_datetime)"/></span>
+                                    <span t-if="record.journal_entry">JE: <t t-esc="record.journal_entry"/></span>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        </div>
+    </t>
+</templates>
+

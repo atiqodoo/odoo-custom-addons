@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_team_kubwa_cashout_list" model="ir.ui.view">
+        <field name="name">team.kubwa.cashout.list</field>
+        <field name="model">team.kubwa.cashout</field>
+        <field name="arch" type="xml">
+            <list decoration-info="state in ('draft', 'eligibility_checked', 'waiting_otp', 'otp_shared', 'crown_confirmed')" decoration-success="state == 'paid'" decoration-warning="recovery_status == 'pending_recovery'" decoration-danger="state in ('blocked', 'cancelled')">
+                <field name="name"/>
+                <field name="state"/>
+                <field name="recovery_status"/>
+                <field name="fundi_name"/>
+                <field name="fundi_phone"/>
+                <field name="requested_amount"/>
+                <field name="paid_amount"/>
+                <field name="balance_amount"/>
+                <field name="eligibility_gross_purchase"/>
+                <field name="eligibility_consumed_purchase"/>
+                <field name="eligibility_available_purchase"/>
+                <field name="transaction_ref"/>
+                <field name="crown_member_name"/>
+                <field name="crown_points_redeemed"/>
+                <field name="cashier_id"/>
+                <field name="authorized_supervisor_id"/>
+                <field name="paid_datetime"/>
+                <field name="account_move_id"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_team_kubwa_cashout_form" model="ir.ui.view">
+        <field name="name">team.kubwa.cashout.form</field>
+        <field name="model">team.kubwa.cashout</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_cancel_cashout" type="object" string="Cancel" class="btn-secondary" invisible="state in ('paid', 'cancelled')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,eligibility_checked,waiting_otp,otp_shared,crown_confirmed,paid"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><label for="name"/><h1><field name="name"/></h1></div>
+                    <group>
+                        <group string="Fundi">
+                            <field name="fundi_name"/>
+                            <field name="fundi_phone"/>
+                            <field name="fundi_phone_normalized" readonly="1"/>
+                            <field name="fundi_partner_id"/>
+                            <field name="transaction_ref"/>
+                            <field name="crown_member_name"/>
+                            <field name="crown_points_redeemed"/>
+                            <field name="otp_reference"/>
+                            <field name="otp_received_time"/>
+                        </group>
+                        <group string="Amounts">
+                            <field name="currency_id" invisible="1"/>
+                            <field name="requested_amount"/>
+                            <field name="approved_amount"/>
+                            <field name="paid_amount"/>
+                            <field name="recovered_amount"/>
+                            <field name="balance_amount"/>
+                            <field name="recovery_status"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Eligibility">
+                            <field name="eligibility_policy_id"/>
+                            <field name="eligibility_allowed"/>
+                            <field name="eligibility_requires_manager"/>
+                            <field name="eligibility_reason"/>
+                            <field name="eligibility_required_purchase"/>
+                            <field name="eligibility_gross_purchase"/>
+                            <field name="eligibility_consumed_purchase"/>
+                            <field name="eligibility_available_purchase"/>
+                            <field name="eligibility_available_after_cashout"/>
+                            <field name="eligibility_gap"/>
+                            <field name="eligibility_purchase_period_mode"/>
+                            <field name="eligibility_period_start"/>
+                            <field name="eligibility_period_end"/>
+                            <field name="is_first_time"/>
+                            <field name="last_cashout_id"/>
+                        </group>
+                        <group string="Override">
+                            <field name="manager_override"/>
+                            <field name="override_user_id"/>
+                            <field name="override_reason"/>
+                            <field name="override_note"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Accounting">
+                            <field name="receivable_account_id"/>
+                            <field name="payout_journal_id"/>
+                            <field name="payout_account_id"/>
+                            <field name="account_move_id"/>
+                            <field name="account_move_state"/>
+                            <field name="posted_by_id"/>
+                            <field name="posted_datetime"/>
+                        </group>
+                        <group string="POS">
+                            <field name="pos_session_id"/>
+                            <field name="pos_config_id"/>
+                            <field name="cashier_id"/>
+                            <field name="authorized_supervisor_id"/>
+                            <field name="authorization_action_key"/>
+                            <field name="authorization_log_id"/>
+                            <field name="authorization_datetime"/>
+                            <field name="paid_datetime"/>
+                            <field name="company_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Notes"><field name="note" nolabel="1"/></page>
+                        <page string="Purchase Ledger">
+                            <field name="ledger_ids">
+                                <list create="0" edit="0" delete="0">
+                                    <field name="entry_datetime"/>
+                                    <field name="entry_type"/>
+                                    <field name="gross_purchase"/>
+                                    <field name="previously_consumed_purchase"/>
+                                    <field name="available_purchase"/>
+                                    <field name="required_purchase"/>
+                                    <field name="consumed_purchase"/>
+                                    <field name="running_available_purchase"/>
+                                    <field name="manager_override"/>
+                                    <field name="override_reason"/>
+                                    <field name="user_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Audit Logs">
+                            <field name="log_ids">
+                                <list>
+                                    <field name="create_date"/>
+                                    <field name="event_type"/>
+                                    <field name="old_state"/>
+                                    <field name="new_state"/>
+                                    <field name="user_id"/>
+                                    <field name="message"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_team_kubwa_cashout_search" model="ir.ui.view">
+        <field name="name">team.kubwa.cashout.search</field>
+        <field name="model">team.kubwa.cashout</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="fundi_phone"/>
+                <field name="fundi_name"/>
+                <field name="transaction_ref"/>
+                <filter name="paid" string="Paid" domain="[('state','=','paid')]"/>
+                <filter name="drafts" string="Drafts" domain="[('state','in',('draft','eligibility_checked','waiting_otp','otp_shared','crown_confirmed'))]"/>
+                <filter name="pending_recovery" string="Pending Recovery" domain="[('state','=','paid'),('recovery_status','=','pending_recovery')]"/>
+                <filter name="override" string="Manager Override" domain="[('manager_override','=',True)]"/>
+            </search>
+        </field>
+    </record>
+    <record id="action_team_kubwa_cashout" model="ir.actions.act_window">
+        <field name="name">Cash-Out Transactions</field>
+        <field name="res_model">team.kubwa.cashout</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="team_kubwa_cashout.view_team_kubwa_cashout_search"/>
+    </record>
+    <record id="view_team_kubwa_cashout_log_list" model="ir.ui.view">
+        <field name="name">team.kubwa.cashout.log.list</field>
+        <field name="model">team.kubwa.cashout.log</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="create_date"/>
+                <field name="cashout_id"/>
+                <field name="event_type"/>
+                <field name="old_state"/>
+                <field name="new_state"/>
+                <field name="user_id"/>
+                <field name="pos_session_id"/>
+                <field name="message"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_team_kubwa_cashout_log" model="ir.actions.act_window">
+        <field name="name">Cash-Out Logs</field>
+        <field name="res_model">team.kubwa.cashout.log</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+    </record>
+    <record id="view_team_kubwa_purchase_ledger_list" model="ir.ui.view">
+        <field name="name">team.kubwa.purchase.ledger.list</field>
+        <field name="model">team.kubwa.purchase.ledger</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" decoration-danger="running_available_purchase &lt; 0" decoration-success="entry_type == 'cashout_consumption'">
+                <field name="entry_datetime"/>
+                <field name="entry_type"/>
+                <field name="partner_id"/>
+                <field name="cashout_id"/>
+                <field name="purchase_period_mode"/>
+                <field name="gross_purchase"/>
+                <field name="previously_consumed_purchase"/>
+                <field name="available_purchase"/>
+                <field name="required_purchase"/>
+                <field name="cashout_amount"/>
+                <field name="consumed_purchase"/>
+                <field name="running_available_purchase"/>
+                <field name="manager_override"/>
+                <field name="override_reason"/>
+                <field name="user_id"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_team_kubwa_purchase_ledger_form" model="ir.ui.view">
+        <field name="name">team.kubwa.purchase.ledger.form</field>
+        <field name="model">team.kubwa.purchase.ledger</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <group string="Reference">
+                            <field name="entry_datetime"/>
+                            <field name="entry_type"/>
+                            <field name="partner_id"/>
+                            <field name="cashout_id"/>
+                            <field name="policy_id"/>
+                            <field name="company_id"/>
+                        </group>
+                        <group string="Period">
+                            <field name="purchase_period_mode"/>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="pos_session_id"/>
+                            <field name="user_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Purchase Statement">
+                            <field name="currency_id" invisible="1"/>
+                            <field name="gross_purchase"/>
+                            <field name="previously_consumed_purchase"/>
+                            <field name="available_purchase"/>
+                            <field name="required_purchase"/>
+                            <field name="cashout_amount"/>
+                            <field name="consumed_purchase"/>
+                            <field name="running_available_purchase"/>
+                        </group>
+                        <group string="Approval">
+                            <field name="manager_override"/>
+                            <field name="override_reason"/>
+                            <field name="note"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_team_kubwa_purchase_ledger_search" model="ir.ui.view">
+        <field name="name">team.kubwa.purchase.ledger.search</field>
+        <field name="model">team.kubwa.purchase.ledger</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <field name="cashout_id"/>
+                <field name="entry_type"/>
+                <filter name="consumption" string="Cash-Out Consumption" domain="[('entry_type','=','cashout_consumption')]"/>
+                <filter name="deficit" string="Deficit" domain="[('running_available_purchase','&lt;',0)]"/>
+                <filter name="override" string="Manager Override" domain="[('manager_override','=',True)]"/>
+            </search>
+        </field>
+    </record>
+    <record id="action_team_kubwa_purchase_ledger" model="ir.actions.act_window">
+        <field name="name">Purchase Consumption Ledger</field>
+        <field name="res_model">team.kubwa.purchase.ledger</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="team_kubwa_cashout.view_team_kubwa_purchase_ledger_search"/>
+        <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+    </record>
+</odoo>
+

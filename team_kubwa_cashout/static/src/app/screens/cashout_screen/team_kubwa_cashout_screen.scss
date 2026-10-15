@@ -1,0 +1,49 @@
+.team-kubwa-screen {
+    background: #f3f4f6;
+    color: #111827;
+    .tk-shell { height: 100%; display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+    .tk-header, .tk-header-tools, .tk-tabs, .tk-actions, .tk-card-head, .tk-card-meta { display: flex; align-items: center; gap: 10px; }
+    .tk-header { justify-content: space-between; padding: 12px 14px; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; }
+    .tk-title h2 { margin: 0; font-size: 24px; }
+    .tk-title span, .tk-card-meta, .tk-card-person small, .tk-eligibility span, .tk-contact-strip span { color: #6b7280; }
+    .tk-icon-button { width: 42px; height: 42px; }
+    .tk-tabs { padding: 6px; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; }
+    .tk-tab { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 14px; border: 0; border-radius: 6px; background: transparent; font-weight: 700; line-height: 1.2; }
+    .tk-tab small { color: #6b7280; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .tk-tab.is-active { background: #0f766e; color: #fff; }
+    .tk-tab.is-active small { color: #d1fae5; }
+    .tk-content { min-height: 0; flex: 1; overflow: auto; }
+    .tk-workflow, .tk-list-section, .tk-panel { display: flex; flex-direction: column; gap: 12px; }
+    .tk-stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .tk-stepper span { padding: 10px; text-align: center; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; font-weight: 700; }
+    .tk-stepper span.is-active { border-color: #0f766e; color: #0f766e; }
+    .tk-contact-strip { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; }
+    .tk-contact-strip strong { text-align: right; overflow-wrap: anywhere; }
+    .tk-panel, .tk-card, .tk-empty, .tk-message { padding: 14px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; }
+    .tk-form-grid { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 12px; }
+    .tk-form-grid label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
+    .tk-actions { justify-content: flex-end; padding-top: 8px; }
+    .tk-message-success { border-color: #86efac; color: #166534; background: #f0fdf4; }
+    .tk-message-warning { border-color: #fde68a; color: #92400e; background: #fffbeb; }
+    .tk-message-error { border-color: #fecaca; color: #991b1b; background: #fef2f2; }
+    .tk-eligibility { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .tk-eligibility div, .tk-summary { display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; }
+    .tk-decision { padding: 12px; border-radius: 8px; border: 1px solid #d1d5db; }
+    .tk-decision.is-good { color: #166534; border-color: #86efac; background: #f0fdf4; }
+    .tk-decision.is-bad { color: #92400e; border-color: #fde68a; background: #fffbeb; }
+    .tk-override { display: grid; grid-template-columns: 180px minmax(180px, 260px) 1fr; gap: 10px; align-items: center; }
+    .tk-check { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+    .tk-otp { display: flex; gap: 12px; align-items: center; }
+    .tk-otp i { display: grid; width: 52px; height: 52px; place-items: center; color: #fff; background: #0f766e; border-radius: 8px; font-size: 24px; }
+    .tk-search { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; }
+    .tk-search input { flex: 1; border: 0; outline: 0; }
+    .tk-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+    .tk-card { display: flex; flex-direction: column; gap: 10px; }
+    .tk-card-head { justify-content: space-between; }
+    .tk-card-person, .tk-card-money { display: flex; flex-direction: column; gap: 2px; }
+    .tk-card-money strong { font-size: 22px; }
+    .tk-card-meta { flex-direction: column; align-items: flex-start; font-size: 12px; }
+    .tk-badge { padding: 4px 8px; border-radius: 999px; background: #e5e7eb; font-size: 12px; text-transform: capitalize; }
+    .tk-badge-paid { color: #166534; background: #dcfce7; }
+}
+

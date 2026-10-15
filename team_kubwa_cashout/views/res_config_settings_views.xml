@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_team_kubwa" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.team.kubwa</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Team Kubwa" string="Team Kubwa" name="team_kubwa_cashout">
+                    <block title="Team Kubwa Cash-Out">
+                        <setting string="Enable Cash-Out"><field name="team_kubwa_enabled"/></setting>
+                        <setting string="Dealer Registered Line"><field name="team_kubwa_dealer_line"/></setting>
+                        <setting string="Default Eligibility Policy"><field name="team_kubwa_default_policy_id"/></setting>
+                        <setting string="Receivable Account"><field name="team_kubwa_receivable_account_id"/></setting>
+                        <setting string="Default Payout Journal"><field name="team_kubwa_default_payout_journal_id"/></setting>
+                        <setting string="Require Transaction Ref for Bank Payouts"><field name="team_kubwa_require_transaction_ref"/></setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_team_kubwa_settings" model="ir.actions.act_window">
+        <field name="name">Team Kubwa Settings</field>
+        <field name="path" eval="False"/>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" eval="False"/>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'team_kubwa_cashout', 'bin_size': False}</field>
+    </record>
+</odoo>
+

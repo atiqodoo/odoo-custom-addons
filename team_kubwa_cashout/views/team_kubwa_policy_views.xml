@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_team_kubwa_policy_list" model="ir.ui.view">
+        <field name="name">team.kubwa.eligibility.policy.list</field>
+        <field name="model">team.kubwa.eligibility.policy</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="first_time_allowed"/>
+                <field name="first_time_limit_amount"/>
+                <field name="purchase_ratio"/>
+                <field name="high_value_approval_amount"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_team_kubwa_policy_form" model="ir.ui.view">
+        <field name="name">team.kubwa.eligibility.policy.form</field>
+        <field name="model">team.kubwa.eligibility.policy</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title"><label for="name"/><h1><field name="name"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="active"/>
+                            <field name="company_id"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="first_time_allowed"/>
+                            <field name="first_time_limit_amount"/>
+                        </group>
+                        <group>
+                            <field name="purchase_ratio"/>
+                            <field name="minimum_purchase_amount"/>
+                            <field name="high_value_approval_amount"/>
+                            <field name="purchase_period_mode"/>
+                            <field name="purchase_period_days" invisible="purchase_period_mode != 'days'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Tier Rules">
+                            <field name="tier_ids">
+                                <list editable="bottom">
+                                    <field name="active"/>
+                                    <field name="amount_from"/>
+                                    <field name="amount_to"/>
+                                    <field name="required_purchase_amount"/>
+                                    <field name="purchase_ratio"/>
+                                    <field name="requires_manager_approval"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_team_kubwa_policy" model="ir.actions.act_window">
+        <field name="name">Eligibility Policies</field>
+        <field name="res_model">team.kubwa.eligibility.policy</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
+
