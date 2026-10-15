@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="log_manager_search_wizard_view_form" model="ir.ui.view">
+        <field name="name">log.manager.search.wizard.form</field>
+        <field name="model">log.manager.search.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="level"/>
+                            <field name="database"/>
+                            <field name="module"/>
+                            <field name="keyword"/>
+                        </group>
+                        <group>
+                            <field name="since"/>
+                            <field name="until"/>
+                            <field name="limit"/>
+                            <field name="offset"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_search" type="object" string="Search" class="btn-primary"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="log_manager_search_wizard_action" model="ir.actions.act_window">
+        <field name="name">Search Indexed Logs</field>
+        <field name="res_model">log.manager.search.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

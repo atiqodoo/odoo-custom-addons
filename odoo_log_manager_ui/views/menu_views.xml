@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="log_manager_discover_sources_action" model="ir.actions.server">
+        <field name="name">Discover Log Sources</field>
+        <field name="model_id" ref="model_log_manager_source"/>
+        <field name="state">code</field>
+        <field name="code">action = env["log.manager.source"].action_discover_sources()</field>
+        <field name="groups_id" eval="[(4, ref('odoo_log_manager_ui.group_log_manager_admin'))]"/>
+    </record>
+
+    <menuitem id="log_manager_root_menu"
+              name="Logs"
+              sequence="90"
+              groups="odoo_log_manager_ui.group_log_manager_user"/>
+
+    <menuitem id="log_manager_sources_menu"
+              name="Sources"
+              parent="log_manager_root_menu"
+              action="log_manager_source_action"
+              sequence="10"
+              groups="odoo_log_manager_ui.group_log_manager_user"/>
+
+    <menuitem id="log_manager_discover_sources_menu"
+              name="Discover Sources"
+              parent="log_manager_root_menu"
+              action="log_manager_discover_sources_action"
+              sequence="15"
+              groups="odoo_log_manager_ui.group_log_manager_admin"/>
+
+    <menuitem id="log_manager_search_menu"
+              name="Search"
+              parent="log_manager_root_menu"
+              action="log_manager_search_wizard_action"
+              sequence="20"
+              groups="odoo_log_manager_ui.group_log_manager_user"/>
+
+    <menuitem id="log_manager_entries_menu"
+              name="Entries"
+              parent="log_manager_root_menu"
+              action="log_manager_entry_action"
+              sequence="30"
+              groups="odoo_log_manager_ui.group_log_manager_user"/>
+
+    <menuitem id="log_manager_archives_menu"
+              name="Archives"
+              parent="log_manager_root_menu"
+              action="log_manager_archive_action"
+              sequence="40"
+              groups="odoo_log_manager_ui.group_log_manager_user"/>
+
+    <menuitem id="log_manager_settings_menu"
+              name="Settings"
+              parent="log_manager_root_menu"
+              action="base_setup.action_general_configuration"
+              sequence="90"
+              groups="odoo_log_manager_ui.group_log_manager_admin"/>
+</odoo>

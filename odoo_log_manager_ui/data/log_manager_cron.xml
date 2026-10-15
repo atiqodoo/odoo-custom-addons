@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="ir_cron_log_manager_auto_rotate" model="ir.cron">
+        <field name="name">Log Manager: Automatic Rotation</field>
+        <field name="model_id" ref="model_log_manager_source"/>
+        <field name="state">code</field>
+        <field name="code">model.action_auto_rotate_and_index()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">hours</field>
+        <field name="active">False</field>
+    </record>
+</odoo>

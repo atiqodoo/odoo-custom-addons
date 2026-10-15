@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_log_manager" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.log.manager</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='general_settings']" position="inside">
+                <block title="Log Manager" name="log_manager_setting_container"
+                       groups="odoo_log_manager_ui.group_log_manager_admin">
+                    <setting id="log_manager_engine_path" string="Engine Path">
+                        <field name="log_manager_engine_path" placeholder="Leave empty for auto-discovery"/>
+                    </setting>
+                    <setting id="log_manager_config_path" string="Config Path">
+                        <field name="log_manager_config_path" placeholder="Leave empty for engine config/example.odoo18.json"/>
+                    </setting>
+                    <setting id="log_manager_auto_rotate_enabled" string="Automatic Rotation">
+                        <field name="log_manager_auto_rotate_enabled"/>
+                    </setting>
+                    <setting id="log_manager_rotation_strategy" string="Rotation Strategy">
+                        <field name="log_manager_rotation_strategy"/>
+                    </setting>
+                    <setting id="log_manager_max_size_mb" string="Maximum Size">
+                        <field name="log_manager_max_size_mb"/>
+                    </setting>
+                    <setting id="log_manager_locked_file_mode" string="Locked File Mode">
+                        <field name="log_manager_locked_file_mode"/>
+                    </setting>
+                    <setting id="log_manager_auto_rotate_interval" string="Automatic Rotation Interval">
+                        <field name="log_manager_auto_rotate_interval_number"/>
+                        <field name="log_manager_auto_rotate_interval_type"/>
+                    </setting>
+                    <setting id="log_manager_actions" string="Log Manager">
+                        <button name="%(log_manager_source_action)d" type="action" string="Sources" class="btn-link"/>
+                        <button name="%(log_manager_search_wizard_action)d" type="action" string="Search" class="btn-link"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

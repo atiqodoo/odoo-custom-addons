@@ -1,0 +1,23 @@
+{
+    "name": "Odoo Log Manager UI",
+    "version": "18.0.1.0.0",
+    "category": "Administration",
+    "summary": "Backend UI for live and indexed Odoo logs",
+    "author": "Crown Kenya PLC",
+    "depends": ["base", "base_setup"],
+    "data": [
+        "security/log_manager_security.xml",
+        "security/ir.model.access.csv",
+        "data/log_manager_cron.xml",
+        "views/log_manager_entry_views.xml",
+        "views/log_manager_source_views.xml",
+        "views/log_manager_archive_views.xml",
+        "views/log_manager_search_wizard_views.xml",
+        "views/res_config_settings_views.xml",
+        "views/menu_views.xml",
+    ],
+    "installable": True,
+    "application": True,
+    "post_init_hook": "post_init_hook",
+    "license": "LGPL-3",
+}

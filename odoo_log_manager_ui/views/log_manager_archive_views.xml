@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="log_manager_archive_view_list" model="ir.ui.view">
+        <field name="name">log.manager.archive.list</field>
+        <field name="model">log.manager.archive</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false" delete="false">
+                <header>
+                    <button name="action_sync_archives" type="object" string="Sync" class="btn-primary"/>
+                </header>
+                <field name="indexed_at"/>
+                <field name="name"/>
+                <field name="line_count"/>
+                <field name="first_ts"/>
+                <field name="last_ts"/>
+                <field name="compressed_size"/>
+                <field name="path"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="log_manager_archive_view_form" model="ir.ui.view">
+        <field name="name">log.manager.archive.form</field>
+        <field name="model">log.manager.archive</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="path"/>
+                            <field name="indexed_at"/>
+                        </group>
+                        <group>
+                            <field name="line_count"/>
+                            <field name="size_bytes"/>
+                            <field name="compressed_size"/>
+                            <field name="first_ts"/>
+                            <field name="last_ts"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="log_manager_archive_action" model="ir.actions.act_window">
+        <field name="name">Log Archives</field>
+        <field name="res_model">log.manager.archive</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

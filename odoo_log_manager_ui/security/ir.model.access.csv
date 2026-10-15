@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_log_manager_entry_user,log.manager.entry user,model_log_manager_entry,group_log_manager_user,1,0,0,0
+access_log_manager_entry_admin,log.manager.entry admin,model_log_manager_entry,group_log_manager_admin,1,1,1,1
+access_log_manager_source_user,log.manager.source user,model_log_manager_source,group_log_manager_user,1,0,0,0
+access_log_manager_source_admin,log.manager.source admin,model_log_manager_source,group_log_manager_admin,1,1,1,1
+access_log_manager_archive_user,log.manager.archive user,model_log_manager_archive,group_log_manager_user,1,0,0,0
+access_log_manager_archive_admin,log.manager.archive admin,model_log_manager_archive,group_log_manager_admin,1,1,1,1
+access_log_manager_search_wizard_user,log.manager.search.wizard user,model_log_manager_search_wizard,group_log_manager_user,1,1,1,1
