@@ -13,3 +13,6 @@ access_mpesa_modem_health_manager,mpesa.modem.health.manager,model_mpesa_modem_h
 access_mpesa_bridge_control_manager,mpesa.bridge.control.manager,model_mpesa_bridge_control,mpesa_c2b_sms.group_mpesa_manager,1,1,1,0
 access_mpesa_manual_sms_wizard,mpesa.manual.sms.wizard,model_mpesa_manual_sms_wizard,mpesa_c2b_sms.group_mpesa_manual_entry,1,1,1,0
 access_mpesa_manual_sms_wizard_manager,mpesa.manual.sms.wizard.manager,model_mpesa_manual_sms_wizard,mpesa_c2b_sms.group_mpesa_manager,1,1,1,0
+access_mpesa_transaction_freeze_user,mpesa.transaction.freeze.user,model_mpesa_transaction_freeze,mpesa_c2b_sms.group_mpesa_user,1,0,0,0
+access_mpesa_transaction_freeze_manager,mpesa.transaction.freeze.manager,model_mpesa_transaction_freeze,mpesa_c2b_sms.group_mpesa_manager,1,1,1,0
+access_mpesa_transaction_freeze_wizard_manager,mpesa.transaction.freeze.wizard.manager,model_mpesa_transaction_freeze_wizard,mpesa_c2b_sms.group_mpesa_manager,1,1,1,0

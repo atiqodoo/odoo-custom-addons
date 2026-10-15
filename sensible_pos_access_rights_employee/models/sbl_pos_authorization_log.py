@@ -53,6 +53,16 @@ SBL_ACTION_RESTRICTION_FIELDS = {
     'reward': 'sbl_hide_pos_action_reward',
     'fiscal_position': 'sbl_hide_pos_action_fiscal_position',
     'cancel_order': 'sbl_hide_pos_action_cancel_order',
+    'team_kubwa_open': 'sbl_require_auth_team_kubwa_open',
+    'team_kubwa_create_customer': 'sbl_require_auth_team_kubwa_create_customer',
+    'team_kubwa_check_eligibility': 'sbl_require_auth_team_kubwa_check_eligibility',
+    'team_kubwa_save_draft': 'sbl_require_auth_team_kubwa_save_draft',
+    'team_kubwa_open_draft': 'sbl_require_auth_team_kubwa_open_draft',
+    'team_kubwa_continue_otp': 'sbl_require_auth_team_kubwa_continue_otp',
+    'team_kubwa_mark_otp': 'sbl_require_auth_team_kubwa_mark_otp',
+    'team_kubwa_continue_pay': 'sbl_require_auth_team_kubwa_continue_pay',
+    'team_kubwa_manager_override': 'sbl_require_auth_team_kubwa_manager_override',
+    'team_kubwa_pay_post': 'sbl_require_auth_team_kubwa_pay_post',
 }
 
 
@@ -258,7 +268,7 @@ class HrEmployee(models.Model):
         order_reference,
         status,
     ):
-        self.env['sbl.pos.authorization.log'].sbl_log_authorization({
+        log = self.env['sbl.pos.authorization.log'].sbl_log_authorization({
             'action_key': action_key,
             'action_label': action_label,
             'status': status,
@@ -273,4 +283,5 @@ class HrEmployee(models.Model):
             'approved': approved,
             'message': message,
             'supervisor_id': supervisor_id,
+            'authorization_log_id': log.id,
         }

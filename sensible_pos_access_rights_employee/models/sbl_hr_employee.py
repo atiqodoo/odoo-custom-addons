@@ -44,5 +44,10 @@ class HrEmployeeBase(models.Model):
             'sbl_hide_pos_action_pricelist', 'sbl_hide_pos_action_refund',
             'sbl_hide_pos_action_reward', 'sbl_hide_pos_action_fiscal_position',
             'sbl_hide_pos_action_cancel_order',
-            'sbl_hide_pos_action_product_info'
+            'sbl_hide_pos_action_product_info',
+            'sbl_require_auth_team_kubwa_open', 'sbl_require_auth_team_kubwa_create_customer',
+            'sbl_require_auth_team_kubwa_check_eligibility', 'sbl_require_auth_team_kubwa_save_draft',
+            'sbl_require_auth_team_kubwa_open_draft', 'sbl_require_auth_team_kubwa_continue_otp',
+            'sbl_require_auth_team_kubwa_mark_otp', 'sbl_require_auth_team_kubwa_continue_pay',
+            'sbl_require_auth_team_kubwa_manager_override', 'sbl_require_auth_team_kubwa_pay_post',
         ]

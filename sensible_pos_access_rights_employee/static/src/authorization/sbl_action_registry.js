@@ -177,6 +177,46 @@ export const SBL_POS_ACTIONS = {
         label: "Cancel Order",
         field: "sbl_hide_pos_action_cancel_order",
     },
+    team_kubwa_open: {
+        label: "Team Kubwa",
+        field: "sbl_require_auth_team_kubwa_open",
+    },
+    team_kubwa_create_customer: {
+        label: "Team Kubwa Create Customer",
+        field: "sbl_require_auth_team_kubwa_create_customer",
+    },
+    team_kubwa_check_eligibility: {
+        label: "Team Kubwa Check Eligibility",
+        field: "sbl_require_auth_team_kubwa_check_eligibility",
+    },
+    team_kubwa_save_draft: {
+        label: "Team Kubwa Save Draft",
+        field: "sbl_require_auth_team_kubwa_save_draft",
+    },
+    team_kubwa_open_draft: {
+        label: "Team Kubwa Open Draft",
+        field: "sbl_require_auth_team_kubwa_open_draft",
+    },
+    team_kubwa_continue_otp: {
+        label: "Team Kubwa Continue to OTP",
+        field: "sbl_require_auth_team_kubwa_continue_otp",
+    },
+    team_kubwa_mark_otp: {
+        label: "Team Kubwa Mark OTP",
+        field: "sbl_require_auth_team_kubwa_mark_otp",
+    },
+    team_kubwa_continue_pay: {
+        label: "Team Kubwa Continue to Pay",
+        field: "sbl_require_auth_team_kubwa_continue_pay",
+    },
+    team_kubwa_manager_override: {
+        label: "Team Kubwa Manager Override",
+        field: "sbl_require_auth_team_kubwa_manager_override",
+    },
+    team_kubwa_pay_post: {
+        label: "Team Kubwa Pay & Post",
+        field: "sbl_require_auth_team_kubwa_pay_post",
+    },
 };
 
 export function sblGetAction(actionKey) {

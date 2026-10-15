@@ -73,6 +73,22 @@
                             <field name="sbl_require_auth_cod_discount" widget="boolean_toggle"/>
                         </group>
                     </group>
+                    <group name="sbl_pos_team_kubwa" string="Team Kubwa">
+                        <group>
+                            <field name="sbl_require_auth_team_kubwa_open" widget="boolean_toggle"/>
+                            <field name="sbl_require_auth_team_kubwa_create_customer" widget="boolean_toggle"/>
+                            <field name="sbl_require_auth_team_kubwa_check_eligibility" widget="boolean_toggle"/>
+                            <field name="sbl_require_auth_team_kubwa_save_draft" widget="boolean_toggle"/>
+                            <field name="sbl_require_auth_team_kubwa_open_draft" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="sbl_require_auth_team_kubwa_continue_otp" widget="boolean_toggle"/>
+                            <field name="sbl_require_auth_team_kubwa_mark_otp" widget="boolean_toggle"/>
+                            <field name="sbl_require_auth_team_kubwa_continue_pay" widget="boolean_toggle"/>
+                            <field name="sbl_require_auth_team_kubwa_manager_override" widget="boolean_toggle"/>
+                            <field name="sbl_require_auth_team_kubwa_pay_post" widget="boolean_toggle"/>
+                        </group>
+                    </group>
                     <group name="sbl_pos_navigation_menu" string="Navigation Menu">
                         <group>
                             <field name="sbl_hide_pos_install_app" widget="boolean_toggle"/>

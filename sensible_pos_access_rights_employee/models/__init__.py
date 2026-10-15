@@ -8,6 +8,7 @@ from . import sbl_pos_authorization_log
 from . import sbl_hr_employee_cod_payment_method
 from . import sbl_mpesa_sms_access
 from . import sbl_mpesa_expiry_authorization
+from . import sbl_mpesa_freeze_authorization
 from . import sbl_app_gate_config
 from . import sbl_app_gate_log
 from . import sbl_app_gate_employee

@@ -1,5 +1,7 @@
 from . import mpesa_sms_raw_log
 from . import mpesa_transaction
+from . import mpesa_transaction_freeze
+from . import mpesa_transaction_freeze_wizard
 from . import mpesa_transaction_usage
 from . import mpesa_refund_case
 from . import mpesa_manual_sms_wizard

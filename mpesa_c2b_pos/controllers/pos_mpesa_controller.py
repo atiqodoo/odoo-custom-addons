@@ -16,7 +16,13 @@ from odoo import http
 from odoo.http import request
 
 _log = logging.getLogger(__name__)
-AVAILABLE_TRANSACTION_STATES = ('new', 'unmatched', 'partial_pos', 'partially_refunded')
+AVAILABLE_TRANSACTION_STATES = (
+    'new',
+    'unmatched',
+    'partial_pos',
+    'partially_refunded',
+    'reconciled_pos',
+)
 
 
 def _release_state(txn):
@@ -108,10 +114,24 @@ class PosMpesaController(http.Controller):
         txns = txns.sorted('transaction_date', reverse=True)
 
         if not txns:
+            remaining_blocked = Txn.search([
+                ('sender_phone', 'in', phone_variants),
+                ('amount_remaining', '>', 0),
+            ], order='transaction_date desc', limit=5)
             _log.info(
                 "POS validate no match: phone=%s normalized=%s amount=%.2f "
-                "variants=%s states=%s",
+                "variants=%s states=%s remaining_balance_candidates=%s",
                 phone, norm_phone, order_amount, phone_variants, AVAILABLE_TRANSACTION_STATES,
+                [
+                    {
+                        'id': txn.id,
+                        'ref': txn.mpesa_ref,
+                        'state': txn.state,
+                        'remaining': txn.amount_remaining,
+                        'manual_frozen': getattr(txn, 'amount_manually_frozen', 0.0) or 0.0,
+                    }
+                    for txn in remaining_blocked
+                ],
             )
             return {'status': 'not_found', 'transactions': []}
 
@@ -174,6 +194,17 @@ class PosMpesaController(http.Controller):
 
         txn = Txn.browse(transaction_id)
         state, locked_session_id, lock_expires = row
+        if (txn.amount_remaining or 0.0) <= 0.0:
+            _log.warning(
+                "Blocked M-Pesa lock for unavailable/frozen txn id=%d ref=%s session=%s "
+                "remaining=%.2f manual_frozen=%.2f",
+                transaction_id,
+                txn.mpesa_ref,
+                pos_session_id,
+                txn.amount_remaining or 0.0,
+                getattr(txn, 'amount_manually_frozen', 0.0) or 0.0,
+            )
+            return {'success': False, 'error': 'Transaction has no available M-Pesa balance'}
         if state == 'pending_pos':
             if locked_session_id != pos_session_id:
                 return {'success': False, 'error': 'Transaction locked by another till'}
@@ -257,6 +288,17 @@ class PosMpesaController(http.Controller):
         if txn.pos_lock_expires and datetime.utcnow() > txn.pos_lock_expires:
             txn.write({'state': _release_state(txn), 'pos_session_id': False, 'lock_token': False})
             return {'success': False, 'error': 'Lock expired — please re-validate'}
+        if (txn.amount_remaining or 0.0) <= 0.0:
+            _log.warning(
+                "Blocked M-Pesa confirm for unavailable/frozen txn id=%d ref=%s session=%s "
+                "remaining=%.2f manual_frozen=%.2f",
+                transaction_id,
+                txn.mpesa_ref,
+                txn.pos_session_id.id,
+                txn.amount_remaining or 0.0,
+                getattr(txn, 'amount_manually_frozen', 0.0) or 0.0,
+            )
+            return {'success': False, 'error': 'Transaction has no available M-Pesa balance'}
 
         expiry_validator = getattr(
             request.env['hr.employee'].sudo(),
@@ -360,7 +402,8 @@ class PosMpesaController(http.Controller):
                 - amount_used
                 - (txn.amount_refunded or 0.0)
                 - (txn.amount_reversed or 0.0)
-                - (txn.amount_frozen or 0.0),
+                - (txn.amount_frozen or 0.0)
+                - (getattr(txn, 'amount_manually_frozen', 0.0) or 0.0),
                 0.0,
             )
             if amount_used > 0.01:

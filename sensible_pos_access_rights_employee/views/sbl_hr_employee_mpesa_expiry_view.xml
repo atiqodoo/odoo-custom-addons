@@ -9,6 +9,12 @@
                 <field name="sbl_allow_expired_mpesa_sms_override"
                        widget="boolean_toggle"
                        string="Allow Expired M-Pesa SMS Override"/>
+                <field name="sbl_allow_mpesa_sms_freeze"
+                       widget="boolean_toggle"
+                       string="Allow M-Pesa SMS Freeze"/>
+                <field name="sbl_allow_mpesa_sms_unfreeze"
+                       widget="boolean_toggle"
+                       string="Allow M-Pesa SMS Unfreeze"/>
             </xpath>
         </field>
     </record>

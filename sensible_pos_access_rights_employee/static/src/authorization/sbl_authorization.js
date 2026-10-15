@@ -93,7 +93,7 @@ export async function sblAuthorizeAction(pos, dialog, notification, actionKey, o
                 supervisorId: result.supervisor_id,
             });
             notification?.add(_t("Authorization approved."), { type: "success" });
-            return true;
+            return result;
         }
         sblWarn("authorization denied by backend", {
             actionKey,

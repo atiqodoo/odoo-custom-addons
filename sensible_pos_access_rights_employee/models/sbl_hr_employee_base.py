@@ -239,3 +239,53 @@ class HrEmployeeBase(models.AbstractModel):
         help='If checked, this employee needs supervisor authorization before opening product info.',
         default=False,
     )
+    sbl_require_auth_team_kubwa_open = fields.Boolean(
+        string='Require Authorization for Team Kubwa',
+        help='If checked, this employee needs supervisor authorization before opening Team Kubwa.',
+        default=False,
+    )
+    sbl_require_auth_team_kubwa_create_customer = fields.Boolean(
+        string='Require Authorization for Team Kubwa Customer Creation',
+        help='If checked, this employee needs supervisor authorization before creating a Team Kubwa customer.',
+        default=False,
+    )
+    sbl_require_auth_team_kubwa_check_eligibility = fields.Boolean(
+        string='Require Authorization for Team Kubwa Eligibility Check',
+        help='If checked, this employee needs supervisor authorization before checking Team Kubwa eligibility.',
+        default=False,
+    )
+    sbl_require_auth_team_kubwa_save_draft = fields.Boolean(
+        string='Require Authorization for Team Kubwa Draft Save',
+        help='If checked, this employee needs supervisor authorization before manually saving a Team Kubwa draft.',
+        default=False,
+    )
+    sbl_require_auth_team_kubwa_open_draft = fields.Boolean(
+        string='Require Authorization for Team Kubwa Draft Open',
+        help='If checked, this employee needs supervisor authorization before opening a Team Kubwa draft.',
+        default=False,
+    )
+    sbl_require_auth_team_kubwa_continue_otp = fields.Boolean(
+        string='Require Authorization for Team Kubwa Continue to OTP',
+        help='If checked, this employee needs supervisor authorization before moving a Team Kubwa cash-out to OTP.',
+        default=False,
+    )
+    sbl_require_auth_team_kubwa_mark_otp = fields.Boolean(
+        string='Require Authorization for Team Kubwa OTP Confirmation',
+        help='If checked, this employee needs supervisor authorization before marking Team Kubwa OTP received.',
+        default=False,
+    )
+    sbl_require_auth_team_kubwa_continue_pay = fields.Boolean(
+        string='Require Authorization for Team Kubwa Continue to Pay',
+        help='If checked, this employee needs supervisor authorization before moving a Team Kubwa cash-out to Pay.',
+        default=False,
+    )
+    sbl_require_auth_team_kubwa_manager_override = fields.Boolean(
+        string='Require Authorization for Team Kubwa Manager Override',
+        help='If checked, this employee needs supervisor authorization before using Team Kubwa manager override.',
+        default=False,
+    )
+    sbl_require_auth_team_kubwa_pay_post = fields.Boolean(
+        string='Require Authorization for Team Kubwa Pay & Post',
+        help='If checked, this employee needs supervisor authorization before paying and posting a Team Kubwa cash-out.',
+        default=False,
+    )
