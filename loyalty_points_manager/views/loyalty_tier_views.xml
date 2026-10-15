@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_loyalty_tier_list" model="ir.ui.view">
+        <field name="name">loyalty.tier.list</field>
+        <field name="model">loyalty.tier</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="program_id"/>
+                <field name="multiplier"/>
+                <field name="match_policy"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_loyalty_tier_form" model="ir.ui.view">
+        <field name="name">loyalty.tier.form</field>
+        <field name="model">loyalty.tier</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="program_id"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="multiplier"/>
+                            <field name="match_policy"/>
+                            <field name="valid_from"/>
+                            <field name="valid_to"/>
+                            <field name="company_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Conditions" name="conditions">
+                            <field name="condition_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="condition_type"/>
+                                    <field name="operator"/>
+                                    <field name="value_float"/>
+                                    <field name="period_days"/>
+                                    <field name="partner_category_id"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Product Rules" name="product_rules">
+                            <field name="product_rule_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id"/>
+                                    <field name="product_tmpl_id"/>
+                                    <field name="categ_id"/>
+                                    <field name="uom_id"/>
+                                    <field name="points_per_qty"/>
+                                    <field name="points_per_amount"/>
+                                    <field name="min_qty"/>
+                                    <field name="stop_at_first_match"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_loyalty_tier" model="ir.actions.act_window">
+        <field name="name">Loyalty Tiers</field>
+        <field name="res_model">loyalty.tier</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="loyalty_program_view_form_lpm_tiers" model="ir.ui.view">
+        <field name="name">loyalty.program.form.lpm.tiers</field>
+        <field name="model">loyalty.program</field>
+        <field name="inherit_id" ref="loyalty.loyalty_program_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Tiers" name="lpm_tiers" invisible="program_type != 'loyalty'">
+                    <group>
+                        <group string="Tier Earning Policy">
+                            <field name="lpm_tier_earning_policy"/>
+                            <field name="lpm_tier_override_base_eligibility"/>
+                            <field name="lpm_cod_tier_freeze_policy"/>
+                        </group>
+                    </group>
+                    <field name="lpm_tier_ids" context="{'default_program_id': id}" mode="list,form">
+                        <list>
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="multiplier"/>
+                            <field name="match_policy"/>
+                            <field name="valid_from"/>
+                            <field name="valid_to"/>
+                            <field name="active"/>
+                        </list>
+                        <form>
+                            <sheet>
+                                <group>
+                                    <group>
+                                        <field name="name"/>
+                                        <field name="code"/>
+                                        <field name="program_id"/>
+                                        <field name="sequence"/>
+                                        <field name="active"/>
+                                    </group>
+                                    <group>
+                                        <field name="multiplier"/>
+                                        <field name="match_policy"/>
+                                        <field name="valid_from"/>
+                                        <field name="valid_to"/>
+                                    </group>
+                                </group>
+                                <notebook>
+                                    <page string="Conditions" name="conditions">
+                                        <field name="condition_ids">
+                                            <list editable="bottom">
+                                                <field name="sequence" widget="handle"/>
+                                                <field name="condition_type"/>
+                                                <field name="operator"/>
+                                                <field name="value_float"/>
+                                                <field name="period_days"/>
+                                                <field name="partner_category_id"/>
+                                                <field name="active"/>
+                                            </list>
+                                        </field>
+                                    </page>
+                                    <page string="Product Rules" name="product_rules">
+                                        <field name="product_rule_ids">
+                                            <list editable="bottom">
+                                                <field name="sequence" widget="handle"/>
+                                                <field name="product_id"/>
+                                                <field name="product_tmpl_id"/>
+                                                <field name="categ_id"/>
+                                                <field name="uom_id"/>
+                                                <field name="points_per_qty"/>
+                                                <field name="points_per_amount"/>
+                                                <field name="min_qty"/>
+                                                <field name="stop_at_first_match"/>
+                                                <field name="active"/>
+                                            </list>
+                                        </field>
+                                    </page>
+                                </notebook>
+                            </sheet>
+                        </form>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

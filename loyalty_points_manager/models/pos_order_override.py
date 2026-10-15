@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
-from odoo import models, api
+from odoo import _, models, api
+from odoo.exceptions import ValidationError
 from odoo.tools import float_is_zero
 
 _logger = logging.getLogger(__name__)
@@ -73,6 +74,21 @@ class PosOrderLoyaltyOverride(models.Model):
                     order.get('name', '?'),
                 )
                 continue
+
+            partner = self.env['res.partner'].browse(order.get('partner_id')).exists()
+            if partner and not partner._lpm_can_redeem_points():
+                _logger.warning(
+                    "[LPM_PARTNER_LOYALTY_POLICY] POS_SO_INTERCEPT_REDEEM_BLOCKED "
+                    "| order=%s | partner=%s | partner_id=%s | deductions=%s",
+                    order.get('name', '?'),
+                    partner.display_name,
+                    partner.id,
+                    deductions,
+                )
+                raise ValidationError(_(
+                    "Loyalty redemption is disabled for customer %(customer)s.",
+                    customer=partner.display_name,
+                ))
 
             order_name = order.get('name', 'unknown')
             pending_deductions[order_name] = {
@@ -444,6 +460,12 @@ class PosOrderLoyaltyOverride(models.Model):
                 cleaned[k] = vals
             coupon_data = cleaned
 
+        coupon_data = self._lpm_apply_partner_loyalty_policy_to_coupon_data(
+            coupon_data,
+            spending_by_coupon=spending_by_coupon,
+        )
+        coupon_data = self._lpm_apply_tier_earning_policy_to_coupon_data(coupon_data)
+
         _logger.info(
             "[loyalty_backend] confirm_coupon_programs FINAL coupon_data | order=%s | data=%s",
             self.name,
@@ -453,6 +475,133 @@ class PosOrderLoyaltyOverride(models.Model):
         )
 
         return super().confirm_coupon_programs(coupon_data)
+
+    def _lpm_apply_tier_earning_policy_to_coupon_data(self, coupon_data):
+        self.ensure_one()
+        partner = self.partner_id
+        if not partner:
+            return coupon_data
+
+        adjusted = {}
+        for coupon_key, vals in coupon_data.items():
+            spent = float(vals.get('spent', 0.0) or 0.0)
+            points = float(vals.get('points', 0.0) or 0.0)
+            won = float(vals.get('won', max(0.0, points + spent)) or 0.0)
+            if won <= 0:
+                adjusted[coupon_key] = vals
+                continue
+
+            program = self._lpm_program_from_coupon_data(coupon_key, vals)
+            if not program or program.lpm_tier_earning_policy == "none":
+                adjusted[coupon_key] = vals
+                continue
+
+            tier_result = self.env["loyalty.tier.engine"].lpm_apply_tier_earning_policy(
+                partner,
+                program,
+                self,
+                won,
+                source_label="pos_confirm_coupon_programs",
+            )
+            final_won = float(tier_result["final_points"] or 0.0)
+            new_points = final_won - spent
+            _logger.info(
+                "[LPM_TIER_POS] COUPON_DATA_ADJUSTED | order=%s | partner=%s | partner_id=%s "
+                "| coupon=%s | program=%s | program_id=%s | won=%.6f->%.6f "
+                "| spent=%.6f | points=%.6f | tier_result=%s",
+                self.name,
+                partner.display_name,
+                partner.id,
+                coupon_key,
+                program.display_name,
+                program.id,
+                won,
+                final_won,
+                spent,
+                new_points,
+                tier_result,
+            )
+            adjusted[coupon_key] = {**vals, 'won': final_won, 'points': new_points}
+        return adjusted
+
+    def _lpm_program_from_coupon_data(self, coupon_key, vals):
+        program_id = vals.get('program_id')
+        if program_id:
+            return self.env['loyalty.program'].browse(program_id).exists()
+        try:
+            coupon_id = int(coupon_key)
+        except (TypeError, ValueError):
+            coupon_id = 0
+        if coupon_id > 0:
+            return self.env['loyalty.card'].browse(coupon_id).exists().program_id
+        return self.env['loyalty.program']
+
+    def _lpm_apply_partner_loyalty_policy_to_coupon_data(self, coupon_data, spending_by_coupon=None):
+        self.ensure_one()
+        partner = self.partner_id
+        if not partner:
+            return coupon_data
+
+        redeemed_points = self._lpm_coupon_data_redeemed_points(
+            coupon_data,
+            spending_by_coupon=spending_by_coupon,
+        )
+        if redeemed_points > 0 and not partner._lpm_can_redeem_points():
+            _logger.warning(
+                "[LPM_PARTNER_LOYALTY_POLICY] POS_REDEEM_BLOCKED | order=%s "
+                "| partner=%s | partner_id=%s | redeemed_points=%.4f",
+                self.name,
+                partner.display_name,
+                partner.id,
+                redeemed_points,
+            )
+            raise ValidationError(_(
+                "Loyalty redemption is disabled for customer %(customer)s.",
+                customer=partner.display_name,
+            ))
+
+        if partner._lpm_can_earn_points():
+            return coupon_data
+
+        cleaned = {}
+        for coupon_key, vals in coupon_data.items():
+            won = float(vals.get('won', 0.0) or 0.0)
+            spent = float(vals.get('spent', 0.0) or 0.0)
+            points = float(vals.get('points', 0.0) or 0.0)
+            if points < 0 and spent <= 0:
+                spent = abs(points)
+
+            if won > 0 or points > 0:
+                new_points = -spent if spent > 0 else 0.0
+                _logger.info(
+                    "[LPM_PARTNER_LOYALTY_POLICY] POS_EARN_ZEROED | order=%s "
+                    "| partner=%s | partner_id=%s | coupon=%s | won=%.4f->0 "
+                    "| spent=%.4f | points=%.4f->%.4f",
+                    self.name,
+                    partner.display_name,
+                    partner.id,
+                    coupon_key,
+                    won,
+                    spent,
+                    points,
+                    new_points,
+                )
+                vals = {**vals, 'won': 0.0, 'points': new_points}
+                if spent > 0:
+                    vals['spent'] = spent
+            cleaned[coupon_key] = vals
+        return cleaned
+
+    def _lpm_coupon_data_redeemed_points(self, coupon_data, spending_by_coupon=None):
+        authoritative = sum(float(value or 0.0) for value in (spending_by_coupon or {}).values())
+        declared_spent = 0.0
+        declared_negative = 0.0
+        for vals in coupon_data.values():
+            declared_spent += max(0.0, float(vals.get('spent', 0.0) or 0.0))
+            points = float(vals.get('points', 0.0) or 0.0)
+            if points < 0:
+                declared_negative += abs(points)
+        return max(authoritative, declared_spent, declared_negative)
 
     # -------------------------------------------------------------------------
     # Entry point — Odoo 18 signature: _process_order(self, order, existing_order)
@@ -548,6 +697,22 @@ class PosOrderLoyaltyOverride(models.Model):
             "[loyalty_backend] Redemption audit | order=%s | requested=%.2f | available=%.2f | partner=%s",
             order_name, total_redeemed, current_points, partner_id,
         )
+
+        if total_redeemed > 0:
+            partner = self.env['res.partner'].browse(partner_id).exists()
+            if partner and not partner._lpm_can_redeem_points():
+                _logger.warning(
+                    "[LPM_PARTNER_LOYALTY_POLICY] POS_PROCESS_REDEEM_BLOCKED "
+                    "| order=%s | partner=%s | partner_id=%s | redeemed_points=%.4f",
+                    order_name,
+                    partner.display_name,
+                    partner.id,
+                    total_redeemed,
+                )
+                raise ValidationError(_(
+                    "Loyalty redemption is disabled for customer %(customer)s.",
+                    customer=partner.display_name,
+                ))
 
         if total_redeemed > 0 and total_redeemed > current_points + 0.001:
             _logger.warning(

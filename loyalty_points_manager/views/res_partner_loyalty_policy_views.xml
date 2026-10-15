@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_lpm_loyalty_policy" model="ir.ui.view">
+        <field name="name">res.partner.form.lpm.loyalty.policy</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="membership.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='membership']/group[1]" position="after">
+                <notebook name="lpm_membership_policy_notebook">
+                    <page string="Loyalty Controls" name="lpm_loyalty_controls">
+                        <group>
+                            <group>
+                                <field name="lpm_can_earn_loyalty_points" widget="boolean_toggle"/>
+                                <field name="lpm_can_redeem_loyalty_points" widget="boolean_toggle"/>
+                            </group>
+                        </group>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+</odoo>

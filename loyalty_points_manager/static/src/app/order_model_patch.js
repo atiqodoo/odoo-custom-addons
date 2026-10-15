@@ -42,6 +42,14 @@ patch(PosOrder.prototype, {
     pointsForPrograms(programs) {
         const result = super.pointsForPrograms(...arguments);
 
+        if (this._lpmPartnerCanEarnLoyaltyPoints() === false) {
+            return this._lpmZeroEarnedLoyaltyResult(
+                result,
+                programs,
+                "partner earning disabled"
+            );
+        }
+
         const scaleFactor = this._getNetEarningScaleFactor();
 
         // ── Zero-payment guard (fixed) ────────────────────────────────────────
@@ -124,6 +132,43 @@ patch(PosOrder.prototype, {
     // ─────────────────────────────────────────────────────────────────────────
     // Helpers
     // ─────────────────────────────────────────────────────────────────────────
+
+    _lpmPartnerCanEarnLoyaltyPoints() {
+        const partner = this.get_partner?.();
+        if (!partner) {
+            return true;
+        }
+        return partner.lpm_can_earn_loyalty_points !== false;
+    },
+
+    _lpmZeroEarnedLoyaltyResult(result, programs, reason) {
+        console.log(
+            "[LPM_PARTNER_LOYALTY_POLICY] POS_EARN_ZEROED_FRONTEND | reason=" + reason
+        );
+
+        for (const program of programs) {
+            if (!result[program.id]?.length) continue;
+
+            result[program.id] = result[program.id].map((entry) => {
+                const couponId = entry.coupon_id;
+                let costFromLines = 0;
+
+                for (const line of this.get_orderlines()) {
+                    if (
+                        line.is_reward_line &&
+                        (line.coupon_id?.id ?? line.coupon_id) === couponId &&
+                        (line.points_cost || 0) > 0
+                    ) {
+                        costFromLines += line.points_cost;
+                    }
+                }
+
+                const correctedPoints = costFromLines > 0 ? -costFromLines : 0;
+                return { ...entry, points: correctedPoints, won: 0 };
+            });
+        }
+        return result;
+    },
 
     /**
      * The scale factor collapses the two-pass proportional distribution from

@@ -22,6 +22,9 @@
         'contacts',
         'loyalty',
         'account',
+        'sale_loyalty',
+        'sale_stock',
+        'membership',
         'point_of_sale',
         'pos_loyalty',
         'pos_cod',
@@ -29,7 +32,10 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'views/res_partner_loyalty_policy_views.xml',
+        'views/loyalty_tier_views.xml',
         'views/loyalty_points_adjustment_views.xml',
+        'views/loyalty_history_log_views.xml',
         'wizard/loyalty_points_wizard_views.xml',
     ],
     'assets': {
@@ -60,6 +66,7 @@
             'loyalty_points_manager/static/src/app/payment_screen_loyalty_patch.js',
         ],
     },
+    'post_init_hook': 'post_init_hook',
     'installable': True,
     'application': False,
     'auto_install': False,

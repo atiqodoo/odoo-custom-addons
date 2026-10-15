@@ -120,6 +120,19 @@ patch(PosOrder.prototype, {
 
         // Only intercept redemption rewards (those that consume loyalty points)
         if (requiredPoints > 0) {
+            const partner = this.get_partner?.();
+            if (partner?.lpm_can_redeem_loyalty_points === false) {
+                const errMsg = _t(
+                    "Loyalty redemption is disabled for customer %(name)s.",
+                    { name: partner.name }
+                );
+                console.warn(
+                    "[LPM_PARTNER_LOYALTY_POLICY] POS_REDEEM_BLOCKED_FRONTEND" +
+                    " | partner=" + (partner?.name ?? "?") +
+                    " | partner_id=" + (partner?.id ?? "?")
+                );
+                return errMsg;
+            }
 
             // ── Points balance pre-check (synchronous, before first await) ──────
             // Reads the loyalty card from the in-memory POS model cache.
@@ -166,7 +179,6 @@ patch(PosOrder.prototype, {
                 );
             }
 
-            const partner   = this.get_partner?.();
             const partnerId = partner?.id;
 
             console.log(

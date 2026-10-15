@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_lpm_loyalty_history_log_list" model="ir.ui.view">
+        <field name="name">lpm.loyalty.history.log.list</field>
+        <field name="model">loyalty.history</field>
+        <field name="arch" type="xml">
+            <list string="Loyalty History Logs"
+                  create="0"
+                  edit="0"
+                  delete="0"
+                  decoration-success="transaction_type == 'earned'"
+                  decoration-danger="transaction_type == 'redeemed'"
+                  decoration-warning="transaction_type == 'mixed'">
+                <field name="create_date" string="Date"/>
+                <field name="partner_id"/>
+                <field name="program_id"/>
+                <field name="card_id" string="Loyalty Card"/>
+                <field name="current_points_balance" sum="Current Balance"/>
+                <field name="source_type"/>
+                <field name="source_reference"/>
+                <field name="description"/>
+                <field name="issued" sum="Total Issued"/>
+                <field name="used" sum="Total Used"/>
+                <field name="net_points" sum="Net Points"/>
+                <field name="transaction_type" widget="badge"
+                       decoration-success="transaction_type == 'earned'"
+                       decoration-danger="transaction_type == 'redeemed'"
+                       decoration-warning="transaction_type == 'mixed'"
+                       decoration-muted="transaction_type == 'neutral'"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_lpm_loyalty_history_log_form" model="ir.ui.view">
+        <field name="name">lpm.loyalty.history.log.form</field>
+        <field name="model">loyalty.history</field>
+        <field name="arch" type="xml">
+            <form string="Loyalty History Log" create="0" edit="0" delete="0">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="source_reference" readonly="1" placeholder="Loyalty Transaction"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Customer">
+                            <field name="partner_id"/>
+                            <field name="program_id"/>
+                            <field name="card_id"/>
+                            <field name="current_points_balance"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Points">
+                            <field name="issued"/>
+                            <field name="used"/>
+                            <field name="net_points"/>
+                            <field name="transaction_type"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Source">
+                            <field name="source_type"/>
+                            <field name="source_reference"/>
+                            <field name="order_model"/>
+                            <field name="order_id" invisible="not order_id"/>
+                        </group>
+                        <group string="Audit">
+                            <field name="create_uid"/>
+                            <field name="create_date"/>
+                            <field name="write_uid"/>
+                            <field name="write_date"/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_lpm_loyalty_history_log_search" model="ir.ui.view">
+        <field name="name">lpm.loyalty.history.log.search</field>
+        <field name="model">loyalty.history</field>
+        <field name="arch" type="xml">
+            <search string="Search Loyalty History Logs">
+                <field name="description"/>
+                <field name="partner_id"/>
+                <field name="program_id"/>
+                <field name="card_id"/>
+                <field name="current_points_balance"/>
+                <field name="source_reference"/>
+                <field name="order_model"/>
+                <separator/>
+                <filter string="Earned" name="earned" domain="[('transaction_type', '=', 'earned')]"/>
+                <filter string="Redeemed" name="redeemed" domain="[('transaction_type', '=', 'redeemed')]"/>
+                <filter string="Earned and Redeemed" name="mixed" domain="[('transaction_type', '=', 'mixed')]"/>
+                <separator/>
+                <filter string="POS" name="source_pos" domain="[('source_type', '=', 'pos')]"/>
+                <filter string="Sales Orders" name="source_sale" domain="[('source_type', '=', 'sale')]"/>
+                <filter string="Manual Adjustments" name="source_manual" domain="[('source_type', '=', 'manual')]"/>
+                <filter string="Imports / Balance Sync" name="source_import" domain="[('source_type', '=', 'import')]"/>
+                <separator/>
+                <filter string="Has Balance" name="has_balance" domain="[('current_points_balance', '&gt;', 0)]"/>
+                <filter string="Zero Balance" name="zero_balance" domain="[('current_points_balance', '=', 0)]"/>
+                <separator/>
+                <filter string="Created On" name="created_on" date="create_date"/>
+                <group expand="0" string="Group By">
+                    <filter string="Customer" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Program" name="group_program" context="{'group_by': 'program_id'}"/>
+                    <filter string="Loyalty Card" name="group_card" context="{'group_by': 'card_id'}"/>
+                    <filter string="Current Points Balance" name="group_current_points_balance" context="{'group_by': 'current_points_balance'}"/>
+                    <filter string="Source" name="group_source" context="{'group_by': 'source_type'}"/>
+                    <filter string="Transaction Type" name="group_transaction_type" context="{'group_by': 'transaction_type'}"/>
+                    <filter string="Company" name="group_company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                    <filter string="Created On" name="group_create_date" context="{'group_by': 'create_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_lpm_loyalty_history_log_pivot" model="ir.ui.view">
+        <field name="name">lpm.loyalty.history.log.pivot</field>
+        <field name="model">loyalty.history</field>
+        <field name="arch" type="xml">
+            <pivot string="Loyalty History Analysis">
+                <field name="source_type" type="row"/>
+                <field name="transaction_type" type="row"/>
+                <field name="create_date" interval="month" type="col"/>
+                <field name="issued" type="measure"/>
+                <field name="used" type="measure"/>
+                <field name="net_points" type="measure"/>
+                <field name="current_points_balance" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_lpm_loyalty_history_log_graph" model="ir.ui.view">
+        <field name="name">lpm.loyalty.history.log.graph</field>
+        <field name="model">loyalty.history</field>
+        <field name="arch" type="xml">
+            <graph string="Loyalty History" type="bar">
+                <field name="create_date" interval="month"/>
+                <field name="issued" type="measure"/>
+                <field name="used" type="measure"/>
+                <field name="net_points" type="measure"/>
+                <field name="current_points_balance" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_lpm_loyalty_history_log" model="ir.actions.act_window">
+        <field name="name">Loyalty History Logs</field>
+        <field name="res_model">loyalty.history</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="search_view_id" ref="view_lpm_loyalty_history_log_search"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No loyalty history logs found
+            </p>
+            <p>
+                POS, sales order, COD, import, and manual adjustment loyalty transactions appear here.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_lpm_loyalty_history_log"
+              name="History Logs"
+              parent="menu_loyalty_points_root"
+              action="action_lpm_loyalty_history_log"
+              sequence="30"/>
+
+</odoo>

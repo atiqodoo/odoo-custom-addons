@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import json
 
 from odoo import api, fields, models
 
@@ -8,6 +9,13 @@ _logger = logging.getLogger(__name__)
 
 class PosOrderCodLoyalty(models.Model):
     _inherit = 'pos.order'
+
+    lpm_cod_tier_snapshot_json = fields.Text(
+        string="COD Tier Snapshot",
+        copy=False,
+        readonly=True,
+        help="Technical JSON snapshot used to freeze COD tier earning per program when configured.",
+    )
 
     @api.model
     def collect_cod_payment(self, *args, **kwargs):
@@ -55,6 +63,15 @@ class PosOrderCodLoyalty(models.Model):
             return False
         if result.get('cod_state') == 'returned':
             return False
+        if not self.partner_id._lpm_can_earn_points():
+            _logger.info(
+                "[loyalty_cod] earn blocked by partner policy | order=%s "
+                "| partner=%s | partner_id=%s",
+                self.name,
+                self.partner_id.display_name,
+                self.partner_id.id,
+            )
+            return False
 
         payment_amount = float(result.get('amount') or 0.0)
         if payment_amount <= 0:
@@ -80,15 +97,17 @@ class PosOrderCodLoyalty(models.Model):
             full_points = self._lpm_cod_points_for_program(program)
             if full_points <= 0:
                 continue
+            tier_full_points = self._lpm_cod_tier_adjusted_full_points(program, full_points)
 
-            target_issued = round(full_points * paid_ratio, 6)
+            target_issued = round(tier_full_points * paid_ratio, 6)
             already_issued = self._lpm_cod_issued_points(program)
             delta = round(target_issued - already_issued, 6)
             if delta <= 0.0001:
                 _logger.debug(
                     "[loyalty_cod] skip program=%s order=%s full=%.4f ratio=%.6f "
-                    "target=%.4f already=%.4f",
+                    "tier_full=%.4f target=%.4f already=%.4f",
                     program.display_name, self.name, full_points, paid_ratio,
+                    tier_full_points,
                     target_issued, already_issued,
                 )
                 continue
@@ -119,7 +138,7 @@ class PosOrderCodLoyalty(models.Model):
             _logger.info(
                 "[loyalty_cod] awarded COD points | order=%s partner=%s "
                 "program=%s payment=%.2f cumulative_paid=%.2f ratio=%.6f "
-                "full_points=%.4f issued_now=%.4f new_balance=%.4f",
+                "base_full_points=%.4f tier_full_points=%.4f issued_now=%.4f new_balance=%.4f",
                 self.name,
                 self.partner_id.display_name,
                 program.display_name,
@@ -127,11 +146,71 @@ class PosOrderCodLoyalty(models.Model):
                 cumulative_paid,
                 paid_ratio,
                 full_points,
+                tier_full_points,
                 delta,
                 before + delta,
             )
 
         return updates or False
+
+    def _lpm_cod_tier_adjusted_full_points(self, program, full_points):
+        self.ensure_one()
+        if program.lpm_tier_earning_policy == "none":
+            return full_points
+
+        snapshots = self._lpm_cod_tier_snapshots()
+        program_key = str(program.id)
+        if program.lpm_cod_tier_freeze_policy == "order" and program_key in snapshots:
+            snapshot = snapshots[program_key]
+            _logger.info(
+                "[LPM_TIER_COD] USING_FROZEN_SNAPSHOT | order=%s | program=%s | program_id=%s "
+                "| base_full_points=%.6f | frozen_final=%.6f | snapshot=%s",
+                self.name,
+                program.display_name,
+                program.id,
+                full_points,
+                float(snapshot.get("final_points") or full_points),
+                snapshot,
+            )
+            return float(snapshot.get("final_points") or full_points)
+
+        tier_result = self.env["loyalty.tier.engine"].lpm_apply_tier_earning_policy(
+            self.partner_id,
+            program,
+            self,
+            full_points,
+            source_label="cod_payment_collection",
+        )
+        final_points = float(tier_result["final_points"] or 0.0)
+        if program.lpm_cod_tier_freeze_policy == "order":
+            snapshots[program_key] = tier_result
+            self.sudo().write({"lpm_cod_tier_snapshot_json": json.dumps(snapshots, sort_keys=True)})
+            _logger.info(
+                "[LPM_TIER_COD] SNAPSHOT_FROZEN | order=%s | program=%s | program_id=%s "
+                "| base_full_points=%.6f | final_full_points=%.6f | tier_result=%s",
+                self.name,
+                program.display_name,
+                program.id,
+                full_points,
+                final_points,
+                tier_result,
+            )
+        return final_points
+
+    def _lpm_cod_tier_snapshots(self):
+        self.ensure_one()
+        if not self.lpm_cod_tier_snapshot_json:
+            return {}
+        try:
+            data = json.loads(self.lpm_cod_tier_snapshot_json)
+        except (TypeError, ValueError):
+            _logger.warning(
+                "[LPM_TIER_COD] INVALID_SNAPSHOT_JSON | order=%s | raw=%s",
+                self.name,
+                self.lpm_cod_tier_snapshot_json,
+            )
+            return {}
+        return data if isinstance(data, dict) else {}
 
     def _lpm_cod_loyalty_programs(self):
         self.ensure_one()
