@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_upg_log_tail_wizard_form" model="ir.ui.view">
+        <field name="name">pos.uncleared.payment.log.tail.form</field>
+        <field name="model">pos.uncleared.payment.log.tail</field>
+        <field name="arch" type="xml">
+            <form string="UPG Backend Log Tail">
+                <header>
+                    <button name="action_refresh" type="object" string="Refresh" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="pos_config_id"/>
+                        <field name="line_count"/>
+                        <field name="upg_only"/>
+                        <field name="log_file_path"/>
+                    </group>
+                    <field name="log_tail" nolabel="1" readonly="1" widget="text"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
