@@ -2,7 +2,7 @@
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import base64
 import io
 import logging
@@ -475,7 +475,7 @@ Check Odoo server logs for complete details.
         _logger.info(f"Show internal transfers: {self.show_internal_transfers}")
         
         date_from_dt = fields.Datetime.to_datetime(self.date_from)
-        date_to_dt = fields.Datetime.to_datetime(self.date_to)
+        date_to_dt = fields.Datetime.to_datetime(self.date_to) + timedelta(days=1)
         
         _logger.info(f"Date from (datetime): {date_from_dt}")
         _logger.info(f"Date to (datetime): {date_to_dt}")
@@ -484,7 +484,7 @@ Check Odoo server logs for complete details.
             ('product_id', '=', product.id),
             ('state', '=', 'done'),
             ('date', '>=', date_from_dt),
-            ('date', '<=', date_to_dt),
+            ('date', '<', date_to_dt),
             '|',
             ('location_id', 'in', location_ids),
             ('location_dest_id', 'in', location_ids),
@@ -743,6 +743,37 @@ Check Odoo server logs for complete details.
         # Return the tuple
         return (total_amount, unit_price)
 
+    def _get_purchase_move_qty_for_line(self, move, line_uom):
+        """Return the stock move quantity expressed in the purchase/invoice line UoM."""
+        qty = move.quantity or move.product_uom_qty
+        move_uom = move.product_uom or move.product_id.uom_id
+
+        if line_uom and move_uom and line_uom != move_uom:
+            return move_uom._compute_quantity(qty, line_uom)
+
+        return qty
+
+    def _allocate_amount_to_stock_move(self, total_incl, total_excl, line_qty, move_qty, unit_price_incl=None):
+        """Allocate a line total to the actual received quantity on the stock move."""
+        if not line_qty:
+            return 0.0, 0.0, 0.0
+
+        unit_price_incl = unit_price_incl or (total_incl / line_qty)
+        unit_price_excl = total_excl / line_qty
+        return unit_price_incl * move_qty, unit_price_incl, unit_price_excl * move_qty
+
+    def _purchase_invoice_lines_for_move(self, bill, move, purchase_line):
+        lines = bill.invoice_line_ids.filtered(
+            lambda line: line.product_id == move.product_id and line.display_type not in ('line_section', 'line_note')
+        )
+
+        if lines and hasattr(lines[0], 'purchase_line_id'):
+            purchase_lines = lines.filtered(lambda line: line.purchase_line_id == purchase_line)
+            if purchase_lines:
+                return purchase_lines
+
+        return lines
+
     def _get_purchase_amount_and_unit_price(self, move):
         """
         Get purchase amount and unit price - ENHANCED with tax inclusion and custom pricing support
@@ -901,9 +932,7 @@ Check Odoo server logs for complete details.
                 _logger.info(f"\n    Looking for product ID: {move.product_id.id}")
                 _logger.info(f"    Looking for product name: {move.product_id.display_name}")
                 
-                invoice_lines = bill.invoice_line_ids.filtered(
-                    lambda line: line.product_id == move.product_id and line.display_type not in ('line_section', 'line_note')
-                )
+                invoice_lines = self._purchase_invoice_lines_for_move(bill, move, purchase_line)
                 _logger.info(f"    Filtered lines found: {len(invoice_lines)}")
                 
                 if invoice_lines:
@@ -939,9 +968,21 @@ Check Odoo server logs for complete details.
                         _logger.info(f"      💰 price_subtotal (WITHOUT tax): {inv_line.price_subtotal}")
                         _logger.info(f"      💰 price_total (WITH tax): {inv_line.price_total} ⬅️ USING THIS")
                         
-                        # Use price_total (includes tax) for consistency with POS
-                        line_amount = inv_line.price_total
+                        line_qty = inv_line.quantity or purchase_line.product_qty
+                        move_qty_for_line = self._get_purchase_move_qty_for_line(move, inv_line.product_uom_id)
+                        vendor_unit_price_incl = getattr(inv_line, 'vendor_final_unit_price_vat_incl', 0.0) or 0.0
+                        line_amount, line_unit_price, line_subtotal = self._allocate_amount_to_stock_move(
+                            inv_line.price_total,
+                            inv_line.price_subtotal,
+                            line_qty,
+                            move_qty_for_line,
+                            vendor_unit_price_incl,
+                        )
                         total_amount += line_amount
+                        _logger.info(f"      Invoice Line Quantity: {line_qty}")
+                        _logger.info(f"      Stock Move Quantity in invoice UoM: {move_qty_for_line}")
+                        _logger.info(f"      Allocated Unit Price (WITH tax): {line_unit_price}")
+                        _logger.info(f"      Allocated Subtotal (WITHOUT tax): {line_subtotal}")
                         
                         _logger.info(f"      ✓ Line Contribution: {line_amount}")
                 else:
@@ -986,9 +1027,17 @@ Check Odoo server logs for complete details.
             _logger.info(f"    💰 price_subtotal (WITHOUT tax): {purchase_line.price_subtotal}")
             _logger.info(f"    💰 price_total (WITH tax): {purchase_line.price_total} ⬅️ USING THIS")
             
-            # Use price_total for consistency with POS and bills
-            total_amount = purchase_line.price_total
+            move_qty_for_line = self._get_purchase_move_qty_for_line(move, purchase_line.product_uom)
+            total_amount, allocated_unit_price, allocated_subtotal = self._allocate_amount_to_stock_move(
+                purchase_line.price_total,
+                purchase_line.price_subtotal,
+                purchase_line.product_qty,
+                move_qty_for_line,
+            )
             amount_source = f"Purchase Order (State: {purchase_order.state})"
+            _logger.info(f"    Stock Move Quantity in PO UoM: {move_qty_for_line}")
+            _logger.info(f"    Allocated Unit Price (WITH tax): {allocated_unit_price}")
+            _logger.info(f"    Allocated Subtotal (WITHOUT tax): {allocated_subtotal}")
             
             _logger.info(f"\n  ✓ Total from PO (WITH tax): {total_amount}")
             _logger.info(f"  📊 Source: {amount_source}")
@@ -1009,15 +1058,24 @@ Check Odoo server logs for complete details.
         if posted_bills:
             # Get subtotal from bills
             total_without_tax = sum(
-                line.price_subtotal
+                self._allocate_amount_to_stock_move(
+                    line.price_total,
+                    line.price_subtotal,
+                    line.quantity or purchase_line.product_qty,
+                    self._get_purchase_move_qty_for_line(move, line.product_uom_id),
+                )[2]
                 for bill in posted_bills
-                for line in bill.invoice_line_ids.filtered(
-                    lambda l: l.product_id == move.product_id and not l.display_type
-                )
+                for line in self._purchase_invoice_lines_for_move(bill, move, purchase_line)
             )
         else:
             # Get subtotal from PO
-            total_without_tax = purchase_line.price_subtotal
+            move_qty_for_line = self._get_purchase_move_qty_for_line(move, purchase_line.product_uom)
+            total_without_tax = self._allocate_amount_to_stock_move(
+                purchase_line.price_total,
+                purchase_line.price_subtotal,
+                purchase_line.product_qty,
+                move_qty_for_line,
+            )[2]
         
         unit_price_without_tax = total_without_tax / qty if qty else 0.0
         tax_amount = total_amount - total_without_tax

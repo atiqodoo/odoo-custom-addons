@@ -128,11 +128,19 @@ class StockCardWizardContactStock(models.TransientModel):
         subtotal = 0.0
 
         for bill in posted_bills:
-            invoice_lines = bill.invoice_line_ids.filtered(
-                lambda line: line.product_id == move.product_id and line.display_type not in ('line_section', 'line_note')
-            )
-            amount += sum(invoice_lines.mapped('price_total'))
-            subtotal += sum(invoice_lines.mapped('price_subtotal'))
+            invoice_lines = self._purchase_invoice_lines_for_move(bill, move, purchase_line)
+            for invoice_line in invoice_lines:
+                move_qty_for_line = self._get_purchase_move_qty_for_line(move, invoice_line.product_uom_id)
+                vendor_unit_price_incl = getattr(invoice_line, 'vendor_final_unit_price_vat_incl', 0.0) or 0.0
+                line_amount, _unit_price, line_subtotal = self._allocate_amount_to_stock_move(
+                    invoice_line.price_total,
+                    invoice_line.price_subtotal,
+                    invoice_line.quantity or purchase_line.product_qty,
+                    move_qty_for_line,
+                    vendor_unit_price_incl,
+                )
+                amount += line_amount
+                subtotal += line_subtotal
 
         if amount:
             _logger.info(
@@ -144,8 +152,13 @@ class StockCardWizardContactStock(models.TransientModel):
             )
             return amount, subtotal
 
-        amount = purchase_line.price_total or 0.0
-        subtotal = purchase_line.price_subtotal or 0.0
+        move_qty_for_line = self._get_purchase_move_qty_for_line(move, purchase_line.product_uom)
+        amount, _unit_price, subtotal = self._allocate_amount_to_stock_move(
+            purchase_line.price_total or 0.0,
+            purchase_line.price_subtotal or 0.0,
+            purchase_line.product_qty,
+            move_qty_for_line,
+        )
         _logger.info(
             "[CONTACT REPORT][STOCK] Purchase amount for move %s from PO fallback %s: incl=%s excl=%s",
             move.id,
