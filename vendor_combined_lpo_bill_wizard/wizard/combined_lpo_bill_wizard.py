@@ -21,6 +21,7 @@ _logger = logging.getLogger(__name__)
 
 class CombinedLpoBillWizard(models.TransientModel):
     _name = 'combined.lpo.bill.wizard'
+    _inherit = ['vendor.bill.wizard.display.mixin', 'vendor.bill.variance.policy.mixin']
     _description = 'Combined LPO Vendor Bill Wizard'
 
     partner_id = fields.Many2one('res.partner', string='Vendor', required=True, readonly=True)
@@ -118,17 +119,24 @@ class CombinedLpoBillWizard(models.TransientModel):
         'line_ids.line_total_vat_incl',
         'vendor_invoice_final_total',
         'vendor_invoice_profile',
+        'partner_id.invoice_variance_allocation_mode',
     )
     def _compute_totals(self):
         for wizard in self:
             included_lines = wizard.line_ids.filtered('include_line')
             calculated_total = sum(included_lines.mapped('line_total_vat_incl'))
+            policy = wizard.partner_id.commercial_partner_id.get_invoice_variance_policy()
+            allocation_enabled = (
+                wizard.vendor_invoice_final_total
+                and calculated_total
+                and policy.get('allocation_mode') == 'absorb_into_cost'
+            )
             wizard.invoice_total_vat_incl = calculated_total
             if wizard.vendor_invoice_final_total:
                 variance = calculated_total - wizard.vendor_invoice_final_total
                 ratio = (
                     wizard.vendor_invoice_final_total / calculated_total
-                    if calculated_total else 1.0
+                    if allocation_enabled else 1.0
                 )
                 variance_pct = variance / calculated_total * 100.0 if calculated_total else 0.0
             else:
@@ -243,6 +251,7 @@ class CombinedLpoBillWizard(models.TransientModel):
             'view_mode': 'form',
             'res_id': self.id,
             'target': 'new',
+            'context': {'dialog_size': 'extra-large'},
         }
 
     def _prepare_wizard_line_vals(self, purchase_line, qty):
@@ -358,6 +367,7 @@ class CombinedLpoBillWizard(models.TransientModel):
             'view_mode': 'form',
             'res_id': self.id,
             'target': 'new',
+            'context': {'dialog_size': 'extra-large'},
         }
 
     def _check_promised_cost_discrepancies(self):
@@ -425,10 +435,13 @@ class CombinedLpoBillWizard(models.TransientModel):
 
     def _validate_created_bill(self, bill):
         self.ensure_one()
+        if not self.vendor_invoice_final_total:
+            return
+        rounding = self.currency_id.rounding or 0.01
         comparison = float_compare(
             bill.amount_total,
             self.vendor_invoice_final_total,
-            precision_rounding=self.currency_id.rounding or 0.01,
+            precision_rounding=rounding,
         )
         _logger.info(
             '[CLPO_VALIDATE] generated_bill_total wizard_id=%s bill_id=%s generated=%s '
@@ -440,13 +453,28 @@ class CombinedLpoBillWizard(models.TransientModel):
             comparison,
         )
         if comparison:
-            raise ValidationError(_(
-                'Generated bill total (%(generated).2f) does not match the vendor invoice '
-                'final total (%(vendor).2f).'
-            ) % {
-                'generated': bill.amount_total,
-                'vendor': self.vendor_invoice_final_total,
-            })
+            difference = bill.amount_total - self.vendor_invoice_final_total
+            _logger.warning(
+                '[VPC_VARIANCE] combined_bill_total_variance_allowed wizard_id=%s bill_id=%s '
+                'generated_total=%s vendor_final_total=%s variance=%s',
+                self.id,
+                bill.id,
+                bill.amount_total,
+                self.vendor_invoice_final_total,
+                difference,
+            )
+            if abs(difference) <= rounding + 0.0000001:
+                _logger.info(
+                    '[CLPO_VALIDATE] generated_bill_total_rounding_accepted wizard_id=%s '
+                    'bill_id=%s generated=%s vendor_total=%s difference=%s rounding=%s',
+                    self.id,
+                    bill.id,
+                    bill.amount_total,
+                    self.vendor_invoice_final_total,
+                    difference,
+                    rounding,
+                )
+                return
 
     def action_create_bill(self):
         self.ensure_one()
@@ -455,8 +483,11 @@ class CombinedLpoBillWizard(models.TransientModel):
             self._validate_source_scope()
             self._check_duplicate_vendor_reference()
             self._profile_adapter().validate_wizard()
+            self._check_invoice_variance_policy()
             self._check_promised_cost_discrepancies()
             bill = CombinedLpoBillBuilder(self).create_or_update_bill()
+            self._check_invoice_variance_policy_for_bill(bill)
+            self._log_invoice_variance_audit(bill)
         except Exception:
             _logger.exception(
                 '[CLPO_ERROR] create_bill_failed wizard_id=%s vendor_id=%s purchase_ids=%s',

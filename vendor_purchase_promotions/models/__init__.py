@@ -1,6 +1,10 @@
+from . import promotion_profile
 from . import res_partner
+from . import res_config_settings
 from . import vendor_promotion
 from . import promotion_override_log
+from . import promotion_substitution_override_log
+from . import promotion_receipt_log
 from . import purchase_order_line
 from . import purchase_order
 from . import purchase_promotion_checker
@@ -10,3 +14,4 @@ from . import account_move_line
 from . import account_move
 from . import account_payment_register
 from . import stock_picking
+from . import promotion_substitution_wizard

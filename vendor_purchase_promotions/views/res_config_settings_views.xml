@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_vendor_promotions" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.vendor.promotions</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="purchase.res_config_settings_view_form_purchase"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='purchase_setting_container']" position="inside">
+                <setting id="vendor_promotion_split_groups_by_uom"
+                         string="Promotion UoM Separation"
+                         help="Keep tier/slab calculations separate when eligible RFQ lines use different purchase units of measure. Enabled by default.">
+                    <field name="vendor_promotion_split_groups_by_uom"/>
+                </setting>
+                <setting id="vendor_promotion_split_groups_by_category"
+                         string="Promotion Category Separation"
+                         help="Keep tier/slab calculations separate when eligible RFQ lines belong to different product categories. Enabled by default.">
+                    <field name="vendor_promotion_split_groups_by_category"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

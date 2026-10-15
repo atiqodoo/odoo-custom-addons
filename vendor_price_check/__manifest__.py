@@ -28,7 +28,13 @@
         'views/crown_vendor_price_wizard_views.xml',
         'views/account_move_views.xml',
         'views/crown_invoice_audit_views.xml',
+        'views/vendor_bill_invoice_variance_audit_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'vendor_price_check/static/src/scss/vendor_bill_wizard.scss',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,

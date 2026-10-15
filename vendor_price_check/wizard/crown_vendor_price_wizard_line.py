@@ -34,60 +34,72 @@ class CrownVendorPriceWizardLine(models.TransientModel):
     structured_discount_amount = fields.Monetary(
         string='Structured Discount',
         compute='_compute_crown_line_metrics',
+        store=True,
         currency_field='currency_id',
         readonly=True,
     )
     structured_discount_percentage = fields.Float(
         string='Structured Discount %',
         compute='_compute_crown_line_metrics',
+        store=True,
         readonly=True,
     )
     discount_per_quantity = fields.Monetary(
         string='Discount / Qty',
         compute='_compute_crown_line_metrics',
+        store=True,
         currency_field='currency_id',
         readonly=True,
     )
     freight_amount = fields.Monetary(
         string='Freight Amount',
         compute='_compute_crown_line_metrics',
+        store=True,
         currency_field='currency_id',
         readonly=True,
     )
     preliminary_unit_price_excl_vat = fields.Monetary(
         string='Preliminary Unit Excl. VAT',
         compute='_compute_crown_line_metrics',
+        store=True,
         currency_field='currency_id',
         readonly=True,
     )
     final_unit_price_excl_vat = fields.Monetary(
         string='Final Unit Excl. VAT',
         compute='_compute_crown_final_amounts',
+        store=True,
         currency_field='currency_id',
         readonly=True,
     )
     final_unit_price_incl_vat = fields.Monetary(
         string='Final Unit Incl. VAT',
         compute='_compute_crown_final_amounts',
+        store=True,
         currency_field='currency_id',
         readonly=True,
     )
     final_line_total_vat_incl = fields.Monetary(
         string='Final Line Total Incl. VAT',
         compute='_compute_crown_final_amounts',
+        store=True,
         currency_field='currency_id',
         readonly=True,
     )
     allocated_variance_amount = fields.Monetary(
         string='Allocated Invoice Variance',
         compute='_compute_crown_final_amounts',
+        store=True,
         currency_field='currency_id',
         readonly=True,
     )
 
     def _is_crown_profile(self):
         self.ensure_one()
-        return self.wizard_id.vendor_invoice_profile == VENDOR_INVOICE_PROFILE_CROWN
+        return bool(
+            self.wizard_id
+            and self.wizard_id.vendor_invoice_profile == VENDOR_INVOICE_PROFILE_CROWN
+        )
 
     @api.depends('purchase_tax_ids', 'purchase_tax_ids.name', 'purchase_tax_ids.amount')
     def _compute_vat_description(self):
@@ -234,12 +246,9 @@ class CrownVendorPriceWizardLine(models.TransientModel):
     def _get_effective_bill_unit_price(self):
         self.ensure_one()
         if self._is_crown_profile():
-            # Monetary display fields are currency-rounded. Bill price_unit must
-            # retain full precision so quantity multiplication reconciles to the
-            # vendor's final invoice total without cumulative unit-rounding drift.
-            return (
-                (self.calculated_subtotal or 0.0)
-                * (self.wizard_id.invoice_allocation_ratio or 1.0)
+            return self.wizard_id._apply_invoice_allocation_to_unit_price(
+                self.calculated_subtotal,
+                line=self,
             )
         return super()._get_effective_bill_unit_price()
 

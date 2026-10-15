@@ -28,6 +28,7 @@ class CombinedLpoBillBuilder:
             'applied_freight': line.applied_freight,
             'vpc_from_vendor_price_wizard': True,
         }
+        values.update(line._prepare_common_bill_line_audit_vals())
         values.update(self.wizard._profile_adapter().prepare_bill_line_vals(line))
         _logger.info(
             '[CLPO_LINE] prepare_bill_line wizard_id=%s purchase_line_id=%s po=%s '
@@ -112,6 +113,8 @@ class CombinedLpoBillBuilder:
             )
             bill = wizard.env['account.move'].with_context(**context).create(bill_vals)
 
+        wizard._apply_invoice_final_total_rounding(bill)
+        wizard._validate_invoice_final_total_allocation(bill)
         wizard._validate_created_bill(bill)
         discrepancies = bill.with_context(**context)._check_vendor_bill_prices()
         if hasattr(bill, '_sync_promotion_payment_hold'):

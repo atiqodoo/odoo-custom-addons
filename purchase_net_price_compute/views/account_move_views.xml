@@ -28,12 +28,49 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_vendor_document_tally"
+                        type="object"
+                        string="Open Tally"
+                        class="btn-secondary"
+                        invisible="move_type not in ('in_invoice', 'in_refund', 'in_receipt')"/>
+            </xpath>
+            <xpath expr="//field[@name='ref'][@nolabel='1']" position="before">
+                <field name="vendor_reference_required" invisible="1"/>
+                <field name="vendor_reference_type_id"
+                       invisible="move_type not in ('in_invoice', 'in_receipt', 'in_refund')"
+                       required="vendor_reference_required"
+                       options="{'no_create_edit': True}"/>
+            </xpath>
+            <xpath expr="//field[@name='ref'][@nolabel='1']" position="attributes">
+                <attribute name="required">vendor_reference_required</attribute>
+                <attribute name="placeholder">Vendor document reference</attribute>
+            </xpath>
             <!-- Add fields after price_unit in the invoice_line_ids list -->
             <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='price_unit']" position="after">
                 <field name="use_custom_pricing" column_invisible="1"/>
                 <field name="net_price" optional="show" readonly="1" force_save="1" string="Net Price"/>
                 <field name="applied_discount" optional="show" readonly="1" force_save="1" string="Discount %"/>
                 <field name="applied_freight" optional="show" readonly="1" force_save="1" string="Freight %"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_invoice_filter_vendor_reference" model="ir.ui.view">
+        <field name="name">account.invoice.filter.vendor.reference</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='ref']" position="after">
+                <field name="vendor_reference_type_id"/>
+            </xpath>
+            <xpath expr="//group" position="inside">
+                <filter string="Vendor Reference Type"
+                        name="group_by_vendor_reference_type"
+                        context="{'group_by': 'vendor_reference_type_id'}"/>
+                <filter string="Vendor Reference"
+                        name="group_by_vendor_reference"
+                        context="{'group_by': 'ref'}"/>
             </xpath>
         </field>
     </record>

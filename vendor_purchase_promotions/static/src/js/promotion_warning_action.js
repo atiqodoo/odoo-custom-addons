@@ -71,10 +71,11 @@ async function promotionWarningAction(env, action) {
                         }
                     );
                 } else if (!result.ignored) {
+                    const remaining = Math.max((result.dismissal_limit || 3) - result.dismissal_count, 0);
                     env.services.notification.add(
-                        _t("Promotion warning dismissed once. Confirm again to review the opportunity a second time."),
+                        _t("Promotion warning dismissed. Confirm again to review the opportunity. Remaining dismissals before override: %s", remaining),
                         {
-                            title: _t("First Dismissal Recorded"),
+                            title: _t("Dismissal Recorded"),
                             type: "info",
                             sticky: false,
                             autocloseDelay: 6000,

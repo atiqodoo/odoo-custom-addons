@@ -91,21 +91,23 @@ class VendorPriceWizard(models.TransientModel):
         super()._validate_invoice_profile_inputs()
         if not self.is_gamma_profile:
             return
-        if self.gamma_vendor_invoice_final_total <= 0:
-            raise ValidationError(_('Gamma Invoice Final Total must be greater than zero.'))
+        if not self.gamma_vendor_invoice_final_total:
+            return
         comparison = float_compare(
             self.invoice_total_vat_incl,
             self.gamma_vendor_invoice_final_total,
             precision_rounding=self.currency_id.rounding or 0.01,
         )
         if comparison:
-            raise ValidationError(_(
-                'Calculated Gamma total (%(calculated).2f) does not match the printed invoice total '
-                '(%(vendor).2f). Correct the invoice price, discount, tint charge, taxes, or quantity.'
-            ) % {
-                'calculated': self.invoice_total_vat_incl,
-                'vendor': self.gamma_vendor_invoice_final_total,
-            })
+            _logger.warning(
+                '[VPC_VARIANCE] gamma_wizard_total_variance wizard_id=%s po_id=%s '
+                'calculated_total=%s vendor_final_total=%s variance=%s',
+                self.id,
+                self.purchase_id.id,
+                self.invoice_total_vat_incl,
+                self.gamma_vendor_invoice_final_total,
+                self.invoice_total_vat_incl - self.gamma_vendor_invoice_final_total,
+            )
         _logger.info(
             '[VPP_GAMMA_BILL] validation wizard_id=%s po_id=%s total=%s promised_foc=%s '
             'received_foc=%s outstanding_foc=%s',
@@ -151,13 +153,15 @@ class VendorPriceWizard(models.TransientModel):
             precision_rounding=self.currency_id.rounding or 0.01,
         )
         if comparison:
-            raise ValidationError(_(
-                'Generated bill total (%(generated).2f) does not match the Gamma invoice total '
-                '(%(vendor).2f).'
-            ) % {
-                'generated': bill.amount_total,
-                'vendor': self.gamma_vendor_invoice_final_total,
-            })
+            _logger.warning(
+                '[VPC_VARIANCE] gamma_bill_total_variance_allowed wizard_id=%s bill_id=%s '
+                'generated_total=%s vendor_final_total=%s variance=%s',
+                self.id,
+                bill.id,
+                bill.amount_total,
+                self.gamma_vendor_invoice_final_total,
+                bill.amount_total - self.gamma_vendor_invoice_final_total,
+            )
         bill._sync_promotion_payment_hold()
         _logger.info(
             '[VPP_GAMMA_BILL] created wizard_id=%s bill_id=%s po_id=%s amount_total=%s '

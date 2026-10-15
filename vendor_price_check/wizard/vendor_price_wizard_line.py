@@ -20,12 +20,14 @@ class VendorPriceWizardLine(models.TransientModel):
     unit_price_vat_incl = fields.Monetary(
         string='Unit Price + Configured VAT',
         compute='_compute_vat_inclusive_amounts',
+        store=True,
         currency_field='currency_id',
         readonly=True,
     )
     line_total_vat_incl = fields.Monetary(
         string='Line Total (VAT Incl.)',
         compute='_compute_vat_inclusive_amounts',
+        store=True,
         currency_field='currency_id',
         readonly=True,
     )
@@ -38,6 +40,7 @@ class VendorPriceWizardLine(models.TransientModel):
     promised_cost_difference_vat_incl = fields.Monetary(
         string='Promised vs Unit + VAT Diff.',
         compute='_compute_promised_cost_difference_vat_incl',
+        store=True,
         currency_field='currency_id',
         readonly=True,
     )
@@ -56,7 +59,10 @@ class VendorPriceWizardLine(models.TransientModel):
     def _get_effective_bill_unit_price(self):
         """Profile extension hook returning the tax-exclusive bill unit price."""
         self.ensure_one()
-        return self.calculated_subtotal
+        return self.wizard_id._apply_invoice_allocation_to_unit_price(
+            self.calculated_subtotal,
+            line=self,
+        )
 
     def _get_effective_bill_discount(self):
         self.ensure_one()
@@ -69,7 +75,36 @@ class VendorPriceWizardLine(models.TransientModel):
     def _prepare_profile_bill_line_vals(self):
         """Profile extension hook for persistent audit values."""
         self.ensure_one()
-        return {}
+        return self._prepare_common_bill_line_audit_vals()
+
+    def _get_optional_field_value(self, field_name, default=False):
+        self.ensure_one()
+        return self[field_name] if field_name in self._fields else default
+
+    def _prepare_common_bill_line_audit_vals(self):
+        self.ensure_one()
+        return {
+            'wizard_vendor_list_unit_price': self.vendor_price,
+            'wizard_vendor_line_total': self._get_optional_field_value('vendor_line_total', 0.0),
+            'wizard_discount_percentage': self.applied_discount,
+            'wizard_freight_percentage': self.applied_freight,
+            'wizard_tint_type': self._get_optional_field_value('gamma_tint_type') or False,
+            'wizard_tint_percentage': self._get_optional_field_value('gamma_tint_percentage', 0.0),
+            'wizard_computed_unit_excl_vat': self.calculated_subtotal,
+            'wizard_computed_unit_vat_incl': self.unit_price_vat_incl,
+            'wizard_computed_line_total_vat_incl': self.line_total_vat_incl,
+            'wizard_computed_gross_total': self._get_optional_field_value('gamma_gross_total', 0.0),
+            'wizard_computed_discount_amount': (
+                self._get_optional_field_value('gamma_discount_amount', 0.0)
+                or self._get_optional_field_value('structured_discount_amount', 0.0)
+            ),
+            'wizard_computed_tint_charge': self._get_optional_field_value('gamma_tint_charge', 0.0),
+            'wizard_computed_subtotal_excl_vat': (
+                self._get_optional_field_value('gamma_subtotal_excl_vat', 0.0)
+                or self.calculated_subtotal * (self.product_qty or 0.0)
+            ),
+            'wizard_computed_promised_cost_diff_vat_incl': self.promised_cost_difference_vat_incl,
+        }
 
     @api.depends('vendor_price', 'applied_discount', 'applied_freight')
     def _compute_calculated_subtotal(self):
@@ -86,23 +121,33 @@ class VendorPriceWizardLine(models.TransientModel):
         subtotal = self.vendor_price * (1 - (self.applied_discount or 0.0) / 100) * (1 + (self.applied_freight or 0.0) / 100)
         self.calculated_subtotal = round(subtotal, 2)
 
-    @api.depends('calculated_subtotal', 'product_qty', 'purchase_line_id.taxes_id', 'currency_id')
+    @api.depends(
+        'calculated_subtotal',
+        'product_qty',
+        'purchase_line_id.taxes_id',
+        'currency_id',
+        'wizard_id.vendor_invoice_final_total',
+        'wizard_id.invoice_total_vat_incl',
+        'wizard_id.vendor_invoice_profile',
+    )
     def _compute_vat_inclusive_amounts(self):
         for line in self:
             unit_price = line.calculated_subtotal or 0.0
             quantity = line.product_qty or 0.0
-            taxes = line.purchase_line_id.taxes_id
-            if taxes:
-                tax_res = taxes.compute_all(
+            purchase_line = line.purchase_line_id
+            if purchase_line:
+                line.unit_price_vat_incl = purchase_line._get_price_with_configured_vat(
                     unit_price,
+                    quantity=1.0,
                     currency=line.currency_id,
-                    quantity=quantity,
-                    product=line.product_id,
                     partner=line.wizard_id.purchase_id.partner_id,
                 )
-                total_included = tax_res['total_included']
-                line.line_total_vat_incl = total_included
-                line.unit_price_vat_incl = total_included / quantity if quantity else 0.0
+                line.line_total_vat_incl = purchase_line._get_price_with_configured_vat(
+                    unit_price,
+                    quantity=quantity,
+                    currency=line.currency_id,
+                    partner=line.wizard_id.purchase_id.partner_id,
+                )
             else:
                 line.unit_price_vat_incl = unit_price
                 line.line_total_vat_incl = unit_price * quantity

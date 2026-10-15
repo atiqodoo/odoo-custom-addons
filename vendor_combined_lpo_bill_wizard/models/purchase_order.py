@@ -20,6 +20,9 @@ class PurchaseOrder(models.Model):
     @api.depends(
         'order_line.qty_received',
         'order_line.qty_invoiced',
+        'order_line.invoice_lines.move_id.state',
+        'order_line.invoice_lines.move_id.move_type',
+        'order_line.invoice_lines.quantity',
         'order_line.product_id',
         'order_line.display_type',
         'order_line.is_promotion_foc',
@@ -138,4 +141,5 @@ class PurchaseOrder(models.Model):
             'view_mode': 'form',
             'res_id': wizard.id,
             'target': 'new',
+            'context': {'dialog_size': 'extra-large'},
         }

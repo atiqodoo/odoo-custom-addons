@@ -8,15 +8,92 @@
                 <field name="discrepancy_date"/>
                 <field name="product_id"/>
                 <field name="vendor_id"/>
-                <field name="vendor_price" widget="monetary"/>
-                <field name="lowest_price" widget="monetary"/>
-                <field name="average_price" widget="monetary"/>
+                <field name="vendor_price" string="Current Final Unit Price (Incl. VAT)" widget="monetary"/>
+                <field name="lowest_price" string="Lowest Historical Final Unit Price (Incl. VAT)" widget="monetary"/>
+                <field name="average_price" string="Average Historical Final Unit Price (Incl. VAT)" widget="monetary"/>
                 <field name="price_difference_lowest" widget="monetary"/>
-                <field name="percentage_diff_lowest" widget="percentage"/>
+                <field name="percentage_diff_lowest" column_invisible="1"/>
+                <field name="percentage_diff_lowest_display"/>
                 <field name="price_difference_average" widget="monetary"/>
-                <field name="percentage_diff_average" widget="percentage"/>
+                <field name="percentage_diff_average" column_invisible="1"/>
+                <field name="percentage_diff_average_display"/>
                 <field name="bill_count"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_price_discrepancy_form" model="ir.ui.view">
+        <field name="name">vendor.price.discrepancy.form</field>
+        <field name="model">vendor.price.discrepancy</field>
+        <field name="arch" type="xml">
+            <form string="Vendor Price Discrepancy" create="false" edit="false">
+                <header>
+                    <button name="action_open_lowest_bill"
+                            type="object"
+                            string="Open Lowest Posted Bill"
+                            class="btn-primary"
+                            invisible="not lowest_bill_id"/>
+                    <button name="action_view_historical_bills"
+                            type="object"
+                            string="Open Averaged Posted Bills"
+                            invisible="bill_count == 0"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="bill_id" readonly="1"/>
+                            <field name="vendor_id" readonly="1"/>
+                            <field name="lowest_price" readonly="1"/>
+                            <field name="price_difference_lowest" readonly="1"/>
+                            <field name="price_difference_average" readonly="1"/>
+                            <field name="bill_count" readonly="1"/>
+                            <field name="lowest_bill_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="product_id" readonly="1"/>
+                            <field name="vendor_price" readonly="1"/>
+                            <field name="average_price" readonly="1"/>
+                            <field name="percentage_diff_lowest_display" readonly="1"/>
+                            <field name="percentage_diff_average_display" readonly="1"/>
+                            <field name="discrepancy_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Posted Bills Used for Average">
+                            <field name="history_line_ids"
+                                   readonly="1"
+                                   nolabel="1"
+                                   context="{'create': False, 'edit': False, 'delete': False}">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="invoice_date"/>
+                                    <field name="bill_id"/>
+                                    <field name="bill_line_id"/>
+                                    <field name="final_unit_price_vat_incl"/>
+                                    <button name="action_open_bill"
+                                            type="object"
+                                            string="Open Bill"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Posted Bill Links">
+                            <field name="historical_bill_ids"
+                                   readonly="1"
+                                   nolabel="1"
+                                   context="{'create': False, 'edit': False, 'delete': False}">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="name"/>
+                                    <field name="invoice_date"/>
+                                    <field name="partner_id"/>
+                                    <field name="amount_total" widget="monetary"/>
+                                    <field name="payment_state"/>
+                                    <field name="state"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
         </field>
     </record>
 </odoo>

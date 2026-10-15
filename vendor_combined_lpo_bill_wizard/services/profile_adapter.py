@@ -114,35 +114,33 @@ class CombinedLpoProfileAdapter:
         wizard = self.wizard
         if not wizard.line_ids:
             raise ValidationError(_('There are no eligible received LPO lines to bill.'))
-        if wizard.vendor_invoice_final_total <= 0:
-            raise ValidationError(_('Vendor Invoice Final Total must be greater than zero.'))
+        wizard._validate_required_vendor_invoice_final_total()
 
-        if wizard.vendor_invoice_profile == VENDOR_PROFILE_GAMMA:
+        if wizard.vendor_invoice_profile == VENDOR_PROFILE_GAMMA and wizard.vendor_invoice_final_total:
             rounding = wizard.currency_id.rounding or 0.01
             if abs(wizard.invoice_total_vat_incl - wizard.vendor_invoice_final_total) > rounding:
                 _logger.warning(
-                    '[CLPO_VALIDATE] blocked reason=gamma_total_mismatch wizard_id=%s '
-                    'calculated=%s vendor_total=%s',
+                    '[VPC_VARIANCE] combined_gamma_total_variance wizard_id=%s '
+                    'calculated=%s vendor_total=%s variance=%s',
                     wizard.id,
                     wizard.invoice_total_vat_incl,
                     wizard.vendor_invoice_final_total,
+                    wizard.invoice_total_vat_incl - wizard.vendor_invoice_final_total,
                 )
-                raise ValidationError(_(
-                    'Calculated Gamma total (%(calculated).2f) does not match the printed '
-                    'vendor invoice total (%(vendor).2f).'
-                ) % {
-                    'calculated': wizard.invoice_total_vat_incl,
-                    'vendor': wizard.vendor_invoice_final_total,
-                })
 
         _logger.info('[CLPO_VALIDATE] wizard_valid payload=%s', wizard._debug_payload())
 
     def prepare_bill_vals(self):
         wizard = self.wizard
-        values = {}
+        values = {
+            'vendor_invoice_profile': wizard.vendor_invoice_profile,
+            'vendor_calculated_total_vat_incl': wizard.invoice_total_vat_incl,
+            'vendor_invoice_final_total': wizard.vendor_invoice_final_total,
+            'vendor_invoice_variance_amount': wizard.invoice_variance_amount,
+            'vendor_invoice_variance_percentage': wizard.invoice_variance_percentage,
+        }
         if wizard.vendor_invoice_profile == VENDOR_INVOICE_PROFILE_CROWN:
             values.update({
-                'vendor_invoice_profile': wizard.vendor_invoice_profile,
                 'vendor_calculated_total_vat_incl': wizard.invoice_total_vat_incl,
                 'vendor_invoice_final_total': wizard.vendor_invoice_final_total,
                 'vendor_invoice_variance_amount': wizard.invoice_variance_amount,
@@ -177,8 +175,6 @@ class CombinedLpoProfileAdapter:
                 wizard.gamma_received_foc_qty,
                 wizard.gamma_outstanding_foc_qty,
             )
-        else:
-            values.update({'vendor_invoice_profile': wizard.vendor_invoice_profile})
         return values
 
     def prepare_bill_line_vals(self, line):

@@ -15,12 +15,18 @@ from ..services.crown_invoice_calculator import calculate_variance
 
 _logger = logging.getLogger(__name__)
 
+VENDOR_INVOICE_PROFILE_GAMMA_COMPAT = 'gamma_paints'
+VENDOR_PRICE_WIZARD_PROFILE_SELECTION = (
+    VENDOR_INVOICE_PROFILE_SELECTION
+    + [(VENDOR_INVOICE_PROFILE_GAMMA_COMPAT, 'Gamma Paints Invoice')]
+)
+
 
 class CrownVendorPriceWizard(models.TransientModel):
     _inherit = 'vendor.price.wizard'
 
     vendor_invoice_profile = fields.Selection(
-        selection=VENDOR_INVOICE_PROFILE_SELECTION,
+        selection=VENDOR_PRICE_WIZARD_PROFILE_SELECTION,
         string='Invoice Calculation Profile',
         compute='_compute_vendor_invoice_profile',
         readonly=True,
@@ -28,11 +34,6 @@ class CrownVendorPriceWizard(models.TransientModel):
     is_crown_profile = fields.Boolean(
         string='Uses Crown Invoice Calculation',
         compute='_compute_vendor_invoice_profile',
-    )
-    vendor_invoice_final_total = fields.Monetary(
-        string='Vendor Invoice Final Total (VAT Incl.)',
-        currency_field='currency_id',
-        help='Enter the total amount printed on the vendor invoice, including VAT.',
     )
     invoice_variance_amount = fields.Monetary(
         string='Invoice Variance',
@@ -81,13 +82,6 @@ class CrownVendorPriceWizard(models.TransientModel):
     )
     def _compute_crown_invoice_variance(self):
         for wizard in self:
-            if not wizard.is_crown_profile:
-                wizard.invoice_variance_amount = 0.0
-                wizard.invoice_variance_percentage = 0.0
-                wizard.invoice_allocation_ratio = 1.0
-                wizard.invoice_variance_status = _('Standard vendor calculation')
-                continue
-
             if not wizard.vendor_invoice_final_total:
                 wizard.invoice_variance_amount = 0.0
                 wizard.invoice_variance_percentage = 0.0
@@ -120,8 +114,6 @@ class CrownVendorPriceWizard(models.TransientModel):
         super()._validate_invoice_profile_inputs()
         if not self.is_crown_profile:
             return
-        if self.vendor_invoice_final_total <= 0:
-            raise ValidationError(_('Vendor Invoice Final Total must be greater than zero.'))
         if self.invoice_total_vat_incl <= 0:
             raise ValidationError(_('Calculated invoice total must be greater than zero.'))
 
@@ -169,10 +161,12 @@ class CrownVendorPriceWizard(models.TransientModel):
             comparison,
         )
         if comparison:
-            raise ValidationError(_(
-                'The generated bill total (%(generated).2f) does not match the vendor invoice '
-                'final total (%(vendor).2f). Review line values, taxes, and rounding.'
-            ) % {
-                'generated': bill.amount_total,
-                'vendor': self.vendor_invoice_final_total,
-            })
+            _logger.warning(
+                '[VPC_VARIANCE] crown_bill_total_variance_allowed wizard_id=%s bill_id=%s '
+                'generated_total=%s vendor_final_total=%s variance=%s',
+                self.id,
+                bill.id,
+                bill.amount_total,
+                self.vendor_invoice_final_total,
+                bill.amount_total - self.vendor_invoice_final_total,
+            )

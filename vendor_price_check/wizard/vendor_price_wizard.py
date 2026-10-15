@@ -11,6 +11,7 @@ _logger = logging.getLogger(__name__)
 
 class VendorPriceWizard(models.TransientModel):
     _name = 'vendor.price.wizard'
+    _inherit = ['vendor.bill.wizard.display.mixin', 'vendor.bill.variance.policy.mixin']
     _description = 'Vendor Price Wizard'
 
     purchase_id = fields.Many2one('purchase.order', string='Purchase Order', required=True)
@@ -25,6 +26,11 @@ class VendorPriceWizard(models.TransientModel):
         string='Invoice Total (VAT Incl.)',
         compute='_compute_invoice_total_vat_incl',
         currency_field='currency_id',
+    )
+    vendor_invoice_final_total = fields.Monetary(
+        string='Vendor Invoice Final Total (VAT Incl.)',
+        currency_field='currency_id',
+        help='Enter the total amount printed on the vendor invoice, including VAT.',
     )
     promised_cost_discrepancy_approved = fields.Boolean(
         string='Promised Cost Discrepancy Approved',
@@ -43,10 +49,22 @@ class VendorPriceWizard(models.TransientModel):
     # Extension hooks keep profile-specific calculation code out of this core flow.
     def _validate_invoice_profile_inputs(self):
         self.ensure_one()
+        self._validate_required_vendor_invoice_final_total()
 
     def _prepare_profile_bill_vals(self):
         self.ensure_one()
-        return {}
+        values = self._get_variance_policy_values()
+        return {
+            'vendor_invoice_profile': self._get_variance_policy_profile(),
+            'vendor_calculated_total_vat_incl': values['calculated_total'],
+            'vendor_invoice_final_total': values['vendor_total'],
+            'vendor_invoice_variance_amount': values['variance'],
+            'vendor_invoice_variance_percentage': (
+                values['variance'] / values['calculated_total'] * 100.0
+                if values['calculated_total']
+                else 0.0
+            ),
+        }
 
     def _validate_profile_bill_result(self, bill):
         self.ensure_one()
@@ -113,6 +131,7 @@ class VendorPriceWizard(models.TransientModel):
             'view_mode': 'form',
             'res_id': self.id,
             'target': 'new',
+            'context': {'dialog_size': 'extra-large'},
         }
 
     def _check_promised_cost_discrepancies(self):
@@ -181,6 +200,7 @@ class VendorPriceWizard(models.TransientModel):
             line._validate_for_bill()
 
         self._validate_invoice_profile_inputs()
+        self._check_invoice_variance_policy()
         self._check_promised_cost_discrepancies()
 
         profile_bill_vals = self._prepare_profile_bill_vals()
@@ -269,7 +289,11 @@ class VendorPriceWizard(models.TransientModel):
             _logger.info('[VPC_WIZARD] creating_new_bill wizard_id=%s', self.id)
             bill = self.env['account.move'].with_context(**context).create(bill_vals)
 
+        self._apply_invoice_final_total_rounding(bill)
         self._validate_profile_bill_result(bill)
+        self._validate_invoice_final_total_allocation(bill)
+        self._check_invoice_variance_policy_for_bill(bill)
+        self._log_invoice_variance_audit(bill)
         discrepancies = bill._check_vendor_bill_prices()
         if discrepancies:
             _logger.warning(

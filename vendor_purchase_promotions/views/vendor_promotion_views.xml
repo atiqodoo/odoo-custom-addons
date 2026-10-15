@@ -1,5 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="view_vendor_promotion_profile_list" model="ir.ui.view">
+        <field name="name">vendor.promotion.profile.list</field>
+        <field name="model">vendor.promotion.profile</field>
+        <field name="arch" type="xml">
+            <list string="Vendor Promotion Profiles" decoration-muted="not active">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="qualification_mode"/>
+                <field name="tier_method"/>
+                <field name="substitution_policy"/>
+                <field name="foc_selection_policy"/>
+                <field name="recommendation_enabled"/>
+                <field name="dismissal_limit"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_promotion_profile_form" model="ir.ui.view">
+        <field name="name">vendor.promotion.profile.form</field>
+        <field name="model">vendor.promotion.profile</field>
+        <field name="arch" type="xml">
+            <form string="Vendor Promotion Profile">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Gamma Paints"/></h1>
+                    </div>
+                    <group>
+                        <group string="Profile">
+                            <field name="code"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Alerting">
+                            <field name="recommendation_enabled"/>
+                            <field name="dismissal_limit" invisible="not recommendation_enabled"/>
+                        </group>
+                    </group>
+                    <group string="Promotion Rules">
+                        <group>
+                            <field name="qualification_mode"/>
+                            <field name="tier_method"/>
+                        </group>
+                        <group>
+                            <field name="substitution_policy"/>
+                            <field name="foc_selection_policy"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_partner_form_vendor_promotion_profile" model="ir.ui.view">
+        <field name="name">res.partner.form.vendor.promotion.profile</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='sales_purchases']" position="inside">
+                <group string="Vendor Promotions" invisible="supplier_rank == 0">
+                    <field name="vendor_promotion_profile_id"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_vendor_purchase_promotion_list" model="ir.ui.view">
         <field name="name">vendor.purchase.promotion.list</field>
         <field name="model">vendor.purchase.promotion</field>
@@ -7,6 +77,8 @@
             <list string="Vendor Promotions" decoration-muted="not active">
                 <field name="name"/>
                 <field name="partner_id"/>
+                <field name="promotion_profile_id" optional="show"/>
+                <field name="deal_group_key" optional="show"/>
                 <field name="calculation_profile"/>
                 <field name="product_tmpl_ids" widget="many2many_tags"/>
                 <field name="product_id" optional="show"/>
@@ -38,6 +110,7 @@
                     <group>
                         <group string="Vendor and Product">
                             <field name="partner_id"/>
+                            <field name="promotion_profile_id"/>
                             <field name="calculation_profile"/>
                             <field name="product_tmpl_ids"
                                    widget="many2many_tags"
@@ -50,10 +123,21 @@
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                         <group string="Validity and Priority">
+                            <field name="deal_group_key"/>
                             <field name="date_start"/>
                             <field name="date_end"/>
                             <field name="priority"/>
                             <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Configurable Behavior">
+                        <group>
+                            <field name="qualification_mode"/>
+                            <field name="tier_method"/>
+                        </group>
+                        <group>
+                            <field name="substitution_policy"/>
+                            <field name="foc_selection_policy"/>
                         </group>
                     </group>
                     <group string="Quantity Promotion">
@@ -116,6 +200,17 @@
         <field name="arch" type="xml">
             <form string="Applied Vendor Promotion" create="false" edit="false">
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_foc_receipt_logs"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-truck"
+                                invisible="foc_receipt_log_count == 0">
+                            <field name="foc_receipt_log_count"
+                                   widget="statinfo"
+                                   string="FOC Receipts"/>
+                        </button>
+                    </div>
                     <div class="oe_title"><h1><field name="name"/></h1></div>
                     <group>
                         <group>
@@ -134,11 +229,134 @@
                     </group>
                     <group string="Linked Documents">
                         <field name="charged_line_id"/>
+                        <field name="charged_line_ids" widget="many2many_tags"/>
                         <field name="foc_line_id"/>
                         <field name="bill_ids" widget="many2many_tags"/>
                     </group>
-                    <group string="Applied Snapshot">
-                        <field name="promotion_snapshot" widget="json" nolabel="1"/>
+                    <notebook>
+                        <page string="Received FOC Logs">
+                            <field name="foc_receipt_log_ids" readonly="1">
+                                <list create="false" edit="false" delete="false"
+                                      decoration-info="is_substitute">
+                                    <field name="receipt_date"/>
+                                    <field name="picking_id"/>
+                                    <field name="vendor_reference_type_id"/>
+                                    <field name="vendor_reference"/>
+                                    <field name="expected_product_id"/>
+                                    <field name="received_product_id"/>
+                                    <field name="received_qty"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="is_substitute"/>
+                                    <field name="move_id" optional="show"/>
+                                    <field name="bill_ids" widget="many2many_tags" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Applied Snapshot">
+                            <field name="promotion_snapshot" widget="json" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_vendor_promotion_foc_receipt_log_search" model="ir.ui.view">
+        <field name="name">vendor.promotion.foc.receipt.log.search</field>
+        <field name="model">vendor.promotion.foc.receipt.log</field>
+        <field name="arch" type="xml">
+            <search string="Received FOC Logs">
+                <field name="name"/>
+                <field name="purchase_id"/>
+                <field name="picking_id"/>
+                <field name="vendor_reference"/>
+                <field name="partner_id"/>
+                <field name="promotion_id"/>
+                <field name="expected_product_id"/>
+                <field name="received_product_id"/>
+                <filter name="substitutes" string="Substitutes"
+                        domain="[('is_substitute', '=', True)]"/>
+                <filter name="same_product" string="As Requested"
+                        domain="[('is_substitute', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_purchase" string="Purchase" context="{'group_by': 'purchase_id'}"/>
+                    <filter name="group_receipt" string="Receipt" context="{'group_by': 'picking_id'}"/>
+                    <filter name="group_vendor" string="Vendor" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_promotion" string="Promotion" context="{'group_by': 'promotion_id'}"/>
+                    <filter name="group_substitute" string="Substitute" context="{'group_by': 'is_substitute'}"/>
+                    <filter name="group_reference" string="Delivery Ref" context="{'group_by': 'vendor_reference'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_vendor_promotion_foc_receipt_log_list" model="ir.ui.view">
+        <field name="name">vendor.promotion.foc.receipt.log.list</field>
+        <field name="model">vendor.promotion.foc.receipt.log</field>
+        <field name="arch" type="xml">
+            <list string="Received FOC Logs" create="false" edit="false" delete="false"
+                  decoration-info="is_substitute">
+                <field name="receipt_date"/>
+                <field name="purchase_id"/>
+                <field name="picking_id"/>
+                <field name="vendor_reference_type_id"/>
+                <field name="vendor_reference"/>
+                <field name="partner_id"/>
+                <field name="promotion_id"/>
+                <field name="expected_product_id"/>
+                <field name="received_product_id"/>
+                <field name="received_qty"/>
+                <field name="product_uom_id"/>
+                <field name="is_substitute"/>
+                <field name="move_id" optional="show"/>
+                <field name="bill_ids" widget="many2many_tags" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_promotion_foc_receipt_log_form" model="ir.ui.view">
+        <field name="name">vendor.promotion.foc.receipt.log.form</field>
+        <field name="model">vendor.promotion.foc.receipt.log</field>
+        <field name="arch" type="xml">
+            <form string="Received FOC Log" create="false" edit="false" delete="false">
+                <sheet>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group string="Source">
+                            <field name="application_id"/>
+                            <field name="purchase_id"/>
+                            <field name="picking_id"/>
+                            <field name="move_id"/>
+                            <field name="bill_ids" widget="many2many_tags"/>
+                        </group>
+                        <group string="Delivery Reference">
+                            <field name="receipt_date"/>
+                            <field name="vendor_reference_type_id"/>
+                            <field name="vendor_reference"/>
+                            <field name="partner_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Promotion">
+                            <field name="promotion_id"/>
+                            <field name="foc_line_id"/>
+                            <field name="promised_foc_qty"/>
+                        </group>
+                        <group string="Received FOC">
+                            <field name="expected_product_id"/>
+                            <field name="received_product_id"/>
+                            <field name="received_qty"/>
+                            <field name="product_uom_id"/>
+                            <field name="is_substitute"/>
+                        </group>
+                    </group>
+                    <group string="Extensible Details">
+                        <field name="source_model"/>
+                        <field name="source_res_id"/>
+                        <field name="source_display_name"/>
+                        <field name="details" widget="json" nolabel="1"/>
                     </group>
                 </sheet>
             </form>
@@ -151,6 +369,12 @@
         <field name="view_mode">list,form</field>
     </record>
 
+    <record id="action_vendor_promotion_profiles" model="ir.actions.act_window">
+        <field name="name">Vendor Promotion Profiles</field>
+        <field name="res_model">vendor.promotion.profile</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
     <record id="action_vendor_promotion_applications" model="ir.actions.act_window">
         <field name="name">Promotion Fulfilment</field>
         <field name="res_model">vendor.purchase.promotion.application</field>
@@ -158,16 +382,41 @@
         <field name="context">{'create': False}</field>
     </record>
 
+    <record id="action_vendor_promotion_foc_receipt_logs" model="ir.actions.act_window">
+        <field name="name">Received FOC Logs</field>
+        <field name="res_model">vendor.promotion.foc.receipt.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vendor_promotion_foc_receipt_log_search"/>
+        <field name="context">{'create': False, 'delete': False}</field>
+    </record>
+
     <menuitem id="menu_vendor_purchase_promotions"
               name="Vendor Promotions"
               parent="purchase.menu_procurement_management"
-              action="action_vendor_purchase_promotions"
               groups="purchase.group_purchase_manager"
               sequence="70"/>
+    <menuitem id="menu_vendor_purchase_promotion_rules"
+              name="Promotion Rules"
+              parent="menu_vendor_purchase_promotions"
+              action="action_vendor_purchase_promotions"
+              groups="purchase.group_purchase_manager"
+              sequence="10"/>
+    <menuitem id="menu_vendor_promotion_profiles"
+              name="Promotion Profiles"
+              parent="purchase.menu_purchase_config"
+              action="action_vendor_promotion_profiles"
+              groups="purchase.group_purchase_manager"
+              sequence="69"/>
     <menuitem id="menu_vendor_promotion_applications"
               name="Promotion Fulfilment"
               parent="purchase.menu_procurement_management"
               action="action_vendor_promotion_applications"
               groups="purchase.group_purchase_user"
               sequence="71"/>
+    <menuitem id="menu_vendor_promotion_foc_receipt_logs"
+              name="Received FOC Logs"
+              parent="purchase.menu_procurement_management"
+              action="action_vendor_promotion_foc_receipt_logs"
+              groups="purchase.group_purchase_user"
+              sequence="73"/>
 </odoo>

@@ -27,21 +27,25 @@ class VendorPriceWizardLine(models.TransientModel):
     gamma_gross_total = fields.Monetary(
         string='Gamma Gross',
         compute='_compute_gamma_invoice_amounts',
+        store=True,
         currency_field='currency_id',
     )
     gamma_discount_amount = fields.Monetary(
         string='Gamma Discount',
         compute='_compute_gamma_invoice_amounts',
+        store=True,
         currency_field='currency_id',
     )
     gamma_tint_charge = fields.Monetary(
         string='Gamma Tint Charge',
         compute='_compute_gamma_invoice_amounts',
+        store=True,
         currency_field='currency_id',
     )
     gamma_subtotal_excl_vat = fields.Monetary(
         string='Gamma Subtotal Excl. VAT',
         compute='_compute_gamma_invoice_amounts',
+        store=True,
         currency_field='currency_id',
     )
 
@@ -184,7 +188,10 @@ class VendorPriceWizardLine(models.TransientModel):
     def _get_effective_bill_unit_price(self):
         self.ensure_one()
         if self._is_gamma_profile():
-            return self.calculated_subtotal
+            return self.wizard_id._apply_invoice_allocation_to_unit_price(
+                self.calculated_subtotal,
+                line=self,
+            )
         return super()._get_effective_bill_unit_price()
 
     def _get_effective_bill_discount(self):
@@ -207,4 +214,3 @@ class VendorPriceWizardLine(models.TransientModel):
                 'gamma_invoice_subtotal_excl_vat': self.gamma_subtotal_excl_vat,
             })
         return values
-

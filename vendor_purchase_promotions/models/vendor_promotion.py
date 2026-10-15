@@ -38,6 +38,53 @@ class VendorPurchasePromotion(models.Model):
         index=True,
         ondelete='cascade',
     )
+    promotion_profile_id = fields.Many2one(
+        'vendor.promotion.profile',
+        string='Promotion Profile',
+        help='Optional configurable behavior profile. If empty, the vendor profile is used.',
+    )
+    deal_group_key = fields.Char(
+        string='Deal Group',
+        index=True,
+        help='Use the same value for all tiers/slabs of the same deal.',
+    )
+    qualification_mode = fields.Selection(
+        [
+            ('profile', 'Use Profile'),
+            ('per_line', 'Per Order Line'),
+            ('across_eligible_variants', 'Across Eligible Variants'),
+        ],
+        required=True,
+        default='profile',
+    )
+    tier_method = fields.Selection(
+        [
+            ('profile', 'Use Profile'),
+            ('highest_slab', 'Highest Qualified Slab'),
+            ('cumulative', 'Cumulative Slabs'),
+        ],
+        required=True,
+        default='profile',
+    )
+    substitution_policy = fields.Selection(
+        [
+            ('profile', 'Use Profile'),
+            ('none', 'No Substitution'),
+            ('requested_variants', 'Requested Variants Only'),
+            ('eligible_variants', 'Any Eligible Promotion Variant'),
+        ],
+        required=True,
+        default='profile',
+    )
+    foc_selection_policy = fields.Selection(
+        [
+            ('profile', 'Use Profile'),
+            ('first_line', 'First Qualifying Line'),
+            ('largest_line', 'Largest Qualifying Line'),
+        ],
+        required=True,
+        default='profile',
+    )
     calculation_profile = fields.Selection(
         PROMOTION_PROFILES,
         required=True,
@@ -134,6 +181,16 @@ class VendorPurchasePromotion(models.Model):
             legacy_product = values.get('product_tmpl_id')
             if legacy_product and not values.get('product_tmpl_ids'):
                 values['product_tmpl_ids'] = [(6, 0, [legacy_product])]
+            if (
+                not values.get('promotion_profile_id')
+                and values.get('calculation_profile') == 'gamma_paints'
+            ):
+                profile = self.env.ref(
+                    'vendor_purchase_promotions.vendor_promotion_profile_gamma',
+                    raise_if_not_found=False,
+                )
+                if profile:
+                    values['promotion_profile_id'] = profile.id
         rules = super().create(vals_list)
         _logger.info(
             '[VPP_RULE] created rule_ids=%s product_counts=%s',
@@ -165,6 +222,64 @@ class VendorPurchasePromotion(models.Model):
         if self.default_tint_type in rates:
             self.default_tint_percentage = rates[self.default_tint_type]
 
+    def effective_profile(self):
+        self.ensure_one()
+        profile = self.promotion_profile_id or self.partner_id.vendor_promotion_profile_id
+        if not profile and self.calculation_profile == 'gamma_paints':
+            profile = self.env.ref(
+                'vendor_purchase_promotions.vendor_promotion_profile_gamma',
+                raise_if_not_found=False,
+            )
+        return profile
+
+    def effective_qualification_mode(self):
+        self.ensure_one()
+        profile = self.effective_profile()
+        if self.qualification_mode != 'profile':
+            return self.qualification_mode
+        return profile.qualification_mode if profile else 'per_line'
+
+    def effective_tier_method(self):
+        self.ensure_one()
+        profile = self.effective_profile()
+        if self.tier_method != 'profile':
+            return self.tier_method
+        return profile.tier_method if profile else 'highest_slab'
+
+    def effective_substitution_policy(self):
+        self.ensure_one()
+        profile = self.effective_profile()
+        if self.substitution_policy != 'profile':
+            return self.substitution_policy
+        return profile.substitution_policy if profile else 'none'
+
+    def effective_foc_selection_policy(self):
+        self.ensure_one()
+        profile = self.effective_profile()
+        if self.foc_selection_policy != 'profile':
+            return self.foc_selection_policy
+        return profile.foc_selection_policy if profile else 'first_line'
+
+    def _promotion_group_key(self):
+        self.ensure_one()
+        if self.deal_group_key:
+            return 'deal:%s:%s:%s' % (
+                self.company_id.id,
+                self.partner_id.commercial_partner_id.id,
+                self.deal_group_key,
+            )
+        if self.effective_qualification_mode() != 'per_line':
+            template_ids = sorted((self.product_tmpl_ids | self.product_tmpl_id).ids)
+            variant_id = self.product_id.id or 0
+            return 'auto:%s:%s:%s:%s:%s' % (
+                self.company_id.id,
+                self.partner_id.commercial_partner_id.id,
+                self.effective_profile().id if self.effective_profile() else 0,
+                '-'.join(str(item) for item in template_ids),
+                variant_id,
+            )
+        return 'rule:%s' % self.id
+
     def calculate_foc_qty(self, charged_qty):
         self.ensure_one()
         charged_qty = float(charged_qty or 0.0)
@@ -178,7 +293,7 @@ class VendorPurchasePromotion(models.Model):
         return self.free_qty if charged_qty >= self.buy_qty else 0.0
 
     @api.model
-    def resolve_rule(self, order, product, charged_qty, on_date=None):
+    def resolve_candidate_rules(self, order, product, on_date=None):
         if not order or not order.partner_id or not product:
             return self.browse()
         on_date = on_date or fields.Date.context_today(self)
@@ -191,12 +306,25 @@ class VendorPurchasePromotion(models.Model):
             ('product_tmpl_ids', 'in', [product.product_tmpl_id.id]),
             ('product_tmpl_id', '=', product.product_tmpl_id.id),
             '|', ('product_id', '=', product.id), ('product_id', '=', False),
-            ('min_charged_qty', '<=', charged_qty),
-            '|', ('max_charged_qty', '=', 0), ('max_charged_qty', '>=', charged_qty),
             '|', ('date_start', '=', False), ('date_start', '<=', on_date),
             '|', ('date_end', '=', False), ('date_end', '>=', on_date),
         ]
-        rules = self.search(domain, order=self._order, limit=2)
+        rules = self.search(domain, order=self._order)
+        _logger.info(
+            '[VPP_RULE] candidates order_id=%s vendor_id=%s product_id=%s rule_ids=%s',
+            order.id,
+            order.partner_id.id,
+            product.id,
+            rules.ids,
+        )
+        return rules
+
+    @api.model
+    def resolve_rule(self, order, product, charged_qty, on_date=None):
+        rules = self.resolve_candidate_rules(order, product, on_date=on_date).filtered(
+            lambda rule: rule.min_charged_qty <= charged_qty
+            and (not rule.max_charged_qty or rule.max_charged_qty >= charged_qty)
+        )[:2]
         if len(rules) > 1:
             _logger.warning(
                 '[VPP_RULE] ambiguous_rules order_id=%s product_id=%s charged_qty=%s rule_ids=%s selected=%s',
@@ -232,6 +360,14 @@ class VendorPurchasePromotionApplication(models.Model):
     promotion_id = fields.Many2one('vendor.purchase.promotion', required=True, ondelete='restrict')
     purchase_id = fields.Many2one('purchase.order', required=True, index=True, ondelete='cascade')
     charged_line_id = fields.Many2one('purchase.order.line', required=True, index=True, ondelete='cascade')
+    charged_line_ids = fields.Many2many(
+        'purchase.order.line',
+        'vendor_promotion_application_charged_line_rel',
+        'application_id',
+        'line_id',
+        string='Qualifying Charged Lines',
+        readonly=True,
+    )
     foc_line_id = fields.Many2one('purchase.order.line', required=True, index=True, ondelete='cascade')
     product_id = fields.Many2one('product.product', required=True, index=True)
     charged_qty = fields.Float(required=True)
@@ -266,6 +402,15 @@ class VendorPurchasePromotionApplication(models.Model):
         string='Vendor Bills',
         readonly=True,
     )
+    foc_receipt_log_ids = fields.One2many(
+        'vendor.promotion.foc.receipt.log',
+        'application_id',
+        string='Received FOC Logs',
+        readonly=True,
+    )
+    foc_receipt_log_count = fields.Integer(
+        compute='_compute_foc_receipt_log_count',
+    )
 
     _sql_constraints = [
         (
@@ -286,10 +431,11 @@ class VendorPurchasePromotionApplication(models.Model):
         for record in records:
             _logger.info(
                 '[VPP_APPLICATION] created application_id=%s po_id=%s charged_line_id=%s '
-                'foc_line_id=%s charged_qty=%s promised_foc=%s promotion_id=%s',
+                'charged_line_ids=%s foc_line_id=%s charged_qty=%s promised_foc=%s promotion_id=%s',
                 record.id,
                 record.purchase_id.id,
                 record.charged_line_id.id,
+                record.charged_line_ids.ids,
                 record.foc_line_id.id,
                 record.charged_qty,
                 record.promised_foc_qty,
@@ -297,14 +443,26 @@ class VendorPurchasePromotionApplication(models.Model):
             )
         return records
 
+    def _compute_foc_receipt_log_count(self):
+        grouped = self.env['vendor.promotion.foc.receipt.log']._read_group(
+            [('application_id', 'in', self.ids)],
+            ['application_id'],
+            ['__count'],
+        ) if self.ids else []
+        counts = {application.id: count for application, count in grouped}
+        for application in self:
+            application.foc_receipt_log_count = counts.get(application.id, 0)
+
     @api.depends(
         'promised_foc_qty',
         'foc_line_id.qty_received',
+        'foc_line_id.move_ids.quantity',
+        'foc_line_id.move_ids.product_uom',
         'foc_line_id.move_ids.state',
     )
     def _compute_foc_status(self):
         for application in self:
-            received = application.foc_line_id.qty_received or 0.0
+            received = application._received_foc_qty_from_moves()
             outstanding = max((application.promised_foc_qty or 0.0) - received, 0.0)
             moves = application.foc_line_id.move_ids
             cancelled = bool(moves) and all(move.state == 'cancel' for move in moves)
@@ -327,3 +485,121 @@ class VendorPurchasePromotionApplication(models.Model):
                 outstanding,
                 state,
             )
+
+    def _received_foc_qty_from_moves(self):
+        self.ensure_one()
+        foc_line = self.foc_line_id
+        if not foc_line:
+            return 0.0
+        total = 0.0
+        done_moves = foc_line.move_ids.filtered(lambda move: move.state == 'done')
+        for move in done_moves:
+            quantity = move.quantity or 0.0
+            if move.product_uom and foc_line.product_uom and move.product_uom.category_id == foc_line.product_uom.category_id:
+                quantity = move.product_uom._compute_quantity(
+                    quantity,
+                    foc_line.product_uom,
+                    rounding_method='HALF-UP',
+                )
+            total += quantity
+        fallback = foc_line.qty_received or 0.0
+        received = max(total, fallback)
+        _logger.debug(
+            '[VPP_FOC] received_from_moves application_id=%s foc_line_id=%s move_ids=%s '
+            'move_total=%s qty_received=%s effective_received=%s',
+            self.id,
+            foc_line.id,
+            done_moves.ids,
+            total,
+            fallback,
+            received,
+        )
+        return received
+
+    def _sync_foc_receipt_logs(self, pickings=None):
+        Log = self.env['vendor.promotion.foc.receipt.log'].sudo()
+        for application in self:
+            done_moves = application.foc_line_id.move_ids.filtered(
+                lambda move: move.state == 'done'
+                and (not pickings or move.picking_id in pickings)
+            )
+            for move in done_moves:
+                quantity = move.quantity or 0.0
+                if move.product_uom and application.foc_line_id.product_uom and move.product_uom.category_id == application.foc_line_id.product_uom.category_id:
+                    quantity = move.product_uom._compute_quantity(
+                        quantity,
+                        application.foc_line_id.product_uom,
+                        rounding_method='HALF-UP',
+                    )
+                picking = move.picking_id
+                values = {
+                    'name': '%s / %s / %s' % (
+                        application.name,
+                        picking.name,
+                        move.product_id.display_name,
+                    ),
+                    'application_id': application.id,
+                    'company_id': application.company_id.id,
+                    'partner_id': application.partner_id.id,
+                    'purchase_id': application.purchase_id.id,
+                    'promotion_id': application.promotion_id.id,
+                    'foc_line_id': application.foc_line_id.id,
+                    'picking_id': picking.id,
+                    'move_id': move.id,
+                    'expected_product_id': application.foc_line_id.product_id.id,
+                    'received_product_id': move.product_id.id,
+                    'product_uom_id': application.foc_line_id.product_uom.id,
+                    'received_qty': quantity,
+                    'promised_foc_qty': application.promised_foc_qty,
+                    'is_substitute': move.product_id != application.foc_line_id.product_id,
+                    'receipt_date': picking.date_done or move.date,
+                    'vendor_reference_type_id': picking.vendor_reference_type_id.id,
+                    'vendor_reference': picking.vendor_reference,
+                    'bill_ids': [(6, 0, application.bill_ids.ids)],
+                    'source_model': 'stock.move',
+                    'source_res_id': move.id,
+                    'source_display_name': move.display_name,
+                    'details': {
+                        'picking_name': picking.name,
+                        'move_id': move.id,
+                        'purchase_line_id': application.foc_line_id.id,
+                        'expected_product': application.foc_line_id.product_id.display_name,
+                        'received_product': move.product_id.display_name,
+                        'delivery_reference_type': picking.vendor_reference_type_id.display_name,
+                        'delivery_reference': picking.vendor_reference,
+                        'is_substitute': move.product_id != application.foc_line_id.product_id,
+                    },
+                }
+                existing = Log.search([('move_id', '=', move.id)], limit=1)
+                if existing:
+                    existing.write(values)
+                    action = 'updated'
+                    log = existing
+                else:
+                    log = Log.create(values)
+                    action = 'created'
+                _logger.info(
+                    '[VPP_RECEIPT_LOG] %s application_id=%s log_id=%s picking_id=%s move_id=%s '
+                    'expected_product_id=%s received_product_id=%s qty=%s is_substitute=%s delivery_ref=%s',
+                    action,
+                    application.id,
+                    log.id,
+                    picking.id,
+                    move.id,
+                    application.foc_line_id.product_id.id,
+                    move.product_id.id,
+                    quantity,
+                    move.product_id != application.foc_line_id.product_id,
+                    picking.vendor_reference,
+                )
+
+    def action_view_foc_receipt_logs(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Received FOC Logs'),
+            'res_model': 'vendor.promotion.foc.receipt.log',
+            'view_mode': 'list,form',
+            'domain': [('application_id', '=', self.id)],
+            'context': {'create': False, 'delete': False},
+        }

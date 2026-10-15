@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_document_tally_session_list" model="ir.ui.view">
+        <field name="name">vendor.document.tally.session.list</field>
+        <field name="model">vendor.document.tally.session</field>
+        <field name="arch" type="xml">
+            <list decoration-warning="mismatch_count &gt; 0" decoration-muted="state == 'closed'">
+                <field name="name"/>
+                <field name="source_model"/>
+                <field name="source_display_name"/>
+                <field name="partner_id"/>
+                <field name="attachment_id"/>
+                <field name="line_count"/>
+                <field name="checked_count"/>
+                <field name="mismatch_count"/>
+                <field name="state"/>
+                <field name="user_id"/>
+                <field name="write_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_document_tally_session_form" model="ir.ui.view">
+        <field name="name">vendor.document.tally.session.form</field>
+        <field name="model">vendor.document.tally.session</field>
+        <field name="arch" type="xml">
+            <form string="Vendor Document Tally">
+                <header>
+                    <button name="action_refresh_lines"
+                            type="object"
+                            string="Refresh Lines"
+                            class="btn-secondary"/>
+                    <button name="action_open_source_document"
+                            type="object"
+                            string="Open Source Document"
+                            class="btn-secondary"/>
+                    <button name="action_mark_reviewed"
+                            type="object"
+                            string="Mark Reviewed"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_close"
+                            type="object"
+                            string="Close"
+                            class="btn-secondary"
+                            invisible="state == 'closed'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="source_model" readonly="1"/>
+                            <field name="source_res_id" invisible="1"/>
+                            <field name="source_display_name" readonly="1"/>
+                            <field name="partner_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="available_attachment_ids" invisible="1"/>
+                            <field name="attachment_id"
+                                   options="{'no_create': True}"
+                                   context="{'default_res_model': source_model, 'default_res_id': source_res_id}"/>
+                            <field name="line_count" readonly="1"/>
+                            <field name="checked_count" readonly="1"/>
+                            <field name="mismatch_count" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Vendor PDF Preview">
+                        <field name="attachment_preview_html" nolabel="1" readonly="1" widget="html"/>
+                    </group>
+                    <notebook>
+                        <page string="Odoo Lines">
+                            <field name="odoo_line_ids"
+                                   context="{'default_source_side': 'odoo_line'}">
+                                <list editable="bottom"
+                                      decoration-success="mark_type == 'checked'"
+                                      decoration-danger="mark_type in ('qty_mismatch', 'price_mismatch', 'not_on_pdf', 'duplicate')"
+                                      decoration-warning="mark_type in ('question', 'needs_review')"
+                                      decoration-muted="not active">
+                                    <field name="active" column_invisible="1"/>
+                                    <field name="source_model" column_invisible="1"/>
+                                    <field name="source_res_id" column_invisible="1"/>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="mark_type"/>
+                                    <field name="product_id" readonly="1"/>
+                                    <field name="description" readonly="1"/>
+                                    <field name="quantity_ordered" readonly="1"/>
+                                    <field name="quantity_received" readonly="1"/>
+                                    <field name="quantity_billed" readonly="1"/>
+                                    <field name="product_uom_id" readonly="1"/>
+                                    <field name="unit_price" readonly="1"/>
+                                    <field name="final_unit_price" readonly="1"/>
+                                    <field name="line_total" readonly="1"/>
+                                    <field name="note"/>
+                                    <button name="action_open_source_line"
+                                            type="object"
+                                            string="Open Line"
+                                            invisible="not source_model or not source_res_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="PDF Lines">
+                            <field name="pdf_line_ids"
+                                   context="{
+                                       'default_source_side': 'pdf_line',
+                                       'default_attachment_id': attachment_id,
+                                       'default_currency_id': currency_id
+                                   }">
+                                <list editable="bottom"
+                                      decoration-success="mark_type == 'checked'"
+                                      decoration-danger="mark_type in ('qty_mismatch', 'price_mismatch', 'pdf_only', 'duplicate')"
+                                      decoration-warning="mark_type in ('question', 'needs_review')">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="mark_type"/>
+                                    <field name="attachment_id"/>
+                                    <field name="pdf_page_number"/>
+                                    <field name="pdf_line_reference"/>
+                                    <field name="pdf_text"/>
+                                    <field name="linked_mark_id"/>
+                                    <field name="note"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes">
+                            <field name="note" placeholder="Working notes for tallying this vendor document."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_vendor_document_tally_session_search" model="ir.ui.view">
+        <field name="name">vendor.document.tally.session.search</field>
+        <field name="model">vendor.document.tally.session</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="source_display_name"/>
+                <field name="partner_id"/>
+                <field name="attachment_id"/>
+                <filter name="my_tallies" string="My Tallies" domain="[('user_id', '=', uid)]"/>
+                <filter name="needs_review" string="Needs Review" domain="[('mismatch_count', '&gt;', 0)]"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="reviewed" string="Reviewed" domain="[('state', '=', 'reviewed')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_source_model" string="Document Type" context="{'group_by': 'source_model'}"/>
+                    <filter name="group_vendor" string="Vendor" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_user" string="User" context="{'group_by': 'user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_vendor_document_tally_session" model="ir.actions.act_window">
+        <field name="name">Vendor Document Tallies</field>
+        <field name="res_model">vendor.document.tally.session</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vendor_document_tally_session_search"/>
+        <field name="context">{'search_default_my_tallies': 1}</field>
+    </record>
+
+    <menuitem id="menu_vendor_document_tally_session"
+              name="Vendor Document Tallies"
+              parent="purchase.menu_purchase_root"
+              action="action_vendor_document_tally_session"
+              sequence="95"
+              groups="purchase.group_purchase_user"/>
+</odoo>

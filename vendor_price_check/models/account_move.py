@@ -3,6 +3,10 @@ from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 import logging
 
+from odoo.addons.vendor_price_check.services.vendor_bill_price_checker import (
+    VendorBillFinalUnitPriceChecker,
+)
+
 _logger = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
@@ -40,6 +44,17 @@ class AccountMove(models.Model):
     promised_cost_diff_count = fields.Integer(
         string="Promised Cost Diff Count",
         compute='_compute_promised_cost_diff_count',
+    )
+
+    invoice_variance_audit_ids = fields.One2many(
+        'vendor.bill.invoice.variance.audit',
+        'bill_id',
+        string='Invoice Variance Audits',
+    )
+
+    invoice_variance_audit_count = fields.Integer(
+        string='Invoice Variance Audit Count',
+        compute='_compute_invoice_variance_audit_count',
     )
 
     bill_grade_volume_summary = fields.Text(
@@ -106,6 +121,11 @@ class AccountMove(models.Model):
                     and abs(line.promised_cost_difference_vat_incl) > rounding
                 )
             ))
+
+    @api.depends('invoice_variance_audit_ids')
+    def _compute_invoice_variance_audit_count(self):
+        for move in self:
+            move.invoice_variance_audit_count = len(move.invoice_variance_audit_ids)
 
     @api.depends(
         'invoice_line_ids.vpc_from_vendor_price_wizard',
@@ -211,154 +231,28 @@ class AccountMove(models.Model):
     
     def _check_vendor_bill_prices(self):
         """
-        Check for pricing discrepancies in vendor bill lines.
-        
-        This method compares current bill prices against historical prices
-        from previous bills for the same products and vendor.
-        
-        Comparison can be done against:
-        - Lowest historical price
-        - Average historical price
-        - Both (configurable via system parameters)
-        
-        Returns:
-            list: IDs of created vendor.price.discrepancy records
+        Check final VAT-inclusive bill line prices against eligible posted bills.
         """
         self.ensure_one()
-        _logger.info('[VPC_HISTORY] price_check_start bill_id=%s bill=%s', self.id, self.name or 'Unnamed')
-        
-        # Clear existing discrepancies before rechecking
-        self.discrepancy_ids.unlink()
-        
-        # Get wizard prices if coming from wizard context
-        wizard_prices = self.env.context.get('wizard_vendor_prices', {})
-        wizard_prices_by_purchase_line = self.env.context.get(
-            'wizard_vendor_prices_by_purchase_line',
-            {},
-        )
-        
-        # Fetch system configuration parameters
-        bill_count = int(
-            self.env['ir.config_parameter'].sudo().get_param(
-                'vendor_price_check.bill_count', 
-                '5'
-            )
-        )
-        comparison_mode = self.env['ir.config_parameter'].sudo().get_param(
-            'vendor_price_check.comparison_mode', 
-            'both'
-        )
-        allow_no_history = self.env['ir.config_parameter'].sudo().get_param(
-            'vendor_price_check.allow_no_history', 
-            'false'
-        ) == 'true'
+        return VendorBillFinalUnitPriceChecker(self.env).check(self)
 
+    def _is_eligible_for_vendor_price_history(self):
+        """Hook for modules to exclude posted bills from price-check history."""
+        self.ensure_one()
+        eligible = (
+            self.state == 'posted'
+            and self.move_type == 'in_invoice'
+            and self.payment_state != 'blocked'
+        )
         _logger.debug(
-            "Using bill_count: %s, comparison_mode: %s, allow_no_history: %s", 
-            bill_count, 
-            comparison_mode, 
-            allow_no_history
+            '[VPC_FINAL_UNIT_ELIGIBILITY] bill_id=%s state=%s move_type=%s payment_state=%s eligible=%s',
+            self.id,
+            self.state,
+            self.move_type,
+            self.payment_state,
+            eligible,
         )
-
-        discrepancies = []
-        
-        # Loop through all invoice lines with products
-        for line in self.invoice_line_ids.filtered(
-            lambda l: l.product_id and l.move_id.move_type == 'in_invoice'
-        ):
-            product = line.product_id
-            
-            # Determine current price with priority:
-            # 1. Wizard vendor prices (if set)
-            # 2. Net price (if custom pricing is used)
-            # 3. Standard price_unit
-            purchase_line_price = (
-                wizard_prices_by_purchase_line.get(line.purchase_line_id.id)
-                if line.purchase_line_id
-                else None
-            )
-            current_price = (
-                purchase_line_price
-                if purchase_line_price is not None
-                else wizard_prices.get(
-                    product.id,
-                    line.net_price if getattr(line, 'use_custom_pricing', False) else line.price_unit,
-                )
-            )
-
-            # Check against vendor pricing rules if no wizard price provided
-            if product.id not in wizard_prices and purchase_line_price is None:
-                pricing_rule = self.env['product.supplierinfo'].search([
-                    ('product_id', '=', product.id),
-                    ('partner_id', '=', self.partner_id.id),
-                    ('min_qty', '<=', line.quantity),
-                    '|', 
-                    ('max_qty', '=', 0), 
-                    ('max_qty', '>=', line.quantity),
-                ], limit=1)
-                
-                if pricing_rule:
-                    # Calculate price with discount and freight
-                    current_price = (
-                        pricing_rule.price * 
-                        (1 - (pricing_rule.discount_percentage or 0.0) / 100) * 
-                        (1 + (pricing_rule.freight_percentage or 0.0) / 100)
-                    )
-                    _logger.debug(
-                        f"Using vendor pricing rule for {product.display_name}: {current_price}"
-                    )
-
-            # Search for historical bill lines for the same product
-            domain = [
-                ('product_id', '=', product.id),
-                ('move_id.move_type', '=', 'in_invoice'),
-                ('move_id.state', '=', 'posted'),
-                ('move_id.id', '!=', self.id),
-            ]
-            historical_lines = self.env['account.move.line'].search(
-                domain, 
-                limit=bill_count, 
-                order='date desc'
-            )
-            
-            # Skip if no history and configuration doesn't allow it
-            if not historical_lines and not allow_no_history:
-                continue
-
-            # Calculate historical price statistics
-            prices = historical_lines.mapped('net_price') or [0]
-            lowest_price = min(prices)
-            average_price = sum(prices) / len(prices) if prices else 0
-            price_diff_lowest = current_price - lowest_price
-            price_diff_average = current_price - average_price
-            percentage_diff_lowest = (
-                (price_diff_lowest / lowest_price * 100) if lowest_price else 100
-            )
-            percentage_diff_average = (
-                (price_diff_average / average_price * 100) if average_price else 100
-            )
-
-            # Create discrepancy record if price is higher than historical
-            if (comparison_mode in ('lowest', 'both') and price_diff_lowest > 0.01) or \
-               (comparison_mode in ('average', 'both') and price_diff_average > 0.01):
-                _logger.warning(f"Discrepancy detected for {product.display_name}")
-                
-                discrepancy = self.env['vendor.price.discrepancy'].create({
-                    'bill_id': self.id,
-                    'product_id': product.id,
-                    'vendor_id': self.partner_id.id,
-                    'vendor_price': current_price,
-                    'lowest_price': lowest_price,
-                    'average_price': average_price,
-                    'price_difference_lowest': price_diff_lowest,
-                    'percentage_diff_lowest': percentage_diff_lowest,
-                    'price_difference_average': price_diff_average,
-                    'percentage_diff_average': percentage_diff_average,
-                    'bill_count': len(historical_lines),
-                })
-                discrepancies.append(discrepancy.id)
-
-        return discrepancies
+        return eligible
 
     def action_approve_discrepancy(self):
         """
@@ -443,6 +337,29 @@ class AccountMove(models.Model):
                 'create': False,
                 'edit': False,
                 'delete': False,
+            },
+        }
+
+    def action_view_invoice_variance_audits(self):
+        self.ensure_one()
+        _logger.info(
+            '[VPC_VARIANCE] audit_view bill_id=%s bill=%s count=%s user_id=%s',
+            self.id,
+            self.display_name,
+            self.invoice_variance_audit_count,
+            self.env.user.id,
+        )
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Invoice Variance Audits'),
+            'res_model': 'vendor.bill.invoice.variance.audit',
+            'view_mode': 'list,form',
+            'domain': [('bill_id', '=', self.id)],
+            'context': {
+                'create': False,
+                'edit': False,
+                'delete': False,
+                'default_bill_id': self.id,
             },
         }
 

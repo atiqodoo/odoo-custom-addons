@@ -9,6 +9,19 @@
                 <field name="vendor_invoice_profile"
                        groups="purchase.group_purchase_manager"
                        options="{'no_create': True, 'no_open': True}"/>
+                <field name="invoice_variance_currency_id" invisible="1"/>
+                <field name="allowed_invoice_variance_amount"
+                       groups="purchase.group_purchase_manager"
+                       widget="monetary"/>
+                <field name="variance_warning_dismiss_clicks_required"
+                       groups="purchase.group_purchase_manager"/>
+                <field name="block_invoice_variance_above_allowed"
+                       groups="purchase.group_purchase_manager"/>
+                <field name="require_vendor_invoice_final_total"
+                       groups="purchase.group_purchase_manager"/>
+                <field name="invoice_variance_allocation_mode"
+                       groups="purchase.group_purchase_manager"
+                       options="{'no_create': True, 'no_open': True}"/>
             </xpath>
             <xpath expr="//field[@name='freight_percentage']/ancestor::group[1]" position="after">
                 <div class="alert alert-info" role="alert"

@@ -164,6 +164,19 @@ class AccountMove(models.Model):
                     move.promotion_release_approved_by_id.id,
                 )
 
+    def _is_eligible_for_vendor_price_history(self):
+        self.ensure_one()
+        eligible = super()._is_eligible_for_vendor_price_history()
+        if eligible and self.promotion_payment_hold:
+            _logger.info(
+                '[VPP_PRICE_HISTORY_ELIGIBILITY] bill_id=%s promotion_hold=%s release_state=%s eligible=False',
+                self.id,
+                self.promotion_payment_hold,
+                self.promotion_release_state,
+            )
+            return False
+        return eligible
+
     def _check_promotion_release_access(self):
         if not (
             self.env.user.has_group('account.group_account_manager')

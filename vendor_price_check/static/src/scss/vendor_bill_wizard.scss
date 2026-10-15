@@ -1,0 +1,32 @@
+.o_dialog .modal-dialog.modal-xl:has(.o_vendor_bill_price_wizard) {
+    --modal-xl: 96vw;
+    --bs-modal-width: 96vw;
+    max-width: 96vw;
+}
+
+.o_dialog .modal-dialog:has(.o_vendor_bill_price_wizard) {
+    .modal-content {
+        max-height: 94vh;
+    }
+
+    .modal-body {
+        overflow: auto;
+    }
+}
+
+.o_vendor_bill_price_wizard {
+    .o_field_x2many_list,
+    .o_list_renderer {
+        max-width: 100%;
+    }
+
+    .o_vpc_unit_price_vat_incl,
+    th[data-name="unit_price_vat_incl"],
+    td[name="unit_price_vat_incl"] {
+        background-color: #fff3cd;
+    }
+
+    td.o_vpc_unit_price_vat_incl {
+        font-weight: 600;
+    }
+}

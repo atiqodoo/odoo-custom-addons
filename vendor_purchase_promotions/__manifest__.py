@@ -20,10 +20,14 @@ Vendor Purchase Promotions
     ],
     'data': [
         'security/ir.model.access.csv',
+        'data/promotion_profiles.xml',
         'data/vendor_promotion_sequence.xml',
         'views/vendor_promotion_views.xml',
+        'views/res_config_settings_views.xml',
         'views/purchase_order_views.xml',
+        'views/stock_picking_views.xml',
         'views/promotion_override_log_views.xml',
+        'views/promotion_substitution_override_log_views.xml',
         'views/vendor_price_wizard_views.xml',
         'views/account_move_views.xml',
         'reports/purchase_order_report.xml',
@@ -31,6 +35,7 @@ Vendor Purchase Promotions
     'assets': {
         'web.assets_backend': [
             'vendor_purchase_promotions/static/src/js/promotion_warning_action.js',
+            'vendor_purchase_promotions/static/src/js/substitution_mismatch_warning_action.js',
             'vendor_purchase_promotions/static/src/scss/promotion_warning.scss',
         ],
     },

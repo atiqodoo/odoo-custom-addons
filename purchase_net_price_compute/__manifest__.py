@@ -9,11 +9,14 @@
         'vendor_department_contacts',
     ],
     'data': [
+        'security/ir.model.access.csv',
         'views/res_config_settings_views.xml',
         'views/res_config_settings_attachment_requirement_views.xml',
         'views/product_vendor_pricing_views.xml',  # Load this FIRST
         'views/res_partner_views.xml',
         'views/vendor_invoice_profile_views.xml',
+        'views/vendor_reference_type_views.xml',
+        'views/vendor_document_tally_views.xml',
         'views/res_users_views.xml',
         'views/product_template_views.xml',
         'views/purchase_order_views.xml',

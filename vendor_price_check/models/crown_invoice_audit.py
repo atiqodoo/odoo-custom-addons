@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import fields, models
+from odoo import api, fields, models
 
 from odoo.addons.purchase_net_price_compute.models.vendor_invoice_profile import (
     VENDOR_INVOICE_PROFILE_SELECTION,
@@ -54,5 +54,35 @@ class AccountMoveLineCrownInvoiceAudit(models.Model):
         string='Allocated Invoice Variance', currency_field='currency_id', readonly=True, copy=False,
     )
     vendor_final_unit_price_vat_incl = fields.Monetary(
-        string='Final Unit Price (VAT Incl.)', currency_field='currency_id', readonly=True, copy=False,
+        string='Final Unit Price (VAT Incl.)',
+        compute='_compute_vendor_final_unit_price_vat_incl',
+        store=True,
+        currency_field='currency_id',
+        readonly=True,
+        copy=False,
     )
+
+    @api.depends(
+        'price_unit',
+        'tax_ids',
+        'currency_id',
+        'product_id',
+        'partner_id',
+        'move_id.partner_id',
+        'move_id.vendor_invoice_profile',
+        'move_id.vendor_invoice_variance_amount',
+    )
+    def _compute_vendor_final_unit_price_vat_incl(self):
+        for line in self:
+            partner = line.partner_id or line.move_id.partner_id
+            if line.tax_ids:
+                tax_result = line.tax_ids.compute_all(
+                    line.price_unit or 0.0,
+                    currency=line.currency_id,
+                    quantity=1.0,
+                    product=line.product_id,
+                    partner=partner,
+                )
+                line.vendor_final_unit_price_vat_incl = tax_result['total_included']
+            else:
+                line.vendor_final_unit_price_vat_incl = line.price_unit or 0.0

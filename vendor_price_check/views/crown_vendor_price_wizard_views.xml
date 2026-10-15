@@ -27,7 +27,11 @@
                                widget="monetary"/>
                     </group>
                     <group>
-                        <field name="invoice_variance_amount" readonly="1" widget="monetary"/>
+                        <field name="invoice_variance_amount"
+                               readonly="1"
+                               widget="monetary"
+                               decoration-success="invoice_variance_amount &gt; 0"
+                               decoration-danger="invoice_variance_amount &lt; 0"/>
                         <field name="invoice_variance_percentage" readonly="1"/>
                         <field name="invoice_variance_status" readonly="1"/>
                         <field name="invoice_allocation_ratio" invisible="1"/>
@@ -56,49 +60,49 @@
                 <field name="structured_discount_amount"
                        widget="monetary"
                        readonly="1"
-                       column_invisible="not parent.is_crown_profile"/>
+                       column_invisible="not parent.is_crown_profile or not parent.show_profile_detail_columns"/>
                 <field name="structured_discount_percentage"
                        readonly="1"
-                       column_invisible="not parent.is_crown_profile"/>
+                       column_invisible="not parent.is_crown_profile or not parent.show_profile_detail_columns"/>
                 <field name="discount_per_quantity"
                        widget="monetary"
                        readonly="1"
-                       column_invisible="not parent.is_crown_profile"/>
+                       column_invisible="not parent.is_crown_profile or not parent.show_profile_detail_columns"/>
             </xpath>
             <xpath expr="//field[@name='line_ids']/list/field[@name='discount_per_quantity']" position="after">
                 <field name="freight_amount"
                        widget="monetary"
                        readonly="1"
-                       column_invisible="not parent.is_crown_profile"/>
+                       column_invisible="not parent.is_crown_profile or not parent.show_profile_detail_columns"/>
                 <field name="purchase_tax_ids"
                        widget="many2many_tags"
                        readonly="1"
-                       column_invisible="not parent.is_crown_profile"/>
+                       column_invisible="not parent.is_crown_profile or not parent.show_reference_columns"/>
                 <field name="vat_description"
                        readonly="1"
-                       column_invisible="not parent.is_crown_profile"/>
+                       column_invisible="not parent.is_crown_profile or not parent.show_reference_columns"/>
             </xpath>
             <xpath expr="//field[@name='line_ids']/list/field[@name='calculated_subtotal']" position="after">
                 <field name="preliminary_unit_price_excl_vat"
                        widget="monetary"
                        readonly="1"
-                       column_invisible="not parent.is_crown_profile"/>
+                       column_invisible="not parent.is_crown_profile or not parent.show_computed_line_columns"/>
                 <field name="allocated_variance_amount"
                        widget="monetary"
                        readonly="1"
-                       column_invisible="not parent.is_crown_profile"/>
+                       column_invisible="not parent.is_crown_profile or not parent.show_profile_detail_columns"/>
                 <field name="final_unit_price_excl_vat"
                        widget="monetary"
                        readonly="1"
-                       column_invisible="not parent.is_crown_profile"/>
+                       column_invisible="not parent.is_crown_profile or not parent.show_computed_line_columns"/>
                 <field name="final_unit_price_incl_vat"
                        widget="monetary"
                        readonly="1"
-                       column_invisible="not parent.is_crown_profile"/>
+                       column_invisible="not parent.is_crown_profile or not parent.show_vat_line_columns"/>
                 <field name="final_line_total_vat_incl"
                        widget="monetary"
                        readonly="1"
-                       column_invisible="not parent.is_crown_profile"
+                       column_invisible="not parent.is_crown_profile or not parent.show_vat_line_columns"
                        sum="Vendor Final Total"/>
             </xpath>
         </field>

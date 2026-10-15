@@ -5,12 +5,24 @@
         <field name="model">purchase.order</field>
         <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_status']" position="after">
+                <field name="has_combined_lpo_billable_qty" invisible="1"/>
+            </xpath>
+
+            <xpath expr="//button[@name='action_create_invoice']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <xpath expr="//button[@name='action_create_invoice_wizard']" position="attributes">
+                <attribute name="invisible">state not in ('purchase', 'done') or invoice_status != 'to invoice' or not has_combined_lpo_billable_qty</attribute>
+            </xpath>
+
             <xpath expr="//button[@name='action_create_invoice_wizard']" position="after">
                 <button name="action_create_combined_lpo_bill_wizard"
                         string="Combined Bill"
                         type="object"
                         class="btn-secondary"
-                        invisible="state not in ('purchase', 'done') or invoice_status != 'to invoice'"
+                        invisible="state not in ('purchase', 'done') or invoice_status != 'to invoice' or not has_combined_lpo_billable_qty"
                         help="Create one vendor bill from this LPO and other selected eligible LPOs."/>
             </xpath>
         </field>

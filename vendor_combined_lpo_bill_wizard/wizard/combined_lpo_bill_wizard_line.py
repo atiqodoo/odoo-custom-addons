@@ -66,81 +66,97 @@ class CombinedLpoBillWizardLine(models.TransientModel):
     bill_unit_price_excl_vat = fields.Monetary(
         string='Bill Unit Excl. VAT',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     line_total_vat_incl = fields.Monetary(
         string='Line Total VAT Incl.',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     final_unit_price_excl_vat = fields.Monetary(
         string='Final Unit Excl. VAT',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     final_unit_price_incl_vat = fields.Monetary(
         string='Final Unit Incl. VAT',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     unit_price_vat_incl = fields.Monetary(
         string='Unit Price + Configured VAT',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
         help='VAT-inclusive cost price per unit using the purchase line configured taxes.',
     )
     final_line_total_vat_incl = fields.Monetary(
         string='Final Line Total VAT Incl.',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     promised_cost_difference_vat_incl = fields.Monetary(
         string='Promised Cost Diff.',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     gamma_gross_total = fields.Monetary(
         string='Gamma Gross',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     gamma_discount_amount = fields.Monetary(
         string='Gamma Discount',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     gamma_tint_charge = fields.Monetary(
         string='Gamma Tint Charge',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     gamma_subtotal_excl_vat = fields.Monetary(
         string='Gamma Subtotal Excl. VAT',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     structured_discount_amount = fields.Monetary(
         string='Structured Discount',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     structured_discount_percentage = fields.Float(
         string='Structured Discount %',
         compute='_compute_amounts',
+        store=True,
     )
     discount_per_quantity = fields.Monetary(
         string='Discount / Qty',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     freight_amount = fields.Monetary(
         string='Freight Amount',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
     allocated_variance_amount = fields.Monetary(
         string='Allocated Variance',
         compute='_compute_amounts',
+        store=True,
         currency_field='currency_id',
     )
 
@@ -207,51 +223,39 @@ class CombinedLpoBillWizardLine(models.TransientModel):
         unit_excl = amounts.get('bill_unit_price_excl_vat', 0.0)
         qty = self.product_qty or 0.0
         tax_partner = self.wizard_id.partner_id
-        taxes = self.purchase_tax_ids
-        if taxes:
-            unit_tax = taxes.compute_all(
+        if self.purchase_line_id:
+            unit_incl = self.purchase_line_id._get_price_with_configured_vat(
                 unit_excl,
                 currency=self.currency_id,
                 quantity=1.0,
-                product=self.product_id,
                 partner=tax_partner,
             )
-            line_tax = taxes.compute_all(
+            line_incl = self.purchase_line_id._get_price_with_configured_vat(
                 unit_excl,
                 currency=self.currency_id,
                 quantity=qty,
-                product=self.product_id,
                 partner=tax_partner,
             )
-            unit_incl = unit_tax['total_included']
-            line_incl = line_tax['total_included']
         else:
             unit_incl = unit_excl
             line_incl = unit_excl * qty
 
-        ratio = (
-            self.wizard_id.invoice_allocation_ratio or 1.0
-            if self.wizard_id.vendor_invoice_profile == VENDOR_INVOICE_PROFILE_CROWN
-            else 1.0
-        )
+        allocation_values = self.wizard_id._get_variance_policy_values()
+        ratio = allocation_values['allocation_ratio'] if allocation_values['allocation_enabled'] else 1.0
         final_unit_excl = unit_excl * ratio
-        if taxes:
-            final_unit_tax = taxes.compute_all(
+        if self.purchase_line_id:
+            final_unit_incl = self.purchase_line_id._get_price_with_configured_vat(
                 final_unit_excl,
                 currency=self.currency_id,
                 quantity=1.0,
-                product=self.product_id,
                 partner=tax_partner,
             )
-            final_line_tax = taxes.compute_all(
+            final_line_incl = self.purchase_line_id._get_price_with_configured_vat(
                 final_unit_excl,
                 currency=self.currency_id,
                 quantity=qty,
-                product=self.product_id,
                 partner=tax_partner,
             )
-            final_unit_incl = final_unit_tax['total_included']
-            final_line_incl = final_line_tax['total_included']
         else:
             final_unit_incl = final_unit_excl
             final_line_incl = final_unit_excl * qty
@@ -322,12 +326,40 @@ class CombinedLpoBillWizardLine(models.TransientModel):
 
     def _get_effective_bill_unit_price(self):
         self.ensure_one()
-        if self.wizard_id.vendor_invoice_profile == VENDOR_INVOICE_PROFILE_CROWN:
-            return self.final_unit_price_excl_vat
-        return self.bill_unit_price_excl_vat
+        amounts = self.wizard_id._profile_adapter().prepare_line_amounts(self)
+        return self.wizard_id._apply_invoice_allocation_to_unit_price(
+            amounts.get('bill_unit_price_excl_vat', 0.0),
+            line=self,
+        )
 
     def _get_effective_bill_discount(self):
         self.ensure_one()
         if self.wizard_id.vendor_invoice_profile == VENDOR_INVOICE_PROFILE_CROWN:
             return self.structured_discount_percentage
         return self.applied_discount
+
+    def _prepare_common_bill_line_audit_vals(self):
+        self.ensure_one()
+        amounts = self.wizard_id._profile_adapter().prepare_line_amounts(self)
+        unit_excl = amounts.get('bill_unit_price_excl_vat', 0.0)
+        subtotal_excl = amounts.get('subtotal_excl_vat', unit_excl * (self.product_qty or 0.0))
+        return {
+            'wizard_vendor_list_unit_price': self.vendor_price,
+            'wizard_vendor_line_total': self.vendor_line_total,
+            'wizard_discount_percentage': self.applied_discount,
+            'wizard_freight_percentage': self.applied_freight,
+            'wizard_tint_type': self.gamma_tint_type or False,
+            'wizard_tint_percentage': self.gamma_tint_percentage,
+            'wizard_computed_unit_excl_vat': unit_excl,
+            'wizard_computed_unit_vat_incl': self.unit_price_vat_incl,
+            'wizard_computed_line_total_vat_incl': self.line_total_vat_incl,
+            'wizard_computed_gross_total': self.gamma_gross_total,
+            'wizard_computed_discount_amount': (
+                self.gamma_discount_amount or self.structured_discount_amount
+            ),
+            'wizard_computed_tint_charge': self.gamma_tint_charge,
+            'wizard_computed_subtotal_excl_vat': (
+                self.gamma_subtotal_excl_vat or subtotal_excl
+            ),
+            'wizard_computed_promised_cost_diff_vat_incl': self.promised_cost_difference_vat_incl,
+        }

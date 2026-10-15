@@ -41,6 +41,7 @@
                 <field name="discrepancy_count" readonly="1" invisible="1"/>
                 <field name="discrepancy_approved" readonly="1" invisible="1"/>
                 <field name="promised_cost_diff_count" readonly="1" invisible="1"/>
+                <field name="invoice_variance_audit_count" readonly="1" invisible="1"/>
                 <button name="action_view_discrepancies"
                         type="object"
                         string="View Discrepancies"
@@ -49,6 +50,10 @@
                         type="object"
                         string="View Promised Cost Diff"
                         invisible="promised_cost_diff_count == 0"/>
+                <button name="action_view_invoice_variance_audits"
+                        type="object"
+                        string="Invoice Variance Audits"
+                        invisible="invoice_variance_audit_count == 0"/>
                 <button name="action_approve_discrepancy"
                         type="object"
                         string="Approve Discrepancies"
@@ -68,6 +73,65 @@
             <xpath expr="//field[@name='invoice_line_ids']/list" position="inside">
                 <field name="vpc_from_vendor_price_wizard" column_invisible="1"/>
                 <field name="bill_volume_reference_uom_id" column_invisible="1"/>
+                <field name="unit_price_vat_incl"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       optional="show"
+                       readonly="1"/>
+                <field name="wizard_vendor_list_unit_price"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       optional="show"
+                       readonly="1"/>
+                <field name="wizard_vendor_line_total"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       optional="hide"
+                       readonly="1"/>
+                <field name="wizard_discount_percentage" optional="hide" readonly="1"/>
+                <field name="wizard_freight_percentage" optional="hide" readonly="1"/>
+                <field name="wizard_tint_type" optional="hide" readonly="1"/>
+                <field name="wizard_tint_percentage" optional="hide" readonly="1"/>
+                <field name="wizard_computed_unit_excl_vat"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       optional="hide"
+                       readonly="1"/>
+                <field name="wizard_computed_unit_vat_incl"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       optional="show"
+                       readonly="1"/>
+                <field name="wizard_computed_line_total_vat_incl"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       optional="hide"
+                       readonly="1"/>
+                <field name="wizard_computed_gross_total"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       optional="hide"
+                       readonly="1"/>
+                <field name="wizard_computed_discount_amount"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       optional="hide"
+                       readonly="1"/>
+                <field name="wizard_computed_tint_charge"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       optional="hide"
+                       readonly="1"/>
+                <field name="wizard_computed_subtotal_excl_vat"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       optional="hide"
+                       readonly="1"/>
+                <field name="wizard_computed_promised_cost_diff_vat_incl"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       optional="hide"
+                       readonly="1"/>
                 <field name="bill_volume_reporting_grade_id" optional="show" readonly="1"/>
                 <field name="bill_grade_volume_label" optional="show" readonly="1"/>
                 <field name="bill_grade_amount_vat_incl"

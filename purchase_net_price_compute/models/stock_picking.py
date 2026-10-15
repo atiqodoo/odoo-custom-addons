@@ -1,9 +1,35 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 
 
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
+
+    vendor_reference_type_id = fields.Many2one(
+        'purchase.vendor.reference.type',
+        string='Vendor Reference Type',
+        tracking=True,
+        index=True,
+        copy=False,
+        domain=[('active', '=', True)],
+    )
+    vendor_reference = fields.Char(
+        string='Vendor Reference',
+        tracking=True,
+        index=True,
+        copy=False,
+    )
+    vendor_reference_required = fields.Boolean(
+        compute='_compute_vendor_reference_required',
+    )
+    vendor_reference_normalized = fields.Char(
+        string='Vendor Reference Search Key',
+        compute='_compute_vendor_reference_normalized',
+        store=True,
+        index=True,
+        copy=False,
+    )
 
     receipt_grade_volume_summary = fields.Text(
         string='Receipt Grade Volume Summary',
@@ -19,6 +45,73 @@ class StockPicking(models.Model):
         readonly=True,
         help='Stored receipt grade-wise volume and VAT-inclusive value snapshot for posted bill comparison.',
     )
+
+    @api.depends('vendor_reference')
+    def _compute_vendor_reference_normalized(self):
+        for picking in self:
+            picking.vendor_reference_normalized = (picking.vendor_reference or '').strip().casefold() or False
+
+    def _get_vendor_reference_normalized(self):
+        self.ensure_one()
+        return (self.vendor_reference or '').strip().casefold()
+
+    def _is_vendor_reference_required(self):
+        value = self.env['ir.config_parameter'].sudo().get_param(
+            'purchase_net_price_compute.vendor_reference_required_receipt',
+            default='True',
+        )
+        return str(value).lower() not in ('false', '0', 'no', 'off')
+
+    @api.depends('picking_type_code')
+    def _compute_vendor_reference_required(self):
+        required = self._is_vendor_reference_required()
+        for picking in self:
+            picking.vendor_reference_required = picking.picking_type_code == 'incoming' and required
+
+    @api.constrains('vendor_reference', 'vendor_reference_type_id', 'company_id', 'picking_type_code')
+    def _check_vendor_reference_unique(self):
+        for picking in self:
+            normalized_reference = picking._get_vendor_reference_normalized()
+            if picking.picking_type_code != 'incoming' or not normalized_reference:
+                if picking.picking_type_code == 'incoming' and bool(picking.vendor_reference_type_id) != bool(normalized_reference):
+                    raise ValidationError(_('Vendor Reference Type and Vendor Reference must be entered together.'))
+                continue
+            if not picking.vendor_reference_type_id:
+                raise ValidationError(_('Vendor Reference Type and Vendor Reference must be entered together.'))
+            duplicate = self.search([
+                ('id', '!=', picking.id),
+                ('picking_type_code', '=', 'incoming'),
+                ('company_id', '=', picking.company_id.id),
+                ('vendor_reference_type_id', '=', picking.vendor_reference_type_id.id),
+                ('vendor_reference_normalized', '=', normalized_reference),
+            ], limit=1)
+            if duplicate:
+                raise ValidationError(_(
+                    'Vendor Reference "%(reference)s" already exists for type "%(type)s".',
+                    reference=picking.vendor_reference,
+                    type=picking.vendor_reference_type_id.display_name,
+                ))
+
+    def button_validate(self):
+        if not self._is_vendor_reference_required():
+            self._check_vendor_reference_unique()
+            return super().button_validate()
+        for picking in self.filtered(lambda item: item.picking_type_code == 'incoming'):
+            if not picking.vendor_reference_type_id or not picking._get_vendor_reference_normalized():
+                raise ValidationError(_('Vendor Reference Type and Vendor Reference are mandatory on receipts.'))
+        return super().button_validate()
+
+    def action_open_vendor_document_tally(self):
+        self.ensure_one()
+        session = self.env['vendor.document.tally.session']._get_or_create_for_record(self)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Vendor Document Tally'),
+            'res_model': 'vendor.document.tally.session',
+            'view_mode': 'form',
+            'res_id': session.id,
+            'target': 'current',
+        }
 
     @api.depends(
         'move_ids.receipt_volume_reporting_grade_id',

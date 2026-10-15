@@ -4,7 +4,7 @@
         <field name="name">vendor.price.wizard.form</field>
         <field name="model">vendor.price.wizard</field>
         <field name="arch" type="xml">
-            <form string="Enter Vendor Prices">
+            <form string="Enter Vendor Prices" class="o_vendor_bill_price_wizard">
                 <sheet>
                     <group>
                         <field name="purchase_id" readonly="1"/>
@@ -12,7 +12,53 @@
                         <field name="currency_id" invisible="1"/>
                         <field name="has_promised_cost_discrepancy" invisible="1"/>
                         <field name="promised_cost_discrepancy_approved" invisible="1"/>
+                        <field name="allowed_invoice_variance_amount" invisible="1"/>
+                        <field name="required_variance_dismiss_count" invisible="1"/>
+                        <field name="block_invoice_variance_above_allowed" invisible="1"/>
+                        <field name="variance_policy_calculated_total" invisible="1"/>
+                        <field name="variance_policy_vendor_final_total" invisible="1"/>
+                        <field name="variance_policy_amount" invisible="1"/>
+                        <field name="variance_policy_abs_amount" invisible="1"/>
+                        <field name="variance_policy_exceeds_allowed" invisible="1"/>
+                        <field name="variance_policy_requires_ack" invisible="1"/>
+                        <field name="variance_policy_acknowledged" invisible="1"/>
+                        <field name="invoice_variance_allocation_mode" invisible="1"/>
+                        <field name="invoice_variance_allocation_enabled" invisible="1"/>
                     </group>
+                    <group string="Line Column Visibility">
+                        <field name="show_reference_columns" widget="boolean_toggle"/>
+                        <field name="show_computed_line_columns" widget="boolean_toggle"/>
+                        <field name="show_vat_line_columns" widget="boolean_toggle"/>
+                        <field name="show_promised_cost_columns" widget="boolean_toggle"/>
+                        <field name="show_profile_detail_columns" widget="boolean_toggle"/>
+                    </group>
+                    <group string="Invoice Variance" name="invoice_variance_policy_summary" invisible="is_crown_profile">
+                        <group>
+                            <field name="invoice_total_vat_incl" readonly="1" widget="monetary"/>
+                            <field name="vendor_invoice_final_total" widget="monetary"/>
+                        </group>
+                        <group>
+                            <field name="variance_policy_amount"
+                                   readonly="1"
+                                   decoration-success="variance_policy_amount &gt; 0"
+                                   decoration-danger="variance_policy_amount &lt; 0"/>
+                            <field name="allowed_invoice_variance_amount" readonly="1"/>
+                            <field name="invoice_variance_allocation_mode" readonly="1"/>
+                            <field name="invoice_allocation_ratio"
+                                   readonly="1"
+                                   invisible="not invoice_variance_allocation_enabled"/>
+                            <field name="variance_warning_dismiss_count" readonly="1"/>
+                            <field name="required_variance_dismiss_count" readonly="1"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-warning" role="alert" invisible="not variance_policy_requires_ack or variance_policy_acknowledged">
+                        <strong>Invoice variance exceeds vendor allowed amount.</strong>
+                        <field name="variance_policy_message" readonly="1" widget="text" nolabel="1"/>
+                        <button string="Dismiss Warning"
+                                name="action_dismiss_invoice_variance_warning"
+                                type="object"
+                                class="btn btn-secondary"/>
+                    </div>
                     <group string="Bill Lines">
                         <field name="line_ids" nolabel="1">
                             <list editable="bottom"
@@ -20,20 +66,38 @@
                                   decoration-success="promised_cost_difference_vat_incl &lt; 0">
                                 <field name="product_id" readonly="1"/>
                                 <field name="product_qty" readonly="1"/>
-                                <field name="price_unit" readonly="1" widget="monetary"/>
+                                <field name="price_unit"
+                                       readonly="1"
+                                       widget="monetary"
+                                       column_invisible="not parent.show_reference_columns"/>
                                 <field name="vendor_price" required="1" widget="monetary"/>
                                 <field name="use_custom_pricing" readonly="1"/>
                                 <field name="applied_discount"/>
                                 <field name="applied_freight"/>
-                                <field name="calculated_subtotal" readonly="1" widget="monetary"/>
-                                <field name="unit_price_vat_incl" readonly="1" widget="monetary"/>
-                                <field name="vendor_promised_cost_vat_incl" readonly="1" widget="monetary"/>
+                                <field name="calculated_subtotal"
+                                       readonly="1"
+                                       widget="monetary"
+                                       column_invisible="not parent.show_computed_line_columns"/>
+                                <field name="unit_price_vat_incl"
+                                       readonly="1"
+                                       widget="monetary"
+                                       class="o_vpc_unit_price_vat_incl"
+                                       column_invisible="not parent.show_vat_line_columns"/>
+                                <field name="vendor_promised_cost_vat_incl"
+                                       readonly="1"
+                                       widget="monetary"
+                                       column_invisible="not parent.show_promised_cost_columns"/>
                                 <field name="promised_cost_difference_vat_incl"
                                        readonly="1"
                                        widget="monetary"
+                                       column_invisible="not parent.show_promised_cost_columns"
                                        decoration-danger="promised_cost_difference_vat_incl &gt; 0"
                                        decoration-success="promised_cost_difference_vat_incl &lt; 0"/>
-                                <field name="line_total_vat_incl" readonly="1" widget="monetary" sum="Invoice Total (VAT Incl.)"/>
+                                <field name="line_total_vat_incl"
+                                       readonly="1"
+                                       widget="monetary"
+                                       column_invisible="not parent.show_vat_line_columns"
+                                       sum="Invoice Total (VAT Incl.)"/>
                                 <field name="purchase_line_id" column_invisible="1"/>
                                 <field name="currency_id" column_invisible="1"/>
                             </list>
@@ -45,7 +109,11 @@
                 </sheet>
                 <div class="oe_chatter"/>
                 <footer>
-                    <button string="Create/Update Bill &amp; Validate Prices" name="action_create_bill" type="object" class="btn-primary"/>
+                    <button string="Create/Update Bill &amp; Validate Prices"
+                            name="action_create_bill"
+                            type="object"
+                            class="btn-primary"
+                            invisible="variance_policy_requires_ack and not variance_policy_acknowledged"/>
                     <button string="Approve Promised Cost Difference"
                             name="action_approve_promised_cost_discrepancy"
                             type="object"

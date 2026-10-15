@@ -14,6 +14,28 @@
                          help="Prioritize vendor contacts used on RFQs within the configured number of previous months. Set to 0 to use primary contacts first.">
                     <field name="rfq_vendor_contact_usage_months"/>
                 </setting>
+                <setting id="vendor_reference_required_settings"
+                         string="Vendor Reference Requirements"
+                         help="Choose where users must enter a vendor reference type and reference. All options are enabled by default.">
+                    <div class="content-group">
+                        <div class="row mt8">
+                            <field name="vendor_reference_required_rfq"/>
+                            <label for="vendor_reference_required_rfq"/>
+                        </div>
+                        <div class="row mt8">
+                            <field name="vendor_reference_required_lpo"/>
+                            <label for="vendor_reference_required_lpo"/>
+                        </div>
+                        <div class="row mt8">
+                            <field name="vendor_reference_required_receipt"/>
+                            <label for="vendor_reference_required_receipt"/>
+                        </div>
+                        <div class="row mt8">
+                            <field name="vendor_reference_required_invoice"/>
+                            <label for="vendor_reference_required_invoice"/>
+                        </div>
+                    </div>
+                </setting>
                 <setting id="lpo_report_display_settings"
                          string="LPO/RFQ PDF Display"
                          help="Control which commercial fields are printed on downloaded LPO/RFQ PDF reports.">

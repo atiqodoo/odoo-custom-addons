@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_purchase_vendor_reference_type_user,purchase.vendor.reference.type.user,model_purchase_vendor_reference_type,purchase.group_purchase_user,1,0,0,0
+access_purchase_vendor_reference_type_manager,purchase.vendor.reference.type.manager,model_purchase_vendor_reference_type,purchase.group_purchase_manager,1,1,1,1
+access_vendor_document_tally_session_user,vendor.document.tally.session.user,model_vendor_document_tally_session,purchase.group_purchase_user,1,1,1,0
+access_vendor_document_tally_session_manager,vendor.document.tally.session.manager,model_vendor_document_tally_session,purchase.group_purchase_manager,1,1,1,1
+access_vendor_document_tally_mark_user,vendor.document.tally.mark.user,model_vendor_document_tally_mark,purchase.group_purchase_user,1,1,1,0
+access_vendor_document_tally_mark_manager,vendor.document.tally.mark.manager,model_vendor_document_tally_mark,purchase.group_purchase_manager,1,1,1,1

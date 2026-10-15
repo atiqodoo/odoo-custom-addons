@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_bill_invoice_variance_audit_list" model="ir.ui.view">
+        <field name="name">vendor.bill.invoice.variance.audit.list</field>
+        <field name="model">vendor.bill.invoice.variance.audit</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false"
+                  decoration-success="variance_amount &gt; 0"
+                  decoration-danger="variance_amount &lt; 0">
+                <field name="create_date"/>
+                <field name="bill_id"/>
+                <field name="vendor_id"/>
+                <field name="vendor_invoice_profile"/>
+                <field name="calculated_total_vat_incl" widget="monetary"/>
+                <field name="vendor_invoice_final_total" widget="monetary"/>
+                <field name="variance_amount"
+                       widget="monetary"
+                       decoration-success="variance_amount &gt; 0"
+                       decoration-danger="variance_amount &lt; 0"/>
+                <field name="allowed_variance_amount" widget="monetary"/>
+                <field name="exceeded_allowed_amount"/>
+                <field name="dismiss_clicks_done"/>
+                <field name="dismiss_clicks_required"/>
+                <field name="created_by_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_bill_invoice_variance_audit_form" model="ir.ui.view">
+        <field name="name">vendor.bill.invoice.variance.audit.form</field>
+        <field name="model">vendor.bill.invoice.variance.audit</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="bill_id"/>
+                            <field name="vendor_id"/>
+                            <field name="company_id"/>
+                            <field name="currency_id"/>
+                            <field name="vendor_invoice_profile"/>
+                            <field name="created_by_id"/>
+                        </group>
+                        <group>
+                            <field name="calculated_total_vat_incl" widget="monetary"/>
+                            <field name="vendor_invoice_final_total" widget="monetary"/>
+                            <field name="variance_amount"
+                                   widget="monetary"
+                                   decoration-success="variance_amount &gt; 0"
+                                   decoration-danger="variance_amount &lt; 0"/>
+                            <field name="absolute_variance_amount" widget="monetary"/>
+                            <field name="allowed_variance_amount" widget="monetary"/>
+                            <field name="exceeded_allowed_amount"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="purchase_id"/>
+                        <field name="purchase_ids" widget="many2many_tags"/>
+                        <field name="wizard_model"/>
+                        <field name="wizard_id"/>
+                        <field name="block_above_allowed"/>
+                        <field name="dismiss_clicks_done"/>
+                        <field name="dismiss_clicks_required"/>
+                    </group>
+                    <group string="Snapshots">
+                        <field name="wizard_snapshot_json" widget="json"/>
+                        <field name="line_snapshot_json" widget="json"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

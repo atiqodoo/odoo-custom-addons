@@ -176,6 +176,35 @@ class PurchaseOrderLine(models.Model):
     def _onchange_lpo_grade_volume_fields(self):
         self._compute_lpo_grade_volume_fields()
 
+    @api.model
+    def _prepare_add_missing_fields(self, values):
+        """Keep RFQ product lines complete when custom widgets post partial data."""
+        onchange_fields = {'name', 'price_unit', 'product_qty', 'product_uom', 'taxes_id', 'date_planned'}
+        needs_purchase_defaults = (
+            values.get('order_id')
+            and values.get('product_id')
+            and (
+                any(field not in values for field in onchange_fields)
+                or not values.get('product_qty')
+                or not values.get('product_uom')
+            )
+        )
+        if not needs_purchase_defaults:
+            return super()._prepare_add_missing_fields(values)
+
+        defaults = super()._prepare_add_missing_fields(values)
+        line = self.new(dict(values, **defaults))
+        if not line.product_uom:
+            line._product_id_change()
+        if not line.product_qty:
+            line._suggest_quantity()
+        line._compute_price_unit_and_date_planned_and_name()
+
+        for field in onchange_fields:
+            if field not in values or not values.get(field):
+                defaults[field] = line._fields[field].convert_to_write(line[field], line)
+        return defaults
+
     def _get_rfq_bill_price_check_count(self):
         value = self.env['ir.config_parameter'].sudo().get_param(
             'purchase_net_price_compute.rfq_bill_price_check_count',
@@ -256,6 +285,22 @@ class PurchaseOrderLine(models.Model):
             lowest_price,
         )
         return lowest_price
+
+    def _get_price_with_configured_vat(self, unit_price, quantity=1.0, currency=None, partner=None):
+        """Return a price total using this purchase line's configured taxes."""
+        self.ensure_one()
+        taxes = self.taxes_id
+        quantity = quantity or 0.0
+        if not taxes:
+            return (unit_price or 0.0) * quantity
+        tax_res = taxes.compute_all(
+            unit_price or 0.0,
+            currency=currency or self.currency_id,
+            quantity=quantity,
+            product=self.product_id,
+            partner=partner or self.order_id.partner_id,
+        )
+        return tax_res['total_included']
 
     def _apply_lowest_recent_bill_price(self):
         for line in self:

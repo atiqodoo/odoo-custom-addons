@@ -15,7 +15,7 @@
             <xpath expr="//notebook" position="inside">
                 <page string="Vendor Invoice Calculation"
                       name="vendor_invoice_calculation"
-                      invisible="vendor_invoice_profile != 'crown_paints'">
+                      invisible="not vendor_invoice_profile">
                     <group>
                         <group>
                             <field name="vendor_invoice_profile" readonly="1"/>
