@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_virtual_quotations"
+              name="Virtual Print Quotes"
+              parent="modern_quotation_catalogue.menu_modern_quotation_root"
+              action="action_virtual_quotations"
+              sequence="15"
+              groups="virtual_quotation_print.group_virtual_quotation_user"/>
+
+    <menuitem id="menu_virtual_quotation_import_sale"
+              name="Load Real Quote Lines"
+              parent="modern_quotation_catalogue.menu_modern_quotation_root"
+              action="action_virtual_quotation_import_sale_wizard"
+              sequence="16"
+              groups="virtual_quotation_print.group_virtual_quotation_user"/>
+</odoo>

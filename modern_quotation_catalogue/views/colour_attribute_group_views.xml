@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_modern_quotation_colour_attribute_group_list" model="ir.ui.view">
+        <field name="name">modern.quotation.colour.attribute.group.list</field>
+        <field name="model">modern.quotation.colour.attribute.group</field>
+        <field name="arch" type="xml">
+            <list string="Colour Attribute Groups">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="colour_code_count"/>
+                <field name="attribute_value_count"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_modern_quotation_colour_attribute_group_form" model="ir.ui.view">
+        <field name="name">modern.quotation.colour.attribute.group.form</field>
+        <field name="model">modern.quotation.colour.attribute.group</field>
+        <field name="arch" type="xml">
+            <form string="Colour Attribute Group">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" placeholder="Tinted Soft White [00A05]"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="colour_code_count" readonly="1"/>
+                            <field name="attribute_value_count" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Colour Codes / Names">
+                            <field name="colour_code_ids"
+                                   widget="many2many_tags"
+                                   options="{'no_create_edit': True}"
+                                   placeholder="00A05, Tinted Soft White"/>
+                        </page>
+                        <page string="Attribute Values">
+                            <field name="attribute_value_ids"
+                                   widget="many2many_tags"
+                                   options="{'no_create_edit': True}"
+                                   placeholder="Soft White"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_modern_quotation_colour_attribute_groups" model="ir.actions.act_window">
+        <field name="name">Colour Attribute Groups</field>
+        <field name="res_model">modern.quotation.colour.attribute.group</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a colour and attribute search group
+            </p>
+            <p>
+                Link colour codes or colour names to product attribute values so one catalogue search term can find all related variants.
+            </p>
+        </field>
+    </record>
+</odoo>

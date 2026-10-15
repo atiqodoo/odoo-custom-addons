@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="modern_quotation_catalogue.Workspace">
+        <div class="o_mqc_workspace">
+            <div class="o_mqc_topbar">
+                <div class="o_mqc_quote_context">
+                    <div class="o_mqc_title">
+                        <span>Modern Quotation</span>
+                        <small t-if="state.order" t-esc="state.order.name"/>
+                    </div>
+                    <div class="o_mqc_partner_picker">
+                        <Many2XAutocomplete
+                            value="state.selectedPartnerName"
+                            resModel="'res.partner'"
+                            fieldString="'Customer'"
+                            placeholder="'Search or create customer'"
+                            activeActions="{ create: true, createEdit: true, write: true }"
+                            getDomain="() => []"
+                            update.bind="onPartnerAutocompleteUpdate"
+                            quickCreate.bind="quickCreatePartner"
+                            context="{ default_customer_rank: 1, search_default_customer: 1 }"
+                            searchLimit="10"
+                        />
+                    </div>
+                    <select class="form-select" t-on-change="onSelectPricelist">
+                        <option value="">Pricelist</option>
+                        <t t-foreach="state.pricelists" t-as="pricelist" t-key="pricelist.id">
+                            <option t-att-value="pricelist.id" t-att-selected="pricelist.id === state.selectedPricelistId" t-esc="pricelist.name"/>
+                        </t>
+                    </select>
+                    <select class="form-select" t-on-change="onSelectWarehouse">
+                        <option value="">Warehouse</option>
+                        <t t-foreach="state.warehouses" t-as="warehouse" t-key="warehouse.id">
+                            <option t-att-value="warehouse.id" t-att-selected="warehouse.id === state.selectedWarehouseId" t-esc="warehouse.name"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="o_mqc_actions">
+                    <button class="btn btn-primary"
+                            t-if="!state.order"
+                            t-on-click="createQuotation"
+                            title="Create quotation">
+                        <i class="fa fa-plus"/> New
+                    </button>
+                    <button class="btn btn-secondary" t-if="state.order" t-on-click="openQuotation">
+                        <i class="fa fa-external-link"/> Open
+                    </button>
+                    <button class="btn btn-success" t-if="state.order &amp;&amp; ['draft', 'sent'].includes(state.order.state)" t-on-click="confirmQuotation">
+                        <i class="fa fa-check"/> Confirm
+                    </button>
+                </div>
+            </div>
+
+            <div class="o_mqc_body">
+                <main class="o_mqc_catalogue">
+                    <div class="o_mqc_filters_top">
+                        <div class="o_mqc_filter_field o_mqc_search_field">
+                            <label>Search</label>
+                            <input class="form-control"
+                                   placeholder="Product, code, barcode"
+                                   t-att-value="state.filters.search"
+                                   t-on-input="onSearchInput"/>
+                        </div>
+                        <div class="o_mqc_filter_field">
+                            <label>Category</label>
+                            <select class="form-select" t-att-value="state.filters.category_filter || state.filters.category_id || ''" t-on-change="onSelectCategory">
+                                <option value="">All</option>
+                                <t t-foreach="state.categories" t-as="category" t-key="category.value || category.id">
+                                    <option t-att-value="category.value || category.id" t-esc="category.name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="o_mqc_filter_field">
+                            <label>UoM</label>
+                            <select class="form-select" t-att-value="state.filters.uom_id || ''" t-on-change="onSelectUom">
+                                <option value="">All</option>
+                                <t t-foreach="state.uoms" t-as="uom" t-key="uom.id">
+                                    <option t-att-value="uom.id" t-esc="uom.name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="o_mqc_filter_field o_mqc_variant_filter">
+                            <label>Colour / Attribute</label>
+                            <div class="input-group">
+                                <input class="form-control"
+                                       placeholder="Code, colour name, attribute value"
+                                       t-att-value="state.filters.variant_filter"
+                                       t-on-input="onVariantFilterInput"/>
+                            </div>
+                        </div>
+                        <div class="o_mqc_filter_field o_mqc_quantity_field">
+                            <label>Qty</label>
+                            <input class="form-control" type="number" min="0.01" step="1" t-att-value="state.filters.quantity" t-on-input="onQuantityInput"/>
+                        </div>
+                    </div>
+                    <div class="o_mqc_catalogue_head">
+                        <span><t t-esc="state.total"/> variants</span>
+                        <div class="o_mqc_head_tools">
+                            <div class="btn-group">
+                                <button class="btn btn-secondary"
+                                        t-att-class="state.viewMode === 'list' ? 'btn btn-primary' : 'btn btn-secondary'"
+                                        t-on-click="() => this.setViewMode('list')">
+                                    <i class="fa fa-list"/>
+                                </button>
+                                <button class="btn btn-secondary"
+                                        t-att-class="state.viewMode === 'cards' ? 'btn btn-primary' : 'btn btn-secondary'"
+                                        t-on-click="() => this.setViewMode('cards')">
+                                    <i class="fa fa-th-large"/>
+                                </button>
+                                <button t-att-class="costPriorityButtonClass"
+                                        t-att-title="costPriorityTitle"
+                                        t-att-disabled="!hasActiveCatalogueFilter"
+                                        t-on-click="toggleCostPrioritySort">
+                                    <i t-att-class="'fa ' + costPriorityIcon"/>
+                                </button>
+                                <button class="btn btn-secondary"
+                                        title="Reset catalogue filters"
+                                        t-on-click="resetCatalogueFilters">
+                                    <i class="fa fa-refresh"/>
+                                </button>
+                            </div>
+                            <div class="o_mqc_pager">
+                                <button class="btn btn-secondary" t-on-click="previousPage" t-att-disabled="state.offset === 0">
+                                    <i class="fa fa-chevron-left"/>
+                                </button>
+                                <button class="btn btn-secondary" t-on-click="nextPage" t-att-disabled="state.offset + state.limit >= state.total">
+                                    <i class="fa fa-chevron-right"/>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="o_mqc_product_list" t-if="!state.searching &amp;&amp; state.viewMode === 'list'">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Variant</th>
+                                    <th>Attributes</th>
+                                    <th>Category</th>
+                                    <th>UoM</th>
+                                    <th class="text-end">Sold</th>
+                                    <th class="text-end">On Hand</th>
+                                    <th class="text-end o_mqc_sale_price_col">Sale Price</th>
+                                    <th class="text-end o_mqc_cost_price_col">Cost Incl VAT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="state.products" t-as="product" t-key="product.id">
+                                    <tr class="o_mqc_clickable_product"
+                                        t-on-click="() => this.addProduct(product)"
+                                        t-on-keydown="(ev) => this.onProductKeydown(ev, product)"
+                                        tabindex="0"
+                                        role="button"
+                                        title="Click to add to quotation">
+                                        <td>
+                                            <strong t-esc="product.name"/>
+                                            <div class="text-muted" t-esc="product.default_code"/>
+                                            <div class="text-muted" t-if="product.colour_code">
+                                                <i class="fa fa-tint"/> <t t-esc="product.colour_code"/> <t t-esc="product.colour_name"/>
+                                            </div>
+                                        </td>
+                                        <td t-esc="product.attributes"/>
+                                        <td t-esc="product.category"/>
+                                        <td t-esc="product.uom"/>
+                                        <td class="text-end" t-esc="product.qty_sold"/>
+                                        <td class="text-end" t-esc="product.qty_available"/>
+                                        <td class="text-end o_mqc_sale_price_col"><t t-esc="product.currency"/> <t t-esc="product.sale_price.toFixed(2)"/></td>
+                                        <td class="text-end o_mqc_cost_price_col"><t t-esc="product.currency"/> <t t-esc="product.cost_incl_vat.toFixed(2)"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="o_mqc_product_grid" t-if="!state.searching &amp;&amp; state.viewMode === 'cards'">
+                        <t t-foreach="state.products" t-as="product" t-key="product.id">
+                            <article class="o_mqc_product o_mqc_clickable_product"
+                                     t-on-click="() => this.addProduct(product)"
+                                     t-on-keydown="(ev) => this.onProductKeydown(ev, product)"
+                                     tabindex="0"
+                                     role="button"
+                                     title="Click to add to quotation">
+                                <img t-att-src="product.image_url" alt=""/>
+                                <div class="o_mqc_product_main">
+                                    <strong t-esc="product.name"/>
+                                    <span t-esc="product.default_code"/>
+                                    <small t-esc="product.attributes"/>
+                                </div>
+                                <div class="o_mqc_product_meta">
+                                    <span><i class="fa fa-line-chart"/> <t t-esc="product.qty_sold"/> sold</span>
+                                    <span><i class="fa fa-cubes"/> <t t-esc="product.qty_available"/> <t t-esc="product.uom"/></span>
+                                    <span class="o_mqc_sale_price_col"><i class="fa fa-money"/> <t t-esc="product.currency"/> <t t-esc="product.sale_price.toFixed(2)"/></span>
+                                    <span class="o_mqc_cost_price_col"><i class="fa fa-calculator"/> <t t-esc="product.currency"/> <t t-esc="product.cost_incl_vat.toFixed(2)"/></span>
+                                    <span t-if="product.colour_code"><i class="fa fa-tint"/> <t t-esc="product.colour_code"/> <t t-esc="product.colour_name"/></span>
+                                </div>
+                            </article>
+                        </t>
+                    </div>
+                    <div class="o_mqc_loading" t-if="state.searching">
+                        <i class="fa fa-refresh fa-spin"/> Loading
+                    </div>
+                </main>
+
+                <aside class="o_mqc_order">
+                    <div class="o_mqc_order_head">
+                        <strong t-if="state.order" t-esc="state.order.partner_name"/>
+                        <strong t-if="!state.order">No quotation</strong>
+                        <span t-if="state.order" t-esc="state.order.state"/>
+                    </div>
+                    <div class="o_mqc_customer_prompt" t-if="!state.order">
+                        <label>Customer</label>
+                        <Many2XAutocomplete
+                            value="state.selectedPartnerName"
+                            resModel="'res.partner'"
+                            fieldString="'Customer'"
+                            placeholder="'Search or create customer'"
+                            activeActions="{ create: true, createEdit: true, write: true }"
+                            getDomain="() => []"
+                            update.bind="onPartnerAutocompleteUpdate"
+                            quickCreate.bind="quickCreatePartner"
+                            context="{ default_customer_rank: 1, search_default_customer: 1 }"
+                            searchLimit="10"
+                        />
+                        <button class="btn btn-primary" t-on-click="createQuotation">
+                            <i class="fa fa-plus"/> Create Quotation
+                        </button>
+                    </div>
+                    <div class="o_mqc_lines" t-if="state.order">
+                        <t t-foreach="state.order.lines" t-as="line" t-key="line.id">
+                            <div class="o_mqc_line">
+                                <div class="o_mqc_line_name">
+                                    <strong t-esc="line.name"/>
+                                    <span t-if="line.is_tinted">Tinted</span>
+                                </div>
+                                <input type="number" min="0" step="1" t-att-value="line.quantity" t-on-change="(ev) => this.updateLineQuantity(line, ev)"/>
+                                <input type="number" min="0" step="0.01" t-att-value="line.price_unit" t-on-change="(ev) => this.updateLinePrice(line, ev)"/>
+                                <span><t t-esc="state.order.currency"/> <t t-esc="line.total.toFixed(2)"/></span>
+                                <button class="btn btn-link o_mqc_compare_btn"
+                                        t-if="['draft', 'sent'].includes(state.order.state)"
+                                        t-att-disabled="isQuotationLineBelowCost(line)"
+                                        title="Compare alternate variants"
+                                        t-on-click="(ev) => this.compareQuotationLine(ev, line)">
+                                    <i class="fa fa-balance-scale"/>
+                                </button>
+                                <button class="btn btn-link" t-on-click="() => this.removeLine(line)">
+                                    <i class="fa fa-trash"/>
+                                </button>
+                                <small class="o_mqc_line_cost">Cost Incl VAT: <t t-esc="state.order.currency"/> <t t-esc="line.cost_incl_vat.toFixed(2)"/></small>
+                                <small class="o_mqc_line_profit"
+                                       t-att-class="line.profit_total_incl_vat &lt; 0 ? 'o_mqc_profit_negative' : 'o_mqc_profit_positive'">
+                                    Profit Incl VAT: <t t-esc="state.order.currency"/> <t t-esc="line.profit_total_incl_vat.toFixed(2)"/>
+                                </small>
+                            </div>
+                        </t>
+                    </div>
+                    <div class="o_mqc_totals" t-if="state.order">
+                        <div><span>Untaxed</span><strong><t t-esc="state.order.currency"/> <t t-esc="state.order.amount_untaxed.toFixed(2)"/></strong></div>
+                        <div><span>Tax</span><strong><t t-esc="state.order.currency"/> <t t-esc="state.order.amount_tax.toFixed(2)"/></strong></div>
+                        <div><span>Total</span><strong><t t-esc="state.order.currency"/> <t t-esc="state.order.amount_total.toFixed(2)"/></strong></div>
+                        <div class="o_mqc_total_profit"
+                             t-att-class="state.order.profit_total_incl_vat &lt; 0 ? 'o_mqc_profit_negative' : 'o_mqc_profit_positive'">
+                            <span>Profit Incl VAT</span>
+                            <strong><t t-esc="state.order.currency"/> <t t-esc="state.order.profit_total_incl_vat.toFixed(2)"/></strong>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+            <div class="o_mqc_comparison_backdrop" t-if="state.comparison.open" t-on-click="closeVariantComparison"/>
+            <aside class="o_mqc_comparison_drawer" t-if="state.comparison.open">
+                <div class="o_mqc_comparison_head">
+                    <div>
+                        <strong>Variant Comparison</strong>
+                        <span t-if="state.comparison.selectedProduct" t-esc="state.comparison.selectedProduct.name"/>
+                    </div>
+                    <button class="btn btn-link" title="Close" t-on-click="closeVariantComparison">
+                        <i class="fa fa-times"/>
+                    </button>
+                </div>
+                <div class="o_mqc_comparison_basis" t-if="state.comparison.basis">
+                    <div><span>Category</span><strong t-esc="state.comparison.basis.category"/></div>
+                    <div><span>UoM</span><strong t-esc="state.comparison.basis.uom"/></div>
+                    <div><span>Colour group</span><strong t-esc="state.comparison.basis.colour_attribute_group || 'No matching group'"/></div>
+                    <div><span>Mode</span><strong>Temporary replacement</strong></div>
+                    <div><span>Qty</span><strong t-esc="state.comparison.basis.quantity"/></div>
+                    <div><span>Other lines</span><strong t-esc="state.comparison.basis.other_line_count"/></div>
+                </div>
+                <div class="o_mqc_comparison_filters" t-if="state.comparison.basis">
+                    <div>
+                        <label>Category</label>
+                        <select class="form-select"
+                                t-att-value="state.comparison.filters.categoryFilter || ''"
+                                t-on-change="onSelectComparisonCategory">
+                            <option value="">Comparison branch</option>
+                            <t t-foreach="state.categories" t-as="category" t-key="category.value || category.id">
+                                <option t-att-value="category.value || category.id" t-esc="category.name"/>
+                            </t>
+                        </select>
+                    </div>
+                    <div>
+                        <label>UoM</label>
+                        <select class="form-select"
+                                t-att-value="state.comparison.filters.uomId || ''"
+                                t-on-change="onSelectComparisonUom">
+                            <t t-foreach="state.comparison.filterOptions.uoms" t-as="uom" t-key="uom.id">
+                                <option t-att-value="uom.id" t-esc="uom.name"/>
+                            </t>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Colour / Attribute</label>
+                        <input class="form-control"
+                               placeholder="Code, colour name, attribute value"
+                               t-att-value="state.comparison.filters.colourAttributeFilter"
+                               t-on-input="onComparisonColourFilterInput"/>
+                    </div>
+                </div>
+                <div class="o_mqc_comparison_tools">
+                    <span><t t-esc="state.comparison.rows.length"/> variants</span>
+                    <button class="btn btn-secondary" t-on-click="toggleComparisonSort">
+                        <i t-att-class="state.comparison.sortBy === 'cost_incl_vat_asc' ? 'fa fa-sort-amount-asc' : 'fa fa-sort-amount-desc'"/>
+                        <t t-if="state.comparison.sortBy === 'cost_incl_vat_asc'">Low to high</t>
+                        <t t-if="state.comparison.sortBy === 'cost_incl_vat_desc'">High to low</t>
+                    </button>
+                </div>
+                <div class="o_mqc_comparison_loading" t-if="state.comparison.loading">
+                    <i class="fa fa-refresh fa-spin"/> Loading
+                </div>
+                <div class="o_mqc_comparison_rows" t-if="!state.comparison.loading">
+                    <t t-foreach="state.comparison.rows" t-as="row" t-key="row.id">
+                        <div class="o_mqc_comparison_row">
+                            <div class="o_mqc_comparison_variant">
+                                <strong t-esc="row.name"/>
+                                <span t-esc="row.attributes"/>
+                            </div>
+                            <div class="o_mqc_comparison_numbers">
+                                <div class="o_mqc_comparison_price_edit">
+                                    <span>Qty</span>
+                                    <label>
+                                        <input class="form-control"
+                                               type="number"
+                                               min="0"
+                                               step="1"
+                                               t-att-value="row.editable_quantity"
+                                               t-on-input="(ev) => this.onComparisonQuantityInput(row, ev)"/>
+                                    </label>
+                                </div>
+                                <div class="o_mqc_comparison_price_edit">
+                                    <span>Sale Incl VAT</span>
+                                    <label class="o_mqc_money_input">
+                                        <small t-esc="row.currency"/>
+                                        <input class="form-control"
+                                               type="number"
+                                               min="0"
+                                               step="0.01"
+                                               t-att-value="row.editable_price_incl_vat"
+                                               t-on-input="(ev) => this.onComparisonPriceInput(row, ev)"/>
+                                    </label>
+                                </div>
+                                <div><span>Cost Incl VAT</span><strong><t t-esc="row.currency"/> <t t-esc="row.cost_incl_vat.toFixed(2)"/></strong></div>
+                                <div><span>Variant Total</span><strong><t t-esc="row.currency"/> <t t-esc="row.line_total_if_used.toFixed(2)"/></strong></div>
+                                <div class="o_mqc_compare_total"><span>Current Draft Total</span><strong><t t-esc="row.currency"/> <t t-esc="row.current_quote_total.toFixed(2)"/></strong></div>
+                                <div class="o_mqc_compare_total o_mqc_compare_total_if_used"><span>Quote Total If Used</span><strong><t t-esc="row.currency"/> <t t-esc="row.quotation_total_if_used.toFixed(2)"/></strong></div>
+                                <div t-att-class="row.quotation_profit_if_used &lt; 0 ? 'o_mqc_profit_negative' : 'o_mqc_profit_positive'">
+                                    <span>Quote Profit If Used</span>
+                                    <strong><t t-esc="row.currency"/> <t t-esc="row.quotation_profit_if_used.toFixed(2)"/></strong>
+                                </div>
+                            </div>
+                            <div class="o_mqc_temp_quote">
+                                <strong>Temporary draft quotation</strong>
+                                <t t-foreach="row.temporary_quote_lines" t-as="tempLine" t-key="tempLine.role">
+                                    <div>
+                                        <span><t t-esc="tempLine.name"/> x <t t-esc="tempLine.quantity"/></span>
+                                        <strong><t t-esc="row.currency"/> <t t-esc="tempLine.total.toFixed(2)"/></strong>
+                                    </div>
+                                </t>
+                            </div>
+                            <div class="o_mqc_comparison_actions">
+                                <button class="btn btn-primary"
+                                        t-att-disabled="isComparisonRowBelowCost(row)"
+                                        t-on-click="() => this.replaceWithAlternate(row)">
+                                    <i class="fa fa-exchange"/> Replace
+                                </button>
+                                <button class="btn btn-secondary"
+                                        t-att-disabled="isComparisonRowBelowCost(row)"
+                                        t-on-click="() => this.addAlternateAsNewLine(row)">
+                                    <i class="fa fa-plus"/> Add New
+                                </button>
+                                <span t-if="isComparisonRowBelowCost(row)" class="o_mqc_below_cost_hint">
+                                    Price below cost incl VAT
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </aside>
+        </div>
+    </t>
+</templates>

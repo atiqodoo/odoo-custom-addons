@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sequence_virtual_quotation" model="ir.sequence">
+        <field name="name">Virtual Quotation</field>
+        <field name="code">virtual.quotation</field>
+        <field name="prefix">VQ/%(year)s/</field>
+        <field name="padding">5</field>
+    </record>
+
+    <record id="view_virtual_quotation_list" model="ir.ui.view">
+        <field name="name">virtual.quotation.list</field>
+        <field name="model">virtual.quotation</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'cancelled'" decoration-success="state == 'finalized'">
+                <field name="name"/>
+                <field name="date_order"/>
+                <field name="partner_id"/>
+                <field name="linked_sale_order_id"/>
+                <field name="user_id"/>
+                <field name="amount_total" sum="Total"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_virtual_quotation_form" model="ir.ui.view">
+        <field name="name">virtual.quotation.form</field>
+        <field name="model">virtual.quotation</field>
+        <field name="arch" type="xml">
+            <form string="Virtual Quotation">
+                <header>
+                    <button name="action_finalize" type="object" string="Finalize" class="btn-primary" invisible="state != 'draft'"/>
+                    <div class="btn-group">
+                        <a role="button"
+                           href="#"
+                           class="btn btn-secondary dropdown-toggle"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false">
+                            Print PDF
+                        </a>
+                        <div class="dropdown-menu">
+                            <button name="action_print_virtual_quotation"
+                                    type="object"
+                                    string="Quotation"
+                                    class="dropdown-item"/>
+                            <button name="action_print_virtual_invoice"
+                                    type="object"
+                                    string="Invoice"
+                                    class="dropdown-item"/>
+                        </div>
+                    </div>
+                    <button name="action_open_import_sale_order_wizard" type="object" string="Load Real Quote Lines" class="btn-secondary" invisible="state != 'draft'"/>
+                    <button name="action_create_real_quotation" type="object" string="Create Real Quotation" class="btn-secondary" invisible="linked_sale_order_id or state == 'cancelled'"/>
+                    <button name="action_open_linked_sale_order" type="object" string="Open Real Quotation" class="btn-secondary" invisible="not linked_sale_order_id"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft" groups="virtual_quotation_print.group_virtual_quotation_manager" invisible="state == 'draft'"/>
+                    <button name="action_cancel" type="object" string="Cancel" invisible="state == 'cancelled'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,finalized,cancelled"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <field name="below_cost_warning_html"
+                           widget="html"
+                           readonly="1"
+                           nolabel="1"
+                           invisible="not below_cost_warning_html"/>
+                    <group>
+                        <group>
+                            <field name="partner_id" readonly="state != 'draft'"/>
+                            <field name="linked_sale_order_id" readonly="state != 'draft'"/>
+                            <field name="date_order" readonly="state != 'draft'"/>
+                            <field name="validity_date" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="pricelist_id" readonly="state != 'draft'"/>
+                            <field name="currency_id" readonly="1"/>
+                            <field name="payment_term_id" readonly="state != 'draft'"/>
+                            <field name="user_id" readonly="state != 'draft'"/>
+                            <field name="company_id" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Quote Lines">
+                            <button name="action_add_manual_line" type="object" string="Add Manual Item" class="btn-secondary" invisible="state != 'draft'"/>
+                            <button name="action_add_section_line" type="object" string="Add Section" class="btn-secondary" invisible="state != 'draft'"/>
+                            <button name="action_add_note_line" type="object" string="Add Note" class="btn-secondary" invisible="state != 'draft'"/>
+                            <button name="action_open_import_sale_order_wizard" type="object" string="Load Real Quote Lines" class="btn-secondary" invisible="state != 'draft'"/>
+                            <field name="line_ids" readonly="state != 'draft'" widget="section_and_note_one2many">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="display_type" column_invisible="1"/>
+                                    <field name="section_subtotal" column_invisible="1"/>
+                                    <field name="product_id" invisible="display_type"/>
+                                    <field name="is_manual_item" readonly="1" invisible="display_type"/>
+                                    <field name="is_discount_line" column_invisible="1"/>
+                                    <field name="name" widget="section_and_note_text"/>
+                                    <field name="product_uom_qty" invisible="display_type"/>
+                                    <field name="product_uom_id" invisible="display_type"/>
+                                    <field name="price_unit" invisible="display_type"/>
+                                    <field name="discount" invisible="display_type"/>
+                                    <field name="tax_id" widget="many2many_tags" invisible="display_type"/>
+                                    <field name="price_subtotal" readonly="1" invisible="display_type"/>
+                                    <field name="price_tax" readonly="1" invisible="display_type"/>
+                                    <field name="price_total" readonly="1" invisible="display_type"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                            <div class="float-end d-flex gap-1 mb-2">
+                                <button string="Discount"
+                                        name="action_open_discount_wizard"
+                                        type="object"
+                                        class="btn btn-secondary"
+                                        groups="sale.group_discount_per_so_line"
+                                        invisible="state != 'draft'"/>
+                            </div>
+                            <group class="oe_subtotal_footer" colspan="2">
+                                <field name="amount_untaxed" readonly="1"/>
+                                <field name="amount_tax" readonly="1"/>
+                                <field name="amount_total" readonly="1" class="oe_subtotal_footer_separator"/>
+                            </group>
+                        </page>
+                        <page string="Terms">
+                            <field name="note" readonly="state != 'draft'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_virtual_quotation_search" model="ir.ui.view">
+        <field name="name">virtual.quotation.search</field>
+        <field name="model">virtual.quotation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="linked_sale_order_id"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="finalized" string="Finalized" domain="[('state', '=', 'finalized')]"/>
+                <filter name="my_quotes" string="My Quotes" domain="[('user_id', '=', uid)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
+                    <filter name="group_user" string="Salesperson" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_customer" string="Customer" context="{'group_by': 'partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_virtual_quotations" model="ir.actions.act_window">
+        <field name="name">Virtual Print Quotes</field>
+        <field name="res_model">virtual.quotation</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_my_quotes': 1}</field>
+    </record>
+
+    <record id="action_virtual_quotation_import_sale_wizard" model="ir.actions.act_window">
+        <field name="name">Load Real Quotation Lines</field>
+        <field name="res_model">virtual.quotation.import.sale.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

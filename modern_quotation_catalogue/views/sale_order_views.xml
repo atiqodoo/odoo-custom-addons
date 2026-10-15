@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_modern_quotation_button" model="ir.ui.view">
+        <field name="name">sale.order.form.modern.quotation.button</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_modern_quotation_workspace"
+                        type="object"
+                        string="Open Quotation Workspace"
+                        icon="fa-th-large"
+                        class="btn-secondary"
+                        invisible="state not in ('draft', 'sent')"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

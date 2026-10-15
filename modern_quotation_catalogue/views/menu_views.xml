@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_modern_quotation_root"
+              name="Modern Quotation"
+              sequence="18"
+              web_icon="modern_quotation_catalogue,static/description/icon.png"/>
+
+    <menuitem id="menu_modern_quotation_workspace"
+              name="Quotation Workspace"
+              parent="menu_modern_quotation_root"
+              action="action_modern_quotation_workspace"
+              sequence="10"/>
+
+    <menuitem id="menu_modern_quotation_sales"
+              name="All Quotations"
+              parent="menu_modern_quotation_root"
+              action="sale.action_quotations_with_onboarding"
+              sequence="20"/>
+
+    <menuitem id="menu_modern_quotation_configuration"
+              name="Settings"
+              parent="menu_modern_quotation_root"
+              sequence="90"/>
+
+    <menuitem id="menu_modern_quotation_category_groups"
+              name="Category Groups"
+              parent="menu_modern_quotation_configuration"
+              action="action_modern_quotation_category_groups"
+              sequence="10"/>
+
+    <menuitem id="menu_modern_quotation_colour_attribute_groups"
+              name="Colour Attribute Groups"
+              parent="menu_modern_quotation_configuration"
+              action="action_modern_quotation_colour_attribute_groups"
+              sequence="20"/>
+
+    <menuitem id="menu_modern_quotation_defaults"
+              name="Quotation Defaults"
+              parent="menu_modern_quotation_configuration"
+              action="action_modern_quotation_settings"
+              sequence="30"/>
+
+    <record id="menu_modern_quotation_root" model="ir.ui.menu">
+        <field name="groups_id" eval="[(5, 0, 0)]"/>
+    </record>
+
+    <record id="menu_modern_quotation_workspace" model="ir.ui.menu">
+        <field name="groups_id" eval="[(5, 0, 0)]"/>
+    </record>
+
+    <record id="menu_modern_quotation_sales" model="ir.ui.menu">
+        <field name="groups_id" eval="[(5, 0, 0)]"/>
+    </record>
+
+    <record id="menu_modern_quotation_configuration" model="ir.ui.menu">
+        <field name="groups_id" eval="[(5, 0, 0)]"/>
+    </record>
+
+    <record id="menu_modern_quotation_category_groups" model="ir.ui.menu">
+        <field name="groups_id" eval="[(5, 0, 0)]"/>
+    </record>
+
+    <record id="menu_modern_quotation_colour_attribute_groups" model="ir.ui.menu">
+        <field name="groups_id" eval="[(5, 0, 0)]"/>
+    </record>
+
+    <record id="menu_modern_quotation_defaults" model="ir.ui.menu">
+        <field name="groups_id" eval="[(5, 0, 0)]"/>
+    </record>
+</odoo>

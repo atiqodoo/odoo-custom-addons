@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_modern_quotation" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.modern.quotation</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Modern Quotation" string="Modern Quotation" name="modern_quotation_catalogue">
+                    <block title="Quotation Defaults" name="modern_quotation_defaults">
+                        <setting string="Default Draft Quotation Customer"
+                                 help="Used only when the Modern Quotation workspace creates a draft quotation before the user selects a customer.">
+                            <field name="modern_quotation_default_draft_partner_id"
+                                   placeholder="Walk-in Customer"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_modern_quotation_settings" model="ir.actions.act_window">
+        <field name="name">Quotation Defaults</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'modern_quotation_catalogue'}</field>
+    </record>
+</odoo>

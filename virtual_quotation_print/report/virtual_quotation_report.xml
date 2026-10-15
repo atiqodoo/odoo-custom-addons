@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_virtual_quotation_a4_fit" model="report.paperformat">
+        <field name="name">Quotation A4 Fit</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">7</field>
+        <field name="margin_bottom">7</field>
+        <field name="margin_left">7</field>
+        <field name="margin_right">7</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <record id="action_report_virtual_quotation" model="ir.actions.report">
+        <field name="name">Quotation</field>
+        <field name="model">virtual.quotation</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">virtual_quotation_print.report_virtual_quotation_document</field>
+        <field name="report_file">virtual_quotation_print.report_virtual_quotation_document</field>
+        <field name="print_report_name">('%s - %s' % ('Invoice' if object.env.context.get('virtual_quotation_document_type') == 'invoice' else 'Quotation', object.name))</field>
+        <field name="paperformat_id" ref="virtual_quotation_print.paperformat_virtual_quotation_a4_fit"/>
+        <field name="binding_model_id" ref="model_virtual_quotation"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_virtual_quotation_document">
+        <t t-call="web.html_container">
+            <t t-set="pdf_mode" t-value="env.context.get('virtual_quotation_pdf_mode') or 'normal'"/>
+            <t t-set="fit" t-value="pdf_mode == 'fit'"/>
+            <t t-set="compact" t-value="pdf_mode == 'compact'"/>
+            <t t-set="compressed" t-value="fit or compact"/>
+            <t t-set="document_type" t-value="env.context.get('virtual_quotation_document_type') or 'quotation'"/>
+            <t t-set="document_title" t-value="'Invoice' if document_type == 'invoice' else 'Quotation'"/>
+            <style t-if="fit" type="text/css">
+                .header, .footer {
+                    font-size: 10px !important;
+                    line-height: 1.18 !important;
+                    padding-top: 0 !important;
+                    padding-bottom: 0 !important;
+                    margin-top: 0 !important;
+                    margin-bottom: 0 !important;
+                }
+                .header img, .o_company_logo {
+                    max-height: 55px !important;
+                    max-width: 220px !important;
+                }
+                .article, .page {
+                    margin-top: 0 !important;
+                    padding-top: 0 !important;
+                }
+            </style>
+            <style t-if="compact" type="text/css">
+                .header, .footer {
+                    font-size: 8px !important;
+                    line-height: 1.05 !important;
+                    padding-top: 0 !important;
+                    padding-bottom: 0 !important;
+                    margin-top: 0 !important;
+                    margin-bottom: 0 !important;
+                }
+                .header img, .o_company_logo {
+                    max-height: 34px !important;
+                    max-width: 150px !important;
+                }
+                .article, .page {
+                    margin-top: 0 !important;
+                    padding-top: 0 !important;
+                }
+            </style>
+            <t t-foreach="docs" t-as="doc">
+                <div t-attf-class="page o_vqp_report o_vqp_#{pdf_mode}">
+                        <style type="text/css">
+                            .o_vqp_report {
+                                font-size: 12px;
+                                line-height: 1.25;
+                            }
+                            .o_vqp_letterhead {
+                                width: 100%;
+                                margin: 0 0 8px 0;
+                                border: 0;
+                            }
+                            .o_vqp_letterhead td {
+                                border: 0 !important;
+                                padding: 0;
+                                vertical-align: top;
+                            }
+                            .o_vqp_logo {
+                                max-height: 58px;
+                                max-width: 190px;
+                                object-fit: contain;
+                            }
+                            .o_vqp_company {
+                                text-align: right;
+                                font-size: 11px;
+                                line-height: 1.2;
+                                color: #182033;
+                            }
+                            .o_vqp_company strong {
+                                font-size: 13px;
+                            }
+                            .o_vqp_customer_header {
+                                margin-top: 6px;
+                                padding-top: 5px;
+                                border-top: 1px solid #d6d9df;
+                            }
+                            .o_vqp_report h2 {
+                                color: #2f3b52;
+                                font-size: 26px;
+                                margin: 0 0 8px 0;
+                                font-weight: 700;
+                            }
+                            .o_vqp_report .o_vqp_intro {
+                                margin: 0 0 12px 0;
+                            }
+                            .o_vqp_report .o_vqp_info {
+                                margin-bottom: 12px;
+                            }
+                            .o_vqp_report .o_vqp_meta td,
+                            .o_vqp_report .o_vqp_lines th,
+                            .o_vqp_report .o_vqp_lines td,
+                            .o_vqp_report .o_vqp_totals td {
+                                padding: 4px 5px;
+                                vertical-align: top;
+                            }
+                            .o_vqp_report .o_vqp_lines {
+                                border-collapse: collapse;
+                                width: 100%;
+                            }
+                            .o_vqp_report .o_vqp_lines thead th {
+                                border-top: 1px solid #2f3b52;
+                                border-bottom: 1px solid #2f3b52;
+                                color: #182033;
+                                font-weight: 700;
+                                text-transform: uppercase;
+                            }
+                            .o_vqp_report .o_vqp_lines tbody td {
+                                border-bottom: 1px solid #d6d9df;
+                            }
+                            .o_vqp_report .o_vqp_section td {
+                                background: #f1f3f6;
+                                border-top: 1px solid #9ba2ad;
+                                border-bottom: 1px solid #9ba2ad;
+                                font-weight: 700;
+                            }
+                            .o_vqp_report .o_vqp_note td {
+                                color: #566174;
+                                font-style: italic;
+                            }
+                            .o_vqp_report .o_vqp_totals {
+                                margin-top: 8px;
+                            }
+                            .o_vqp_footer {
+                                margin-top: 8px;
+                                padding-top: 4px;
+                                border-top: 1px solid #2f3b52;
+                                font-size: 10px;
+                                color: #182033;
+                            }
+                            .o_vqp_fit {
+                                font-size: 11.5px;
+                                line-height: 1.22;
+                            }
+                            .o_vqp_fit .o_vqp_logo {
+                                max-height: 50px;
+                                max-width: 170px;
+                            }
+                            .o_vqp_fit h2 {
+                                font-size: 24px;
+                                margin-bottom: 7px;
+                            }
+                            .o_vqp_fit .o_vqp_intro,
+                            .o_vqp_fit .o_vqp_info {
+                                margin-bottom: 10px;
+                            }
+                            .o_vqp_fit .o_vqp_meta td,
+                            .o_vqp_fit .o_vqp_lines th,
+                            .o_vqp_fit .o_vqp_lines td,
+                            .o_vqp_fit .o_vqp_totals td {
+                                padding: 3px 5px;
+                            }
+                            .o_vqp_fit .o_vqp_lines th {
+                                white-space: nowrap;
+                            }
+                            .o_vqp_fit .o_vqp_terms {
+                                margin-top: 10px !important;
+                                font-size: 10px;
+                            }
+                            .o_vqp_compact {
+                                font-size: 9px;
+                                line-height: 1.08;
+                            }
+                            .o_vqp_compact .o_vqp_letterhead {
+                                margin-bottom: 4px;
+                            }
+                            .o_vqp_compact .o_vqp_logo {
+                                max-height: 38px;
+                                max-width: 135px;
+                            }
+                            .o_vqp_compact .o_vqp_company {
+                                font-size: 8px;
+                                line-height: 1.05;
+                            }
+                            .o_vqp_compact .o_vqp_company strong {
+                                font-size: 9px;
+                            }
+                            .o_vqp_compact .o_vqp_customer_header {
+                                margin-top: 3px;
+                                padding-top: 2px;
+                            }
+                            .o_vqp_compact h2 {
+                                font-size: 17px;
+                                margin-bottom: 3px;
+                            }
+                            .o_vqp_compact .o_vqp_intro,
+                            .o_vqp_compact .o_vqp_info {
+                                margin-bottom: 5px;
+                            }
+                            .o_vqp_compact .o_vqp_meta td,
+                            .o_vqp_compact .o_vqp_lines th,
+                            .o_vqp_compact .o_vqp_lines td,
+                            .o_vqp_compact .o_vqp_totals td {
+                                padding: 1px 3px;
+                            }
+                            .o_vqp_compact .o_vqp_lines th {
+                                white-space: nowrap;
+                            }
+                            .o_vqp_compact .o_vqp_terms {
+                                margin-top: 5px !important;
+                                font-size: 8px;
+                            }
+                            .o_vqp_compact .o_vqp_footer {
+                                font-size: 8px;
+                                margin-top: 5px;
+                                padding-top: 2px;
+                            }
+                        </style>
+                        <table class="o_vqp_letterhead">
+                            <tr>
+                                <td style="width: 45%;">
+                                    <img t-if="doc.company_id.logo"
+                                         class="o_vqp_logo"
+                                         t-att-src="image_data_uri(doc.company_id.logo)"
+                                         alt="Logo"/>
+                                </td>
+                                <td class="o_vqp_company" style="width: 55%;">
+                                    <strong t-esc="doc.company_id.name"/>
+                                    <div t-if="doc.company_id.street" t-esc="doc.company_id.street"/>
+                                    <div>
+                                        <span t-if="doc.company_id.city" t-esc="doc.company_id.city"/>
+                                        <span t-if="doc.company_id.zip"> <t t-esc="doc.company_id.zip"/></span>
+                                    </div>
+                                    <div t-if="doc.company_id.country_id" t-esc="doc.company_id.country_id.name"/>
+                                    <div class="o_vqp_customer_header">
+                                        <strong>Customer</strong>
+                                        <div t-esc="doc.partner_id.display_name or ''"/>
+                                        <div t-if="doc.partner_id.phone" t-esc="doc.partner_id.phone"/>
+                                        <div t-if="doc.partner_id.email" t-esc="doc.partner_id.email"/>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                        <h2 t-esc="document_title"/>
+                        <p class="o_vqp_intro">
+                            <strong t-esc="doc.name"/>
+                            <span t-if="document_type != 'invoice'"> - Printout only, not a confirmed sale order.</span>
+                        </p>
+                        <div class="row o_vqp_info">
+                            <div class="col-6"/>
+                            <div class="col-6">
+                                <table class="table table-sm table-borderless o_vqp_meta">
+                                    <tr>
+                                        <td><strong>Date</strong></td>
+                                        <td><span t-field="doc.date_order"/></td>
+                                    </tr>
+                                    <tr t-if="doc.validity_date">
+                                        <td><strong>Valid Until</strong></td>
+                                        <td><span t-field="doc.validity_date"/></td>
+                                    </tr>
+                                    <tr t-if="doc.linked_sale_order_id">
+                                        <td><strong>Linked Quote</strong></td>
+                                        <td t-esc="doc.linked_sale_order_id.name"/>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Salesperson</strong></td>
+                                        <td t-esc="doc.user_id.display_name"/>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <table class="table table-sm o_main_table o_vqp_lines">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-end">Qty</th>
+                                    <th>UoM</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Disc.%</th>
+                                    <th>Taxes</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.line_ids" t-as="line">
+                                    <tr t-if="line.display_type == 'line_section'" class="o_vqp_section">
+                                        <td colspan="6">
+                                            <strong t-esc="line.name"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong>
+                                                <span t-if="line.section_subtotal">Subtotal </span>
+                                                <span t-if="line.section_subtotal" t-esc="doc._format_report_amount(line.section_subtotal)"/>
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                    <tr t-elif="line.display_type == 'line_note'" class="o_vqp_note">
+                                        <td colspan="7"><em t-esc="line.name"/></td>
+                                    </tr>
+                                    <tr t-else="">
+                                        <td>
+                                            <span t-esc="line.name"/>
+                                            <br t-if="line.is_manual_item"/>
+                                            <small t-if="line.is_manual_item">Manual item</small>
+                                        </td>
+                                        <td class="text-end" t-esc="line.product_uom_qty"/>
+                                        <td t-esc="line.product_uom_id.name or ''"/>
+                                        <td class="text-end">
+                                            <span t-esc="doc._format_report_amount(line.price_unit)"/>
+                                        </td>
+                                        <td class="text-end" t-esc="line.discount"/>
+                                        <td t-esc="', '.join(line.tax_id.mapped('name'))"/>
+                                        <td class="text-end">
+                                            <span t-esc="doc._format_report_amount(line.price_total)"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                        <div class="clearfix">
+                            <div class="row">
+                                <div class="col-6"/>
+                                <div class="col-6">
+                                    <table class="table table-sm o_vqp_totals">
+                                        <tr>
+                                            <td>Untaxed Amount</td>
+                                            <td class="text-end">
+                                                <span t-esc="doc._format_report_amount(doc.amount_untaxed)"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Taxes</td>
+                                            <td class="text-end">
+                                                <span t-esc="doc._format_report_amount(doc.amount_tax)"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Total</strong></td>
+                                            <td class="text-end">
+                                                <strong>
+                                                    <span t-esc="doc._format_report_amount(doc.amount_total)"/>
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div t-if="doc.note" class="mt32 o_vqp_terms">
+                            <span t-field="doc.note"/>
+                        </div>
+                        <div class="o_vqp_footer">
+                            <span t-if="doc.company_id.phone" t-esc="doc.company_id.phone"/>
+                            <span t-if="doc.company_id.phone and doc.company_id.email"> </span>
+                            <span t-if="doc.company_id.email" t-esc="doc.company_id.email"/>
+                        </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

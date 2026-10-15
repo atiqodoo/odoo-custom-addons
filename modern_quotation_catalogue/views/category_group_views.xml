@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_modern_quotation_category_group_list" model="ir.ui.view">
+        <field name="name">modern.quotation.category.group.list</field>
+        <field name="model">modern.quotation.category.group</field>
+        <field name="arch" type="xml">
+            <list string="Quotation Category Groups">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="child_category_count"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_modern_quotation_category_group_form" model="ir.ui.view">
+        <field name="name">modern.quotation.category.group.form</field>
+        <field name="model">modern.quotation.category.group</field>
+        <field name="arch" type="xml">
+            <form string="Quotation Category Group">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" placeholder="Water Based Paints"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="child_category_count" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Mapped Child Categories">
+                            <field name="child_category_ids"
+                                   widget="many2many_tags"
+                                   options="{'no_create_edit': True}"
+                                   placeholder="Silk Vinyl, Vinyl Matt, Economy Emulsion"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_modern_quotation_category_groups" model="ir.actions.act_window">
+        <field name="name">Category Groups</field>
+        <field name="res_model">modern.quotation.category.group</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a quotation category group
+            </p>
+            <p>
+                Map existing Odoo product categories under a custom parent filter for the modern quotation catalogue.
+            </p>
+        </field>
+    </record>
+</odoo>
