@@ -28,6 +28,25 @@ import { useService } from "@web/core/utils/hooks";
 import { Component } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 
+function primitiveId(value) {
+    if (!value) return null;
+    if (typeof value === "number") return value;
+    if (typeof value === "string") return Number(value) || null;
+    if (Array.isArray(value)) return primitiveId(value[0]);
+    return primitiveId(value.id);
+}
+
+function getTaxIds(line, product) {
+    let taxes = [];
+    if (line.get_taxes) {
+        taxes = line.get_taxes() || [];
+    }
+    if (!taxes.length && product?.taxes_id) {
+        taxes = product.taxes_id;
+    }
+    return (taxes || []).map((tax) => primitiveId(tax)).filter(Boolean);
+}
+
 console.log("pos_block_price_cost: cod_check.js loaded");
 
 // ── Error-detail dialog ───────────────────────────────────────────────────────
@@ -118,12 +137,12 @@ patch(ProductScreen.prototype, {
             }
 
             // ── Tax IDs (after fiscal-position mapping) ───────────────────────
-            const rawTaxes = line.get_taxes ? line.get_taxes() : [];
-            const taxIds   = (rawTaxes || []).map(t => t.id);
+            const taxIds = getTaxIds(line, product);
 
             lines.push({
                 product_id: product.id,
                 price_incl: priceInclTax,
+                qty,
                 tax_ids:    taxIds,
             });
         }

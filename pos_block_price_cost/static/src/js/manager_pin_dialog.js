@@ -8,8 +8,9 @@
  *
  * Props
  *   invalidLines  {Array<string>}  human-readable list of offending lines
- *   onConfirm     {Function}       called with employeeName when PIN accepted
+ *   onConfirm     {Function}       called with employeeName/result when accepted
  *   onCancel      {Function}       called when user dismisses without override
+ *   overrideContext {Object}       optional data for server-issued override token
  *   close         {Function}       injected by the dialog service — closes the dialog
  */
 
@@ -25,6 +26,7 @@ export class ManagerPinDialog extends Component {
         invalidLines: Array,
         onConfirm: Function,
         onCancel: Function,
+        overrideContext: { type: Object, optional: true },
         close: Function,
     };
 
@@ -72,14 +74,14 @@ export class ManagerPinDialog extends Component {
             const result = await this.orm.call(
                 "pos.session",
                 "validate_manager_pin",
-                [[sessionId], this.state.pin]
+                [[sessionId], this.state.pin, this.props.overrideContext || {}]
             );
 
             console.log("pos_block_price_cost: validate_manager_pin result →", result);
 
             if (result.valid) {
                 this.props.close();
-                this.props.onConfirm(result.employee_name);
+                this.props.onConfirm(result.employee_name, result);
             } else {
                 const reasonMessages = {
                     invalid_pin:  _t("Invalid PIN. Please try again."),

@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
+import hashlib
+import hmac
+import json
 import logging
+import time
+
 from odoo import models
 
 _logger = logging.getLogger(__name__)
@@ -27,13 +32,35 @@ class PosSession(models.Model):
     # Manager PIN validation — called via ORM RPC from the POS frontend
     # -------------------------------------------------------------------------
 
-    def validate_manager_pin(self, pin):
+    def _pc_override_secret(self):
+        secret = self.env["ir.config_parameter"].sudo().get_param("database.secret")
+        return (secret or self.env.cr.dbname).encode()
+
+    def _pc_make_below_cost_override_token(self, order_uuid, employee, lines_data):
+        self.ensure_one()
+        signature = self._pc_below_cost_signature(lines_data, source="manager_pin_override")
+        payload = {
+            "employee_id": employee.id,
+            "issued_at": int(time.time()),
+            "order_uuid": order_uuid or "",
+            "session_id": self.id,
+            "signature": signature,
+        }
+        payload_json = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        digest = hmac.new(
+            self._pc_override_secret(),
+            payload_json.encode(),
+            hashlib.sha256,
+        ).hexdigest()
+        return "%s.%s" % (payload_json, digest)
+
+    def validate_manager_pin(self, pin, override_context=None):
         """
         Validates whether the supplied PIN belongs to an employee with
         the 'Point of Sale / Administrator' (group_pos_manager) role.
 
         Called from the frontend ManagerPinDialog component via:
-            this.orm.call('pos.session', 'validate_manager_pin', [[sessionId], pin])
+            this.orm.call('pos.session', 'validate_manager_pin', [[sessionId], pin, context])
 
         Returns:
             dict — {'valid': True,  'employee_name': str}
@@ -83,7 +110,28 @@ class PosSession(models.Model):
                 "pos_block_price_cost: Manager override GRANTED by employee '%s' (id=%s)",
                 employee.name, employee.id
             )
-            return {'valid': True, 'employee_name': employee.name}
+            result = {
+                'valid': True,
+                'employee_id': employee.id,
+                'employee_name': employee.name,
+            }
+            override_context = override_context or {}
+            if override_context.get("type") == "below_cost_order":
+                lines_data = override_context.get("lines") or []
+                result["below_cost_override_token"] = self._pc_make_below_cost_override_token(
+                    override_context.get("order_uuid"),
+                    employee,
+                    lines_data,
+                )
+                _logger.info(
+                    "[POS_BLOCK_PRICE_COST][MANAGER_OVERRIDE_TOKEN][END] "
+                    "session_id=%s employee_id=%s order_uuid=%s line_count=%s",
+                    self.id,
+                    employee.id,
+                    override_context.get("order_uuid"),
+                    len(lines_data),
+                )
+            return result
 
         _logger.warning(
             "pos_block_price_cost: Employee '%s' (id=%s) found but is NOT in "

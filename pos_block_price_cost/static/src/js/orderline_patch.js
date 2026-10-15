@@ -25,6 +25,15 @@ Orderline.props.line.shape.pcBelowCost = { type: Boolean, optional: true };
 
 console.log("pos_block_price_cost: orderline_patch.js loaded");
 
+function getCostInclTax(line, cost) {
+    const prices = line.get_all_prices(1);
+    const taxMultiplier = prices.priceWithoutTax ? prices.priceWithTax / prices.priceWithoutTax : 1;
+    return {
+        costInclTax: cost * taxMultiplier,
+        priceInclTax: prices.priceWithTax,
+    };
+}
+
 patch(PosOrderline.prototype, {
 
     // ── Price setters ─────────────────────────────────────────────────────────
@@ -55,18 +64,18 @@ patch(PosOrderline.prototype, {
         const cost = product.standard_price || 0;
         if (cost <= 0) return;
 
-        // Use ex-VAT unit price so we compare apples-to-apples with standard_price
-        let effectiveExVat;
+        let prices;
         try {
-            effectiveExVat = this.get_all_prices(1).priceWithoutTax;
+            prices = getCostInclTax(this, cost);
         } catch (_) {
             return;
         }
 
-        if (effectiveExVat < cost) {
+        if (prices.priceInclTax < prices.costInclTax) {
             console.warn(
-                `pos_block_price_cost: BELOW COST — ` +
-                `ex-VAT effective=${effectiveExVat.toFixed(2)} < cost=${cost}`
+                `pos_block_price_cost: BELOW COST - ` +
+                `VAT-inclusive selling=${prices.priceInclTax.toFixed(2)} ` +
+                `< VAT-inclusive cost=${prices.costInclTax.toFixed(2)}`
             );
         }
     },
@@ -81,8 +90,8 @@ patch(PosOrderline.prototype, {
             const cost = product && product.standard_price || 0;
             if (cost > 0) {
                 try {
-                    const effectiveExVat = this.get_all_prices(1).priceWithoutTax;
-                    data.pcBelowCost = effectiveExVat < cost;
+                    const prices = getCostInclTax(this, cost);
+                    data.pcBelowCost = prices.priceInclTax < prices.costInclTax;
                 } catch (_) {
                     // orderline not fully initialised yet — skip
                 }
