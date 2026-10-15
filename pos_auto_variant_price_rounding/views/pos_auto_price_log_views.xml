@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_auto_variant_price_log_view_list" model="ir.ui.view">
+        <field name="name">pos.auto.variant.price.log.list</field>
+        <field name="model">pos.auto.variant.price.log</field>
+        <field name="arch" type="xml">
+            <list string="Auto Variant Price Logs" create="false" edit="false">
+                <field name="create_date"/>
+                <field name="product_id"/>
+                <field name="changed_by_id"/>
+                <field name="trigger"/>
+                <field name="status"/>
+                <field name="old_inclusive_cost"/>
+                <field name="new_inclusive_cost"/>
+                <field name="cost_difference"/>
+                <field name="rounded_increase"/>
+                <field name="old_sale_price"/>
+                <field name="new_sale_price"/>
+                <field name="old_pricelist_price"/>
+                <field name="new_pricelist_price"/>
+                <field name="profit_amount_change"/>
+                <field name="new_profit_percent"/>
+                <field name="source_name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="pos_auto_variant_price_log_view_form" model="ir.ui.view">
+        <field name="name">pos.auto.variant.price.log.form</field>
+        <field name="model">pos.auto.variant.price.log</field>
+        <field name="arch" type="xml">
+            <form string="Auto Variant Price Log" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="product_id"/>
+                            <field name="company_id"/>
+                            <field name="pos_config_id"/>
+                            <field name="changed_by_id"/>
+                            <field name="trigger"/>
+                            <field name="status"/>
+                        </group>
+                        <group>
+                            <field name="source_model"/>
+                            <field name="source_res_id"/>
+                            <field name="source_name"/>
+                            <field name="create_uid"/>
+                            <field name="create_date"/>
+                        </group>
+                    </group>
+                    <group string="Cost">
+                        <field name="old_cost"/>
+                        <field name="new_cost"/>
+                        <field name="include_vat"/>
+                        <field name="vat_rate"/>
+                        <field name="old_inclusive_cost"/>
+                        <field name="new_inclusive_cost"/>
+                        <field name="cost_difference"/>
+                    </group>
+                    <group string="Selling Price">
+                        <field name="rounding_step"/>
+                        <field name="rounded_increase"/>
+                        <field name="old_sale_price"/>
+                        <field name="new_sale_price"/>
+                        <field name="pricelist_item_id"/>
+                        <field name="old_pricelist_price"/>
+                        <field name="new_pricelist_price"/>
+                    </group>
+                    <group string="Profit After Round Off">
+                        <field name="old_profit_amount"/>
+                        <field name="new_profit_amount"/>
+                        <field name="profit_amount_change"/>
+                        <field name="old_profit_percent"/>
+                        <field name="new_profit_percent"/>
+                        <field name="profit_percent_change"/>
+                    </group>
+                    <group string="Message">
+                        <field name="message" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="pos_auto_variant_price_log_view_search" model="ir.ui.view">
+        <field name="name">pos.auto.variant.price.log.search</field>
+        <field name="model">pos.auto.variant.price.log</field>
+        <field name="arch" type="xml">
+            <search string="Auto Variant Price Logs">
+                <field name="product_id"/>
+                <field name="source_name"/>
+                <field name="changed_by_id"/>
+                <filter name="adjusted" string="Adjusted" domain="[('status', '=', 'adjusted')]"/>
+                <filter name="no_update" string="No Update" domain="[('status', '!=', 'adjusted')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_product" string="Product" context="{'group_by': 'product_id'}"/>
+                    <filter name="group_user" string="Changed By" context="{'group_by': 'changed_by_id'}"/>
+                    <filter name="group_trigger" string="Trigger" context="{'group_by': 'trigger'}"/>
+                    <filter name="group_status" string="Status" context="{'group_by': 'status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="pos_auto_variant_price_log_action" model="ir.actions.act_window">
+        <field name="name">Auto Variant Price Logs</field>
+        <field name="res_model">pos.auto.variant.price.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="pos_auto_variant_price_log_view_search"/>
+    </record>
+
+    <menuitem id="pos_auto_variant_price_log_menu"
+              name="Auto Variant Price Logs"
+              parent="point_of_sale.menu_point_rep"
+              action="pos_auto_variant_price_log_action"
+              sequence="95"
+              groups="point_of_sale.group_pos_user"/>
+</odoo>
