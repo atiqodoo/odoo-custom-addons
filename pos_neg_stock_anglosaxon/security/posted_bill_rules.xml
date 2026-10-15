@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_neg_reconciliation_company_rule" model="ir.rule">
+        <field name="name">POS reconciliation events: allowed companies</field>
+        <field name="model_id" ref="model_pos_neg_reconciliation_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="pos_neg_receipt_allocation_company_rule" model="ir.rule">
+        <field name="name">POS receipt allocations: allowed companies</field>
+        <field name="model_id" ref="model_pos_neg_receipt_allocation"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="pos_neg_bill_match_company_rule" model="ir.rule">
+        <field name="name">POS bill matches: allowed companies</field>
+        <field name="model_id" ref="model_pos_neg_bill_match"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="pos_neg_bill_settlement_company_rule" model="ir.rule">
+        <field name="name">POS bill settlements: allowed companies</field>
+        <field name="model_id" ref="model_pos_neg_bill_settlement"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

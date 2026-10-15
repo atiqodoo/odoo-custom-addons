@@ -97,7 +97,7 @@ class StockQuant(models.Model):
         adjustment_snapshots = {}
 
         for quant in self:
-            if quant.product_id.type != 'product':
+            if not quant.product_id.is_storable:
                 continue
 
             product = quant.product_id
@@ -204,7 +204,8 @@ class StockQuant(models.Model):
             if remaining <= 1e-9:
                 break
 
-            open_neg = abs(layer.quantity) - layer.reconciled_qty
+            open_neg = (layer._pos_neg_unreserved_quantity() if layer.pos_neg_bill_costing
+                        else abs(layer.quantity) - layer.reconciled_qty)
             if open_neg <= 1e-9:
                 continue
 

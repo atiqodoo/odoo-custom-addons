@@ -277,7 +277,8 @@ class StockPicking(models.Model):
                 lambda m: m.state not in ('done', 'cancel')
                 and (m.product_id.is_storable or m.product_id.type == 'product')
             ):
-                product = move.product_id
+                product = move.product_id.with_company(picking.company_id).with_context(
+                    allowed_company_ids=[picking.company_id.id])
                 current_qty = product.qty_available
                 received_qty = move.product_uom._compute_quantity(
                     move.quantity,
@@ -285,24 +286,28 @@ class StockPicking(models.Model):
                     rounding_method='HALF-UP',
                 )
 
-                if current_qty < 0 and received_qty > 0:
-                    incoming_cost = move._get_pos_neg_incoming_cost()
+                negative_qty = abs(min(current_qty, 0))
+                if product.lot_valuated:
+                    negative_qty = -sum(self.env['stock.valuation.layer'].sudo().search([
+                        ('product_id', '=', product.id), ('company_id', '=', picking.company_id.id),
+                        ('remaining_qty', '<', 0), ('lot_id', 'in', move.move_line_ids.lot_id.ids),
+                    ]).mapped('remaining_qty'))
+                if negative_qty > 0 and received_qty > 0:
                     key = (picking.id, move.id, product.id)
                     receipt_snapshots[key] = {
                         'product_id': product.id,
-                        'neg_qty_before': abs(current_qty),
-                        'units_at_risk': min(abs(current_qty), received_qty),
-                        'incoming_unit_cost': incoming_cost,
+                        'neg_qty_before': negative_qty,
+                        'units_at_risk': min(negative_qty, received_qty),
+                        'move_id': move.id,
                         'picking_id': picking.id,
                     }
                     _logger.info(
                         '[NegStock] PRE-SNAPSHOT | Picking: %s | Product: "%s" | '
-                        'neg_qty=%.4f | units_at_risk=%.4f | incoming_cost=%.6f',
+                        'neg_qty=%.4f | units_at_risk=%.4f | awaiting_posted_bill=True',
                         picking.name,
                         product.display_name,
-                        abs(current_qty),
+                        negative_qty,
                         receipt_snapshots[key]['units_at_risk'],
-                        incoming_cost,
                     )
 
         # ── PRE-HOOK: Record POS outgoing move IDs before _action_done ────────
@@ -322,12 +327,20 @@ class StockPicking(models.Model):
             len(pos_out_move_ids),
         )
 
+        allocations = self.env['pos.neg.receipt.allocation']
+        consumed = {}
+        for snap in receipt_snapshots.values():
+            move = self.env['stock.move'].browse(snap['move_id'])
+            move.check_access('read')
+            reserved = allocations.sudo()._reserve_receipt(move, snap['units_at_risk'], consumed)
+            allocations |= reserved.sudo(False)
+
         # ── STANDARD ODOO PROCESSING ──────────────────────────────────────────
 
         if receipt_snapshots:
             result = super(
                 StockPicking,
-                self.with_context(pos_allow_negative_stock=True),
+                self.with_context(pos_allow_negative_stock=True, pos_neg_defer_receipt_cost=True),
             )._action_done()
         else:
             result = super()._action_done()
@@ -339,30 +352,11 @@ class StockPicking(models.Model):
 
         # ── POST-HOOK 2: FIFO reconciliation for incoming receipts ────────────
 
-        if receipt_snapshots:
-            # Aggregate by product (a receipt may have multiple moves per product)
-            by_product = {}
-            for key, snap in receipt_snapshots.items():
-                pid = snap['product_id']
-                if pid not in by_product:
-                    by_product[pid] = snap.copy()
-                else:
-                    # Multiple moves for same product — add their risk units
-                    by_product[pid]['units_at_risk'] += snap['units_at_risk']
-                    _logger.debug(
-                        '[NegStock] Multiple moves for product_id=%d — '
-                        'aggregated units_at_risk=%.4f',
-                        pid, by_product[pid]['units_at_risk'],
-                    )
-
-            for pid, snap in by_product.items():
-                source_picking = self.env['stock.picking'].browse(snap['picking_id'])
-                self.env['stock.move']._reconcile_neg_layers_for_product(
-                    product_id=pid,
-                    incoming_qty=snap['units_at_risk'],
-                    incoming_unit_cost=snap['incoming_unit_cost'],
-                    source_picking=source_picking,
-                )
+        # A bill may precede the receipt. Match all receipt quantities, including
+        # ordinary inventory, so partial bills cannot be reused for POS units.
+        if allocations:
+            self.env['pos.neg.bill.match'].sudo()._match_purchase_lines(allocations.purchase_line_id)
+            allocations._settle_available()
 
         return result
 

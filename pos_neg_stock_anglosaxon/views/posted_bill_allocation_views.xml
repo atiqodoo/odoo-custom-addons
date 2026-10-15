@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_neg_receipt_allocation_list" model="ir.ui.view">
+        <field name="name">pos.neg.receipt.allocation.list</field>
+        <field name="model">pos.neg.receipt.allocation</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="product_id"/>
+                <field name="neg_layer_id"/>
+                <field name="receipt_move_id"/>
+                <field name="purchase_line_id"/>
+                <field name="quantity"/>
+                <field name="settled_quantity"/>
+                <field name="state"/>
+                <field name="error_message" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <button name="action_retry" type="object" string="Retry finalization"
+                        groups="account.group_account_manager"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_pos_neg_receipt_allocations" model="ir.actions.act_window">
+        <field name="name">Costs Awaiting Vendor Bills</field>
+        <field name="res_model">pos.neg.receipt.allocation</field>
+        <field name="view_mode">list</field>
+    </record>
+    <menuitem id="menu_pos_neg_receipt_allocations" name="Posted Bill Cost Allocations"
+              parent="menu_pos_neg_stock_root" action="action_pos_neg_receipt_allocations" sequence="15"/>
+    <record id="pos_neg_reconciliation_bill_list" model="ir.ui.view">
+        <field name="name">pos.neg.reconciliation.line.posted.bill.list</field>
+        <field name="model">pos.neg.reconciliation.line</field>
+        <field name="inherit_id" ref="pos_neg_reconciliation_line_tree"/>
+        <field name="arch" type="xml">
+            <field name="source_picking_id" position="after">
+                <field name="bill_line_id" optional="show"/>
+            </field>
+        </field>
+    </record>
+    <record id="pos_neg_reconciliation_bill_form" model="ir.ui.view">
+        <field name="name">pos.neg.reconciliation.line.posted.bill.form</field>
+        <field name="model">pos.neg.reconciliation.line</field>
+        <field name="inherit_id" ref="pos_neg_reconciliation_line_form"/>
+        <field name="arch" type="xml">
+            <field name="source_picking_id" position="after">
+                <field name="bill_line_id"/>
+                <field name="settlement_id"/>
+            </field>
+        </field>
+    </record>
+</odoo>

@@ -12,3 +12,5 @@ from . import pos_force_delivery_lot_bridge
 from . import pos_backorder_recovery
 from . import res_config_settings
 from . import pos_frontend_data
+from . import posted_bill_settlement
+from . import posted_bill_hooks

@@ -190,7 +190,7 @@ class StockMove(models.Model):
         neg_layers = SVL._get_open_negative_layers(
             product_id=product_id,
             company_id=source_picking.company_id.id,
-        )
+        ).filtered(lambda layer: not layer.pos_neg_bill_costing)
 
         if not neg_layers:
             _logger.info(

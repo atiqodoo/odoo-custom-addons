@@ -119,7 +119,7 @@ class StockValuationLayer(models.Model):
 
     # ── Computed Fields ───────────────────────────────────────────────────────
 
-    @api.depends('quantity', 'reconciled_qty')
+    @api.depends('quantity', 'reconciled_qty', 'pos_neg_bill_costing', 'pos_neg_exposure_qty')
     def _compute_reconciliation_state(self):
         """Derive is_fully_reconciled and open_reconcile_qty from stored values.
 
@@ -137,7 +137,7 @@ class StockValuationLayer(models.Model):
                 layer.open_reconcile_qty = 0.0
                 continue
 
-            abs_qty = abs(layer.quantity)
+            abs_qty = layer.pos_neg_exposure_qty if layer.pos_neg_bill_costing else abs(layer.quantity)
             open_qty = abs_qty - layer.reconciled_qty
             layer.open_reconcile_qty = max(0.0, open_qty)
             layer.is_fully_reconciled = (layer.reconciled_qty >= abs_qty - 1e-9)

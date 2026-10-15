@@ -4,3 +4,9 @@ access_pos_neg_rec_line_stock_manager,pos.neg.reconciliation.line stock manager,
 access_pos_neg_rec_line_account_user,pos.neg.reconciliation.line account user,model_pos_neg_reconciliation_line,account.group_account_user,1,0,0,0
 access_pos_neg_rec_line_account_manager,pos.neg.reconciliation.line account manager,model_pos_neg_reconciliation_line,account.group_account_manager,1,1,1,0
 access_pos_neg_rec_line_pos_manager,pos.neg.reconciliation.line pos manager,model_pos_neg_reconciliation_line,point_of_sale.group_pos_manager,1,0,0,0
+access_pos_neg_receipt_stock,pos.neg.receipt.allocation stock,model_pos_neg_receipt_allocation,stock.group_stock_user,1,0,0,0
+access_pos_neg_receipt_account,pos.neg.receipt.allocation account,model_pos_neg_receipt_allocation,account.group_account_user,1,0,0,0
+access_pos_neg_match_stock,pos.neg.bill.match stock,model_pos_neg_bill_match,stock.group_stock_user,1,0,0,0
+access_pos_neg_match_account,pos.neg.bill.match account,model_pos_neg_bill_match,account.group_account_user,1,0,0,0
+access_pos_neg_settlement_stock,pos.neg.bill.settlement stock,model_pos_neg_bill_settlement,stock.group_stock_user,1,0,0,0
+access_pos_neg_settlement_account,pos.neg.bill.settlement account,model_pos_neg_bill_settlement,account.group_account_user,1,0,0,0

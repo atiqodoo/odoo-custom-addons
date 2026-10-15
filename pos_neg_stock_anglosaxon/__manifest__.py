@@ -6,7 +6,7 @@
 # Costing: AVCO | Valuation: Automated | Accounting: Anglo-Saxon
 {
     'name': 'POS Negative Stock Anglo-Saxon Finance Fix',
-    'version': '18.0.1.3.2',
+    'version': '18.0.1.4.0',
     'category': 'Inventory/Point of Sale',
     'summary': 'AVCO price difference reconciliation for POS oversell in Anglo-Saxon accounting',
     'author': 'Custom',
@@ -21,6 +21,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'security/posted_bill_rules.xml',
         # Report actions must load before views that reference them in menuitems
         'report/neg_stock_reconciliation_report.xml',
         'report/neg_stock_reconciliation_template.xml',
@@ -29,6 +30,7 @@
         'views/stock_valuation_layer_view.xml',
         'views/neg_stock_reconciliation_view.xml',
         'views/res_config_settings_view.xml',
+        'views/posted_bill_allocation_views.xml',
     ],
     'assets': {
         'point_of_sale._assets_pos': [
