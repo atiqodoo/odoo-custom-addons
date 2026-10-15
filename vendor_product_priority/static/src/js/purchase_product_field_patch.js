@@ -10,6 +10,9 @@ patch(PurchaseOrderLineProductField.prototype, {
         const record = this.props.record;
         const root = record.model.root;
         const template = record.data.product_template_id;
+        if (!template) {
+            return await super._onProductTemplateUpdate(...arguments);
+        }
         vendorPriorityLog("RFQ template selected", {
             orderId: root.resId || null,
             vendorId: root.data.partner_id?.[0] || null,
@@ -17,6 +20,19 @@ patch(PurchaseOrderLineProductField.prototype, {
             templateName: template?.[1] || null,
             priorityContext: record.context?.vendor_priority_search || false,
         });
+        const result = await this.orm.call(
+            "product.template",
+            "get_single_product_variant",
+            [template[0]],
+        );
+        if (result && result.product_id) {
+            if (record.data.product_id?.[0] !== result.product_id) {
+                await record.update({
+                    product_id: [result.product_id, result.product_name],
+                });
+            }
+            return;
+        }
         return await super._onProductTemplateUpdate(...arguments);
     },
 
@@ -42,4 +58,3 @@ patch(PurchaseOrderLineProductField.prototype, {
         return super._openMatrixConfigurator(...arguments);
     },
 });
-

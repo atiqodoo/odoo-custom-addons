@@ -15,6 +15,9 @@
                     'vendor_priority_source': 'rfq_variant'
                 }</attribute>
             </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='name']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
         </field>
     </record>
 
@@ -25,6 +28,8 @@
         <field name="priority" eval="90"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='order_line']/list/field[@name='product_template_id']" position="attributes">
+                <attribute name="optional"/>
+                <attribute name="force_save">1</attribute>
                 <attribute name="context">{
                     'partner_id': parent.partner_id,
                     'company_id': parent.company_id,
@@ -35,4 +40,3 @@
         </field>
     </record>
 </odoo>
-

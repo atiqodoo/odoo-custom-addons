@@ -28,6 +28,20 @@ class PurchaseOrder(models.Model):
         for po in self:
             po.user_has_vendor_override = override_group and (override_group in self.env.user.groups_id)
 
+    def _is_product_supplied_by_vendor(self, product):
+        """Match Odoo supplierinfo semantics for RFQ restrictions."""
+        self.ensure_one()
+        if not product or not self.partner_id:
+            return False
+
+        vendor = self.partner_id.commercial_partner_id
+        company = self.company_id or self.env.company
+        return bool(product.seller_ids.filtered(lambda seller: (
+            seller.partner_id.commercial_partner_id == vendor
+            and (not seller.company_id or seller.company_id == company)
+            and (not seller.product_id or seller.product_id == product)
+        )))
+
     # --------------------------------------------------------------------- #
     # ONCHANGE: GRID VALIDATION (MATRIX) – FIXED & ROBUST
     # --------------------------------------------------------------------- #
@@ -75,12 +89,10 @@ class PurchaseOrder(models.Model):
                 continue  # Let Odoo create it later; will be caught on save
 
             # === VENDOR MAPPING CHECK ===
-            if not variant.seller_ids.filtered(
-                lambda s: s.partner_id == self.partner_id and s.product_id == variant
-            ):
+            if not self._is_product_supplied_by_vendor(variant):
                 raise UserError(_(
                     "Product variant '%s' is not supplied by vendor '%s'.\n"
-                    "Only products explicitly mapped to this vendor are allowed.",
+                    "Only products mapped to this vendor are allowed.",
                     variant.display_name,
                     self.partner_id.display_name
                 ))
@@ -99,9 +111,7 @@ class PurchaseOrder(models.Model):
             if not line.product_id or line.display_type:
                 continue
 
-            if not line.product_id.seller_ids.filtered(
-                lambda s: s.partner_id == self.partner_id and s.product_id == line.product_id
-            ):
+            if not self._is_product_supplied_by_vendor(line.product_id):
                 raise UserError(_(
                     "Product '%s' is not available from vendor '%s'.\n"
                     "You can only add products mapped to the selected vendor.",
@@ -122,9 +132,7 @@ class PurchaseOrder(models.Model):
                 if not line.product_id or line.display_type:
                     continue
 
-                if not line.product_id.seller_ids.filtered(
-                    lambda s: s.partner_id == po.partner_id and s.product_id == line.product_id
-                ):
+                if not po._is_product_supplied_by_vendor(line.product_id):
                     raise UserError(_(
                         "Cannot save Purchase Order.\n"
                         "Product '%s' is not supplied by '%s'.\n"
