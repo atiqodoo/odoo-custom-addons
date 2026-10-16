@@ -56,7 +56,6 @@
                             <field name="partner_id" readonly="1"/>
                         </group>
                         <group>
-                            <field name="available_attachment_ids" invisible="1"/>
                             <field name="attachment_id"
                                    options="{'no_create': True}"
                                    context="{'default_res_model': source_model, 'default_res_id': source_res_id}"/>
@@ -66,7 +65,11 @@
                             <field name="currency_id" invisible="1"/>
                         </group>
                     </group>
-                    <group string="Vendor PDF Preview">
+                    <group string="Source Document Attachments" col="1">
+                        <field name="available_attachment_ids" widget="pnpc_tally_attachments"
+                               nolabel="1" readonly="1"/>
+                    </group>
+                    <group string="Selected Attachment Preview">
                         <field name="attachment_preview_html" nolabel="1" readonly="1" widget="html"/>
                     </group>
                     <notebook>

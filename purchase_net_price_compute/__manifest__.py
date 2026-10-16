@@ -1,13 +1,20 @@
 {
     'name': 'Purchase Net Price Compute',
-    'version': '18.0.2.3.0',
+    'version': '18.0.2.3.1',
     'depends': [
+        'web',
         'purchase_stock',
         'account',
         'product',
         'product_movement_volume_analysis',
         'vendor_department_contacts',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'purchase_net_price_compute/static/src/fields/tally_attachments.js',
+            'purchase_net_price_compute/static/src/fields/tally_attachments.xml',
+        ],
+    },
     'data': [
         'security/ir.model.access.csv',
         'views/res_config_settings_views.xml',
