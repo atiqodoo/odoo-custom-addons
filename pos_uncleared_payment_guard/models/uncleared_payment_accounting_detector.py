@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 import logging
 
-from odoo import api, fields, models
-from odoo.tools import float_compare
+from odoo import Command, api, fields, models, _
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger("pos_uncleared_payment_guard.accounting_detector")
 
@@ -13,293 +12,88 @@ class UnclearedPaymentAccountingDetector(models.AbstractModel):
 
     @api.model
     def upg_check_hold(self, hold):
-        """Read accounting state only; never create, post, reconcile, or edit moves."""
+        """Read exact linked accounting evidence; write only the guard's audit records."""
         hold.ensure_one()
-        if not self._is_cheque_matured(hold):
+        if hold.state == "cancelled":
             return False
-        if not hold.deposit_bank_journal_id:
-            self._note(hold, "No POS-selected deposit bank journal; skipping bank-chain detection.")
+        if hold.state == "accounting_cleared" and not hold.linked_transfer_move_id:
+            # Preserve historic confirmations; never infer new links during upgrade.
             return False
-        if not hold.mapped_account_id or not hold.deposit_bank_account_id:
-            self._note(
-                hold,
-                "Missing mapped/deposit ledger account. mapped=%s deposit=%s"
-                % (hold.mapped_account_id.display_name, hold.deposit_bank_account_id.display_name),
+        _logger.debug("[UPG][DETECT_CLEARANCE][START] hold_id=%s", hold.id)
+        if not hold.linked_transfer_move_id:
+            return self._not_confirmed(hold, _("Link Transfer is required. References and equal amounts are not clearance evidence."))
+        if hold.cheque_date and hold.cheque_date > fields.Date.context_today(hold):
+            return self._not_confirmed(hold, _("The cheque date has not arrived."))
+        try:
+            _source, target = hold._upg_transfer_lines()
+        except ValidationError as exc:
+            return self._not_confirmed(hold, str(exc))
+
+        transfer = hold.linked_transfer_move_id
+        if hold.accounting_transfer_move_id != transfer:
+            hold._upg_mark_transfer_seen(transfer, note=_("Explicit cheque transfer selected."))
+        statements, confirmed = self._confirmed_bank_evidence(hold, target)
+        if hold.currency_id.compare_amounts(confirmed, hold.amount) < 0:
+            return self._not_confirmed(
+                hold, _("Linked bank confirmation is incomplete: %(confirmed)s of %(amount)s.",
+                        confirmed=confirmed, amount=hold.amount),
             )
-            return False
-
-        transfer = hold.accounting_transfer_move_id or self._find_internal_transfer_move(hold)
-        if not transfer:
-            return False
-
-        if hold.state == "pending":
-            hold._upg_mark_transfer_seen(
-                transfer,
-                note="Read-only detector matched mapped ledger to selected deposit bank ledger.",
-            )
-
-        statement_line = self._find_reconciled_statement_line(hold, transfer)
-        if not statement_line:
-            self._note(hold, "Internal transfer seen, but deposit bank statement line is not reconciled yet.")
-            return False
-
         hold.write({
-            "bank_statement_line_id": statement_line.id,
-            "accounting_detection_note": (
-                "Internal transfer %s and reconciled statement line %s detected."
-                % (transfer.name, statement_line.display_name)
-            ),
+            "accounting_transfer_move_id": transfer.id,
+            "bank_statement_line_id": statements[:1].id,
+            "confirmed_bank_statement_line_ids": [Command.set(statements.ids)],
+            "accounting_detection_note": _("Confirmed through the selected transfer and its bank reconciliation links."),
         })
-        hold._upg_mark_accounting_cleared()
+        if hold.state != "accounting_cleared":
+            hold._upg_mark_accounting_cleared()
+        _logger.debug("[UPG][DETECT_CLEARANCE][END] hold_id=%s outcome=confirmed statement_ids=%s",
+                      hold.id, statements.ids)
         return True
 
     @api.model
-    def _find_internal_transfer_move(self, hold):
-        amount = abs(hold.amount or 0.0)
-        currency = hold.currency_id or hold.company_id.currency_id
-        mapped_accounts = self._mapped_candidate_accounts(hold)
-        domain = [
-            ("move_id.state", "=", "posted"),
-            ("move_id.company_id", "=", hold.company_id.id),
-            ("account_id", "in", (mapped_accounts | hold.deposit_bank_account_id).ids),
-        ]
-        lines = self.env["account.move.line"].search(domain, order="date desc, id desc", limit=400)
-        candidate_moves = lines.mapped("move_id")
-        _logger.warning(
-            "[UPG][Detector] hold=%s direct transfer search amount=%.2f mapped_accounts=%s deposit_account=%s candidates=%s",
-            hold.name,
-            amount,
-            mapped_accounts.mapped("code"),
-            hold.deposit_bank_account_id.code,
-            candidate_moves.mapped("name"),
-        )
-        for move in candidate_moves:
-            mapped_lines = move.line_ids.filtered(lambda line: line.account_id in mapped_accounts)
-            deposit_lines = move.line_ids.filtered(lambda line: line.account_id == hold.deposit_bank_account_id)
-            if not mapped_lines or not deposit_lines:
+    def _confirmed_bank_evidence(self, hold, target):
+        statements = self.env["account.bank.statement.line"]
+        direct = target.statement_line_id
+        if direct:
+            if self._valid_statement(hold, direct):
+                return direct, min(target.debit, hold.amount)
+            return statements, 0.0
+        confirmed = 0.0
+        # target is the transfer's debit to outstanding receipts. Only partials
+        # pointing FROM that exact line TO a bank statement credit are evidence.
+        for partial in target.matched_credit_ids:
+            credit = partial.credit_move_id
+            statement = credit.statement_line_id
+            if (partial.debit_move_id != target or credit.account_id != target.account_id
+                    or partial.company_id != hold.company_id or credit.move_id.state != "posted"
+                    or not statement or not self._valid_statement(hold, statement)):
                 continue
-            mapped_ok = any(self._line_amount_matches(line, amount, currency) for line in mapped_lines)
-            deposit_ok = any(self._line_amount_matches(line, amount, currency) for line in deposit_lines)
-            if mapped_ok and deposit_ok:
-                _logger.warning("[UPG][Detector] hold=%s matched internal transfer move=%s", hold.name, move.name)
-                return move
+            confirmed += partial.amount
+            statements |= statement
+        return statements, confirmed
 
-        chained_move = self._find_liquidity_transfer_chain(hold, mapped_accounts, amount, currency)
-        if chained_move:
-            return chained_move
-
-        mapped_transfer_move = self._find_mapped_ledger_transfer_move(hold, mapped_accounts, amount, currency)
-        if mapped_transfer_move:
-            return mapped_transfer_move
-
-        self._note(
-            hold,
-            "No posted internal-transfer move found between mapped ledger, liquidity transfer, and selected deposit bank ledger.",
+    @api.model
+    def _valid_statement(self, hold, statement):
+        return bool(
+            statement.company_id == hold.company_id
+            and statement.journal_id == hold.deposit_bank_journal_id
+            and statement.move_id.state == "posted"
+            and statement.is_reconciled and statement.amount > 0
+            and (statement.currency_id or statement.company_id.currency_id) == hold.currency_id
         )
-        return self.env["account.move"]
 
     @api.model
-    def _find_mapped_ledger_transfer_move(self, hold, mapped_accounts, amount, currency):
-        mapped_lines = self.env["account.move.line"].search([
-            ("move_id.state", "=", "posted"),
-            ("move_id.company_id", "=", hold.company_id.id),
-            ("account_id", "in", mapped_accounts.ids),
-            ("balance", "in", [amount, -amount]),
-        ], order="date desc, id desc", limit=400)
-        incoming_lines = mapped_lines.filtered(lambda line: self._amount_matches(line.debit, amount, currency))
-        outgoing_lines = mapped_lines.filtered(lambda line: self._amount_matches(line.credit, amount, currency))
-        _logger.warning(
-            "[UPG][Detector] hold=%s mapped-ledger transfer candidates incoming=%s outgoing=%s",
-            hold.name,
-            incoming_lines.mapped("move_id.name"),
-            outgoing_lines.mapped("move_id.name"),
-        )
-        for outgoing_line in outgoing_lines:
-            outgoing_move = outgoing_line.move_id
-            if not self._move_reference_matches_hold(outgoing_move, hold):
-                continue
-            matching_incoming = incoming_lines.filtered(
-                lambda line: line.account_id == outgoing_line.account_id
-                and self._move_reference_matches_hold(line.move_id, hold)
-            )
-            if matching_incoming:
-                _logger.warning(
-                    "[UPG][Detector] hold=%s matched mapped-ledger transfer incoming=%s outgoing=%s account=%s",
-                    hold.name,
-                    matching_incoming.mapped("move_id.name"),
-                    outgoing_move.name,
-                    outgoing_line.account_id.display_name,
-                )
-                return outgoing_move
-        return self.env["account.move"]
-
-    @api.model
-    def _find_liquidity_transfer_chain(self, hold, mapped_accounts, amount, currency):
-        mapped_lines = self.env["account.move.line"].search([
-            ("move_id.state", "=", "posted"),
-            ("move_id.company_id", "=", hold.company_id.id),
-            ("account_id", "in", mapped_accounts.ids),
-            ("balance", "in", [amount, -amount]),
-        ], order="date desc, id desc", limit=400)
-        mapped_moves = mapped_lines.mapped("move_id")
-        _logger.warning(
-            "[UPG][Detector] hold=%s liquidity-chain mapped-side candidates=%s",
-            hold.name,
-            mapped_moves.mapped("name"),
-        )
-        for mapped_move in mapped_moves:
-            if not self._move_reference_matches_hold(mapped_move, hold):
-                _logger.debug("[UPG][Detector] hold=%s skip mapped move=%s reference mismatch", hold.name, mapped_move.name)
-                continue
-            liquidity_lines = mapped_move.line_ids.filtered(
-                lambda line: line.account_id not in mapped_accounts
-                and self._line_amount_matches(line, amount, currency)
-            )
-            for liquidity_line in liquidity_lines:
-                deposit_move = self._find_deposit_side_move(
-                    hold,
-                    liquidity_line.account_id,
-                    amount,
-                    currency,
-                )
-                if deposit_move:
-                    _logger.warning(
-                        "[UPG][Detector] hold=%s matched liquidity chain mapped_move=%s liquidity_account=%s deposit_move=%s",
-                        hold.name,
-                        mapped_move.name,
-                        liquidity_line.account_id.display_name,
-                        deposit_move.name,
-                    )
-                    return deposit_move
-        return self.env["account.move"]
-
-    @api.model
-    def _find_deposit_side_move(self, hold, liquidity_account, amount, currency):
-        deposit_lines = self.env["account.move.line"].search([
-            ("move_id.state", "=", "posted"),
-            ("move_id.company_id", "=", hold.company_id.id),
-            ("journal_id", "=", hold.deposit_bank_journal_id.id),
-            ("account_id", "=", hold.deposit_bank_account_id.id),
-            ("balance", "in", [amount, -amount]),
-        ], order="date desc, id desc", limit=300)
-        for deposit_line in deposit_lines:
-            move = deposit_line.move_id
-            if not self._move_reference_matches_hold(move, hold):
-                _logger.debug("[UPG][Detector] hold=%s skip deposit move=%s reference mismatch", hold.name, move.name)
-                continue
-            liquidity_ok = any(
-                line.account_id == liquidity_account and self._line_amount_matches(line, amount, currency)
-                for line in move.line_ids
-            )
-            if liquidity_ok:
-                return move
-        return self.env["account.move"]
-
-    @api.model
-    def _find_reconciled_statement_line(self, hold, transfer):
-        amount = abs(hold.amount or 0.0)
-        domain = [
-            ("journal_id", "=", hold.deposit_bank_journal_id.id),
-            ("company_id", "=", hold.company_id.id),
-            ("is_reconciled", "=", True),
-        ]
-        statement_lines = self.env["account.bank.statement.line"].search(domain, order="date desc, id desc", limit=300)
-        _logger.warning(
-            "[UPG][Detector] hold=%s statement search deposit_journal=%s candidates=%s",
-            hold.name,
-            hold.deposit_bank_journal_id.display_name,
-            statement_lines.mapped("display_name"),
-        )
-        transfer_line_ids = set(transfer.line_ids.ids)
-        for statement_line in statement_lines:
-            amount_match = self._amount_matches(statement_line.amount, amount, hold.currency_id)
-            linked = bool(transfer_line_ids & set(statement_line.move_id.line_ids.ids))
-            reconciled_linked = any(
-                line.reconciled or line.matched_debit_ids or line.matched_credit_ids
-                for line in statement_line.move_id.line_ids
-            )
-            reference_match = self._statement_reference_matches_hold(statement_line, hold)
-            if amount_match and (linked or reconciled_linked or reference_match):
-                _logger.warning(
-                    "[UPG][Detector] hold=%s matched reconciled statement line=%s linked=%s ref_match=%s",
-                    hold.name,
-                    statement_line.display_name,
-                    linked,
-                    reference_match,
-                )
-                return statement_line
-        return self.env["account.bank.statement.line"]
-
-    @api.model
-    def _line_amount_matches(self, line, amount, currency):
-        return self._amount_matches(abs(line.balance), amount, currency)
-
-    @api.model
-    def _amount_matches(self, candidate, expected, currency):
-        return float_compare(abs(candidate or 0.0), abs(expected or 0.0), precision_rounding=currency.rounding) == 0
-
-    @api.model
-    def _is_cheque_matured(self, hold):
-        if not hold.cheque_date:
-            return True
-        today = fields.Date.context_today(hold)
-        if hold.cheque_date > today:
-            self._note(
-                hold,
-                "Post-dated cheque is not eligible for clearance before %s. Today is %s."
-                % (hold.cheque_date, today),
-            )
-            return False
-        return True
-
-    @api.model
-    def _mapped_candidate_accounts(self, hold):
-        return (
-            hold.mapped_account_id
-            | hold.payment_method_id.outstanding_account_id
-            | hold.payment_method_id.journal_id.default_account_id
-        ).filtered(lambda account: account)
-
-    @api.model
-    def _move_reference_matches_hold(self, move, hold):
-        haystack = self._reference_haystack([
-            move.name,
-            move.ref,
-            *move.line_ids.mapped("name"),
-            *move.line_ids.mapped("ref"),
-            *move.line_ids.mapped("statement_line_id.payment_ref"),
-        ])
-        return self._haystack_matches_hold(haystack, hold)
-
-    @api.model
-    def _statement_reference_matches_hold(self, statement_line, hold):
-        haystack = self._reference_haystack([
-            getattr(statement_line, "name", False),
-            getattr(statement_line, "payment_ref", False),
-            getattr(statement_line, "ref", False),
-            getattr(statement_line.move_id, "ref", False),
-            getattr(statement_line.move_id, "name", False),
-            *statement_line.move_id.line_ids.mapped("name"),
-            *statement_line.move_id.line_ids.mapped("ref"),
-        ])
-        return self._haystack_matches_hold(haystack, hold)
-
-    @api.model
-    def _reference_haystack(self, values):
-        return " ".join(str(value) for value in values if value).lower()
-
-    @api.model
-    def _haystack_matches_hold(self, haystack, hold):
-        needles = [
-            hold.name,
-            hold.cheque_number,
-            hold.pos_order_id.name,
-            hold.pos_order_id.pos_reference,
-            hold.pos_session_id.name,
-        ]
-        return any(needle and str(needle).lower() in haystack for needle in needles)
-
-    @api.model
-    def _note(self, hold, message):
-        hold.accounting_detection_note = message
-        _logger.warning("[UPG][Detector] hold=%s %s", hold.name, message)
+    def _not_confirmed(self, hold, message):
+        vals = {
+            "bank_statement_line_id": False,
+            "confirmed_bank_statement_line_ids": [Command.clear()],
+            "accounting_detection_note": message,
+        }
+        if hold.state == "accounting_cleared":
+            vals["state"] = "manual_cleared" if hold.transfer_link_manual_release else "accounting_transfer_seen"
+        hold.write(vals)
+        if "state" in vals and hold.cod_collection_id:
+            # A fully paid COD order must become visible again when bank evidence is undone.
+            hold.cod_collection_id.order_id.write({"cod_state": "partial"})
+        _logger.debug("[UPG][DETECT_CLEARANCE][END] hold_id=%s outcome=unconfirmed reason=%s", hold.id, message)
+        return False

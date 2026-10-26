@@ -12,3 +12,4 @@ from . import uncleared_payment_accounting_detector
 from . import pos_uncleared_payment_pos_ui
 from . import res_partner_credit
 from . import pos_cod_uncleared_payment
+from . import hold_transfer_link

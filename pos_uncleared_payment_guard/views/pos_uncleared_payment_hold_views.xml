@@ -35,9 +35,12 @@
         <field name="arch" type="xml">
             <form>
                 <header>
+                    <button name="action_open_transfer_link_wizard" type="object" string="Link Transfer"
+                            groups="pos_uncleared_payment_guard.group_pos_uncleared_payment_manager"
+                            invisible="state not in ('pending', 'accounting_transfer_seen', 'manual_cleared')"/>
                     <button name="action_check_accounting_clearance" type="object" string="Check Accounting Now"
                             class="btn-secondary"
-                            invisible="state not in ('pending', 'accounting_transfer_seen')"/>
+                            invisible="state not in ('pending', 'accounting_transfer_seen', 'manual_cleared', 'accounting_cleared')"/>
                     <button name="action_open_clear_wizard" type="object" string="Mark Manually Cleared"
                             class="btn-primary" groups="pos_uncleared_payment_guard.group_pos_uncleared_payment_manager"
                             invisible="state not in ('pending', 'accounting_transfer_seen')"/>
@@ -79,8 +82,10 @@
                         </group>
                     </group>
                     <group string="Read-only Accounting Detection">
+                        <field name="linked_transfer_move_id"/>
                         <field name="accounting_transfer_move_id"/>
                         <field name="bank_statement_line_id"/>
+                        <field name="confirmed_bank_statement_line_ids" widget="many2many_tags"/>
                         <field name="accounting_detection_note"/>
                     </group>
                     <group string="Clearance">

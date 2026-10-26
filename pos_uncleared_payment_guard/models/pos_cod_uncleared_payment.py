@@ -58,25 +58,6 @@ class PosUnclearedPaymentHold(models.Model):
 
     def _upg_mark_accounting_cleared(self):
         result = super()._upg_mark_accounting_cleared()
-        manual_cod_holds = self.filtered(lambda h: h.cod_collection_id and h.state == "manual_cleared")
-        for hold in manual_cod_holds:
-            hold.write({
-                "state": "accounting_cleared",
-                "cleared_by_id": self.env.user.id,
-                "cleared_date": fields.Datetime.now(),
-                "clear_reason": _("Detected from accounting reconciliation after manual clearance."),
-                "clear_reference": (
-                    hold.accounting_transfer_move_id.name
-                    or hold.cod_account_move_id.name
-                    or hold.clear_reference
-                    or ""
-                ),
-            })
-            _logger.warning(
-                "[UPG][COD] manual-cleared hold now accounting-cleared hold=%s cod_move=%s",
-                hold.name,
-                hold.cod_account_move_id.name if hold.cod_account_move_id else "N/A",
-            )
         self._upg_sync_cod_order_clearance("accounting_cleared")
         return result
 

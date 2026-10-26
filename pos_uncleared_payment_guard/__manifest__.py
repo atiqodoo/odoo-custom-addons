@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "POS Uncleared Payment Guard",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.1.0",
     "category": "Point of Sale",
     "summary": "Hold mapped POS deposit/due payments from usable customer balance until cleared",
     "author": "Custom Development",
@@ -23,6 +23,7 @@
         "views/pos_uncleared_payment_hold_views.xml",
         "views/pos_cod_uncleared_payment_views.xml",
         "wizard/pos_uncleared_payment_clear_wizard_views.xml",
+        "wizard/pos_uncleared_payment_link_transfer_wizard_views.xml",
         "views/menu_views.xml",
     ],
     "assets": {

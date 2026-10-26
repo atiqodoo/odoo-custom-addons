@@ -162,7 +162,7 @@ class PosUnclearedPaymentHold(models.Model):
     def action_check_accounting_clearance(self):
         detector = self.env["pos.uncleared.payment.accounting.detector"].sudo()
         for hold in self:
-            if hold.state not in ("pending", "accounting_transfer_seen"):
+            if hold.state not in ("pending", "accounting_transfer_seen", "manual_cleared", "accounting_cleared"):
                 _logger.warning(
                     "[UPG][Hold] SKIP MANUAL ACCOUNTING CHECK hold=%s state=%s",
                     hold.name,
@@ -208,34 +208,44 @@ class PosUnclearedPaymentHold(models.Model):
 
     def _upg_mark_accounting_cleared(self):
         for hold in self:
-            if hold.state not in ("pending", "accounting_transfer_seen"):
+            if hold.state not in ("pending", "accounting_transfer_seen", "manual_cleared"):
                 continue
+            previous_state = hold.state
+            _logger.debug(
+                "[UPG][ACCOUNTING_CLEARANCE][START] hold_id=%s previous_state=%s",
+                hold.id, previous_state,
+            )
             hold.write({
                 "state": "accounting_cleared",
                 "cleared_by_id": self.env.user.id,
                 "cleared_date": fields.Datetime.now(),
                 "clear_reason": _("Detected from read-only accounting reconciliation status."),
-                "clear_reference": hold.accounting_transfer_move_id.name or hold.account_move_id.name or "",
+                "clear_reference": hold.accounting_transfer_move_id.name or hold.account_move_id.name or hold.clear_reference or "",
             })
             _logger.warning(
-                "[UPG][Hold] ACCOUNTING CLEARED hold=%s transfer=%s move=%s payment=%s",
+                "[UPG][ACCOUNTING_CLEARANCE][END] hold=%s transfer=%s move=%s payment=%s previous_state=%s",
                 hold.name,
                 hold.accounting_transfer_move_id.name if hold.accounting_transfer_move_id else "N/A",
                 hold.account_move_id.name if hold.account_move_id else "N/A",
                 hold.pos_payment_id.id,
+                previous_state,
             )
 
     def _upg_mark_transfer_seen(self, move, note=False):
         for hold in self:
-            if hold.state != "pending":
+            if hold.state not in ("pending", "accounting_transfer_seen", "manual_cleared"):
                 continue
+            _logger.debug(
+                "[UPG][TRANSFER_DETECTION][START] hold_id=%s state=%s move_id=%s",
+                hold.id, hold.state, move.id if move else False,
+            )
             hold.write({
-                "state": "accounting_transfer_seen",
+                "state": "accounting_transfer_seen" if hold.state == "pending" else hold.state,
                 "accounting_transfer_move_id": move.id if move else False,
                 "accounting_detection_note": note or "",
             })
             _logger.warning(
-                "[UPG][Hold] ACCOUNTING TRANSFER SEEN hold=%s transfer=%s note=%s",
+                "[UPG][TRANSFER_DETECTION][END] hold=%s transfer=%s note=%s",
                 hold.name,
                 move.name if move else "N/A",
                 note,
@@ -276,7 +286,7 @@ class PosUnclearedPaymentHold(models.Model):
         companies = lines.mapped("company_id")
         amounts = {round(abs(line.amount or 0.0), 2) for line in lines}
         domain = [
-            ("state", "in", ("pending", "accounting_transfer_seen", "manual_cleared")),
+            ("state", "in", ("pending", "accounting_transfer_seen", "manual_cleared", "accounting_cleared")),
             ("company_id", "in", companies.ids),
             "|",
             ("deposit_bank_journal_id", "in", journals.ids),
@@ -329,7 +339,7 @@ class PosUnclearedPaymentHold(models.Model):
         companies = lines.mapped("company_id")
         amounts = {round(abs(line.balance or 0.0), 2) for line in lines if round(abs(line.balance or 0.0), 2)}
         domain = [
-            ("state", "in", ("pending", "accounting_transfer_seen", "manual_cleared")),
+            ("state", "in", ("pending", "accounting_transfer_seen", "manual_cleared", "accounting_cleared")),
             ("company_id", "in", companies.ids),
             "|",
             "|",
@@ -378,34 +388,16 @@ class PosUnclearedPaymentHold(models.Model):
 
     @api.model
     def cron_detect_accounting_reconciliation(self):
-        pending = self.sudo().search([("state", "in", ("pending", "accounting_transfer_seen", "manual_cleared"))])
-        _logger.info("[UPG][Cron] reconciliation scan pending_or_transfer_seen=%d", len(pending))
+        holds = self.sudo().search([
+            "|", ("state", "in", ("pending", "accounting_transfer_seen", "manual_cleared")),
+            "&", ("state", "=", "accounting_cleared"), ("linked_transfer_move_id", "!=", False),
+        ])
+        _logger.debug("[UPG][CRON_CLEARANCE][START] hold_count=%s", len(holds))
         detector = self.env["pos.uncleared.payment.accounting.detector"].sudo()
-        for hold in pending:
+        for hold in holds:
             try:
-                if detector.upg_check_hold(hold):
-                    continue
-                if not hold.account_move_id:
-                    _logger.debug("[UPG][Cron] hold=%s has no related POS payment move yet", hold.name)
-                    continue
-                receivable_or_payable_lines = hold.account_move_id.line_ids.filtered(
-                    lambda line: line.account_id.account_type in ("asset_receivable", "liability_payable")
-                    and line.partner_id.commercial_partner_id == hold.commercial_partner_id
-                )
-                if receivable_or_payable_lines and all(receivable_or_payable_lines.mapped("reconciled")):
-                    hold._upg_mark_accounting_cleared()
-                    continue
-                matched = receivable_or_payable_lines.filtered(
-                    lambda line: line.matched_debit_ids or line.matched_credit_ids
-                )
-                if matched and all(line.reconciled for line in matched):
-                    hold._upg_mark_accounting_cleared()
-                else:
-                    _logger.debug(
-                        "[UPG][Cron] hold=%s not reconciled move=%s line_states=%s",
-                        hold.name,
-                        hold.account_move_id.name,
-                        [(line.id, line.reconciled) for line in receivable_or_payable_lines],
-                    )
-            except Exception as exc:
-                _logger.exception("[UPG][Cron] read-only reconciliation scan failed for hold=%s: %s", hold.name, exc)
+                with self.env.cr.savepoint():
+                    detector.upg_check_hold(hold)
+            except Exception:
+                _logger.exception("[UPG][CRON_CLEARANCE][ERROR] hold_id=%s", hold.id)
+        _logger.debug("[UPG][CRON_CLEARANCE][END] hold_count=%s", len(holds))
