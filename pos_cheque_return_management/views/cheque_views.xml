@@ -1,0 +1,41 @@
+<odoo>
+    <record id="return_list" model="ir.ui.view">
+        <field name="name">pos.cheque.bank.return.list</field><field name="model">pos.cheque.bank.return</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false"><field name="name"/><field name="hold_id"/><field name="reason_id"/><field name="amount"/><field name="state"/><field name="return_statement_id"/><field name="company_id" groups="base.group_multi_company"/></list></field>
+    </record>
+    <record id="return_form" model="ir.ui.view">
+        <field name="name">pos.cheque.bank.return.form</field><field name="model">pos.cheque.bank.return</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false">
+                <header><button name="action_confirm_accounting" type="object" string="Confirm Return Accounting" class="btn-primary" groups="pos_cheque_return_management.group_cheque_return_accountant" invisible="state != 'reported'"/><field name="state" widget="statusbar"/></header>
+                <sheet>
+                    <div class="alert alert-info">Reconcile the bank's negative return transaction to the original customer's receivable account first. Confirming reopens only debts settled by the failed cheque. Fees and fee refunds remain separate. Posted history is retained.</div>
+                    <group>
+                        <group><field name="hold_id"/><field name="attempt_id"/><field name="amount"/><field name="currency_id" invisible="1"/><field name="company_id" groups="base.group_multi_company"/></group>
+                        <group><field name="reason_id" readonly="state != 'reported'"/><field name="reason_note" readonly="state != 'reported'"/><field name="return_statement_id" readonly="state != 'reported'" domain="[('company_id','=',company_id),('amount','&lt;',0)]"/><field name="correction_journal_id" readonly="state != 'reported'"/><field name="correction_date" readonly="state != 'reported'"/><field name="inline_bank_fee"/></group>
+                    </group>
+                    <notebook>
+                        <page string="COD Funding"><field name="funding_ids" readonly="1"><list><field name="order_id"/><field name="application_id"/><field name="amount"/><field name="returned_by_id"/></list></field><group groups="pos_cheque_return_management.group_cheque_return_accountant"><field name="funding_reviewed" readonly="state != 'reported'"/><field name="funding_review_note" readonly="state != 'reported'"/></group></page>
+                        <page string="Accounting Evidence"><field name="correction_move_ids" widget="many2many_tags"/><field name="original_settlement_line_ids" widget="many2many_tags"/><field name="confirmed_by_id"/><field name="confirmed_date"/></page>
+                        <page string="Actual Bank Fees / Refunds"><field name="fee_ids" groups="pos_cheque_return_management.group_cheque_return_accountant"><list editable="bottom" delete="false"><field name="statement_id"/><field name="kind"/><field name="refund_of_id"/><field name="amount"/></list></field></page>
+                    </notebook>
+                </sheet><chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="attempt_list" model="ir.ui.view"><field name="name">pos.cheque.bank.attempt.list</field><field name="model">pos.cheque.bank.attempt</field><field name="arch" type="xml">
+            <list create="false" delete="false"><field name="name"/><field name="state"/><field name="receipt_credit_line_id"/><field name="bank_credit_statement_id"/></list></field></record>
+    <record id="attempt_form" model="ir.ui.view">
+        <field name="name">pos.cheque.bank.attempt.form</field><field name="model">pos.cheque.bank.attempt</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false"><header><field name="hold_state" invisible="1"/><button name="action_confirm_rebank" type="object" string="Finalize Re-banked Receipt" groups="pos_cheque_return_management.group_cheque_return_accountant" invisible="(state != 'deposited' and hold_state != 'rebank_pending') or number &lt;= 1"/><field name="state" widget="statusbar"/></header>
+                <sheet><group><field name="hold_id"/><field name="number" readonly="1"/><field name="receipt_credit_line_id" readonly="state != 'deposited' and receipt_credit_line_id"/><field name="transfer_move_id" readonly="1"/><field name="bank_credit_statement_id" readonly="state != 'deposited'"/><field name="return_ids" readonly="1"/></group></sheet><chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="return_action" model="ir.actions.act_window"><field name="name">Bank Returned Cheques</field><field name="res_model">pos.cheque.bank.return</field><field name="view_mode">list,form</field></record>
+    <record id="reason_action" model="ir.actions.act_window"><field name="name">Cheque Return Reasons</field><field name="res_model">pos.cheque.return.reason</field><field name="view_mode">list,form</field></record>
+    <menuitem id="return_menu" name="Bank Returned Cheques" parent="pos_uncleared_payment_guard.menu_upg_root" action="return_action" groups="pos_cheque_return_management.group_cheque_return_manager" sequence="20"/>
+    <menuitem id="reason_menu" name="Cheque Return Reasons" parent="pos_uncleared_payment_guard.menu_upg_root" action="reason_action" groups="base.group_system" sequence="30"/>
+</odoo>

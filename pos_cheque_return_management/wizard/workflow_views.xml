@@ -1,0 +1,16 @@
+<odoo>
+    <record id="return_wizard_form" model="ir.ui.view">
+        <field name="name">pos.cheque.return.wizard.form</field><field name="model">pos.cheque.return.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Customer Cheque Bank Workflow">
+            <p>Use actual bank evidence. An incoming credit refunding your own outgoing cheque is not a returned customer deposit. Re-banking uses a new bank receipt credit for the same instrument; do not create a duplicate POS deposit.</p>
+            <group><field name="hold_id"/><field name="company_id" invisible="1"/><field name="operation"/><field name="reason_id" invisible="operation != 'report'" required="operation == 'report'"/><field name="note" invisible="operation != 'report'" required="operation == 'report'"/><field name="receipt_credit_line_id"/><field name="statement_id" invisible="operation == 'replace'"/><field name="replacement_hold_id" invisible="operation != 'replace'" required="operation == 'replace'"/></group>
+            <footer><button name="action_apply" type="object" string="Apply" class="btn-primary"/><button special="cancel" string="Cancel"/></footer>
+        </form></field>
+    </record>
+    <record id="funding_wizard_form" model="ir.ui.view">
+        <field name="name">pos.cheque.funding.wizard.form</field><field name="model">pos.cheque.funding.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Identify COD Funding"><p>Use only the amount of this cheque actually consumed by the selected application. Existing reconciliation links are used automatically when available.</p><group><field name="hold_id"/><field name="company_id" invisible="1"/><field name="currency_id" invisible="1"/><field name="application_id"/><field name="amount"/></group><footer><button name="action_apply" type="object" string="Link Funding"/><button special="cancel" string="Cancel"/></footer></form></field>
+    </record>
+</odoo>

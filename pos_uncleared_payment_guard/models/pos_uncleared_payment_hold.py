@@ -306,8 +306,9 @@ class PosUnclearedPaymentHold(models.Model):
         cleared = self.browse()
         for hold in candidate_holds:
             try:
-                if detector.upg_check_hold(hold):
-                    cleared |= hold
+                with self.env.cr.savepoint():
+                    if detector.upg_check_hold(hold):
+                        cleared |= hold
             except Exception as exc:
                 _logger.exception(
                     "[UPG][Hold] live accounting detection failed reason=%s hold=%s: %s",
@@ -365,11 +366,12 @@ class PosUnclearedPaymentHold(models.Model):
         cleared = self.browse()
         for hold in candidate_holds:
             try:
-                before_state = hold.state
-                if detector.upg_check_hold(hold):
-                    cleared |= hold
-                elif before_state == "pending" and hold.state == "accounting_transfer_seen":
-                    cleared |= hold
+                with self.env.cr.savepoint():
+                    before_state = hold.state
+                    if detector.upg_check_hold(hold):
+                        cleared |= hold
+                    elif before_state == "pending" and hold.state == "accounting_transfer_seen":
+                        cleared |= hold
             except Exception as exc:
                 _logger.exception(
                     "[UPG][Hold] live move-line detection failed reason=%s hold=%s: %s",

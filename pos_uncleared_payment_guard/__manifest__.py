@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "POS Uncleared Payment Guard",
-    "version": "18.0.1.1.0",
+    "version": "18.0.1.2.0",
     "category": "Point of Sale",
     "summary": "Hold mapped POS deposit/due payments from usable customer balance until cleared",
     "author": "Custom Development",

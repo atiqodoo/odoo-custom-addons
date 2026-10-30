@@ -301,3 +301,56 @@ class TestAccountingClearance(AccountTestInvoicingCommon):
         self.env["pos.uncleared.payment.hold"].cron_detect_accounting_reconciliation()
         self.assertEqual(hold.state, "accounting_transfer_seen")
         self.assertFalse(hold.confirmed_bank_statement_line_ids)
+
+    def test_posted_reversal_invalidates_confirmation(self):
+        hold = self._hold()
+        transfer = self._transfer(hold)
+        hold._upg_link_transfer(transfer)
+        self._reconcile_transfer(transfer)
+        self.assertTrue(self.detector.upg_check_hold(hold))
+        reverse = transfer._reverse_moves(default_values_list=[{"date": fields.Date.today()}])
+        reverse.action_post()
+        self.assertFalse(self.detector.upg_check_hold(hold))
+        self.assertEqual(hold.state, "manual_cleared")
+
+    def test_standard_statement_deletion_detaches_audit(self):
+        hold = self._hold()
+        receipt = self._bank_receipt()
+        hold._upg_link_transfer(receipt.move_id)
+        reference = receipt.move_id.name
+        receipt.move_id.button_draft()
+        receipt.unlink()
+        hold.invalidate_recordset()
+        self.assertFalse(hold.linked_transfer_move_id)
+        self.assertEqual(hold.previous_transfer_reference, reference)
+        self.assertEqual(hold.state, "manual_cleared")
+
+    def test_live_detector_sql_error_does_not_abort_accounting(self):
+        from unittest.mock import patch
+        self.env = self.env(context=dict(self.env.context, upg_skip_live_detector=False))
+        self.detector = self.env["pos.uncleared.payment.accounting.detector"]
+        hold = self._hold()
+        transfer = self._transfer(hold)
+        hold._upg_link_transfer(transfer)
+        def fail(detector, checked):
+            detector.env.cr.execute("SELECT 1 / %s", [0])
+        with patch.object(type(self.detector), "upg_check_hold", fail):
+            transfer.line_ids[:1].write({"name": "Ordinary valid edit"})
+            self.env.cr.execute("SELECT 1")
+            self.assertEqual(self.env.cr.fetchone()[0], 1)
+
+    def test_standard_internal_transfer_clearing_chain(self):
+        hold = self._hold()
+        clearing = self.env["account.account"].create({"name": "Cheque transfer clearing", "code": "CHQTRF", "account_type": "asset_current", "reconcile": True})
+        self.env.company.transfer_account_id = clearing
+        outgoing = self._transfer(hold, target=clearing)
+        incoming = self.env["account.move"].create({
+            "journal_id": self.company_data["default_journal_misc"].id,
+            "line_ids": [Command.create({"account_id": clearing.id, "credit": 35000}), Command.create({"account_id": self.outstanding.id, "debit": 35000})],
+        })
+        incoming.action_post()
+        (outgoing.line_ids | incoming.line_ids).filtered(lambda line: line.account_id == clearing).reconcile()
+        hold._upg_link_transfer(outgoing)
+        receipt = self._reconcile_transfer(incoming)
+        self.assertTrue(self.detector.upg_check_hold(hold))
+        self.assertEqual(hold.bank_statement_line_id, receipt)

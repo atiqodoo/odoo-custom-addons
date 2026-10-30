@@ -1,0 +1,8 @@
+<odoo>
+    <!-- The base addon has no company rule on holds. Apply a global company boundary. -->
+    <record id="cheque_hold_company_rule" model="ir.rule">
+        <field name="name">Cheque holds: allowed companies</field>
+        <field name="model_id" ref="pos_uncleared_payment_guard.model_pos_uncleared_payment_hold"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

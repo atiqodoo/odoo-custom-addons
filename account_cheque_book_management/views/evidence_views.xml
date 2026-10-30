@@ -1,0 +1,62 @@
+<odoo>
+    <record id="book_bank_code_form" model="ir.ui.view">
+        <field name="name">account.cheque.book.bank.code.form</field>
+        <field name="model">account.cheque.book</field>
+        <field name="inherit_id" ref="book_form"/>
+        <field name="arch" type="xml">
+            <field name="bank_account_id" position="after">
+                <field name="bank_code" placeholder="Bank/branch code printed on the cheque"/>
+            </field>
+        </field>
+    </record>
+    <record id="book_bank_code_list" model="ir.ui.view">
+        <field name="name">account.cheque.book.bank.code.list</field>
+        <field name="model">account.cheque.book</field>
+        <field name="inherit_id" ref="book_list"/>
+        <field name="arch" type="xml">
+            <field name="journal_id" position="after"><field name="bank_code" optional="show"/></field>
+        </field>
+    </record>
+    <record id="payment_cheque_copy" model="ir.ui.view">
+        <field name="name">account.payment.completed.cheque.copy</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="payment_cheque_books"/>
+        <field name="arch" type="xml">
+            <field name="cheque_date" position="after">
+                <field name="cheque_copy_filename" invisible="1"/>
+                <field name="cheque_copy" widget="binary" filename="cheque_copy_filename" invisible="not cheque_managed" readonly="state != 'draft'"/>
+                <div class="text-muted" invisible="not cheque_managed or state != 'draft'">Attach the completed cheque before confirmation.</div>
+            </field>
+        </field>
+    </record>
+    <record id="register_cheque_copy" model="ir.ui.view">
+        <field name="name">account.payment.register.completed.cheque.copy</field>
+        <field name="model">account.payment.register</field>
+        <field name="inherit_id" ref="register_cheque_books"/>
+        <field name="arch" type="xml">
+            <field name="cheque_date" position="after">
+                <field name="cheque_copy_filename" invisible="1"/>
+                <field name="cheque_copy" widget="binary" filename="cheque_copy_filename" invisible="not cheque_managed" required="cheque_managed"/>
+            </field>
+        </field>
+    </record>
+    <record id="workflow_cheque_copy" model="ir.ui.view">
+        <field name="name">account.cheque.workflow.completed.cheque.copy</field>
+        <field name="model">account.cheque.workflow</field>
+        <field name="inherit_id" ref="workflow_form"/>
+        <field name="arch" type="xml">
+            <field name="note" position="before">
+                <field name="cheque_copy_filename" invisible="1"/>
+                <field name="cheque_copy" widget="binary" filename="cheque_copy_filename" invisible="action not in ('represent','replace')" required="action in ('represent','replace')"/>
+            </field>
+        </field>
+    </record>
+    <record id="attempt_bank_code" model="ir.ui.view">
+        <field name="name">account.cheque.attempt.bank.code</field>
+        <field name="model">account.cheque.attempt</field>
+        <field name="inherit_id" ref="attempt_form"/>
+        <field name="arch" type="xml">
+            <field name="leaf_id" position="after"><field name="bank_code"/></field>
+        </field>
+    </record>
+</odoo>

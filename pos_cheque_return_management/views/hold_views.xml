@@ -1,0 +1,21 @@
+<odoo>
+    <record id="hold_return_workflow" model="ir.ui.view">
+        <field name="name">pos.uncleared.payment.hold.return.workflow</field><field name="model">pos.uncleared.payment.hold</field>
+        <field name="inherit_id" ref="pos_uncleared_payment_guard.view_upg_hold_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/field[@name='state']" position="attributes"><attribute name="statusbar_visible">pending,accounting_transfer_seen,manual_cleared,accounting_cleared,returned,rebank_pending,replaced,cancelled</attribute></xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_open_cheque_return" type="object" string="Record Bank Return" groups="pos_cheque_return_management.group_cheque_return_manager" invisible="state in ('returned','replaced','cancelled')"/>
+                <button name="action_open_cheque_recovery" type="object" string="Re-bank / Replace" groups="pos_cheque_return_management.group_cheque_return_accountant" invisible="state != 'returned'"/>
+                <button name="action_open_cheque_funding" type="object" string="Link COD Funding" groups="pos_cheque_return_management.group_cheque_return_manager" invisible="cod_collection_id"/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <notebook>
+                    <page string="Cheque Banking History"><group><field name="replacement_for_id"/><field name="active_attempt_id"/></group><field name="bank_attempt_ids" readonly="1"><list><field name="name"/><field name="state"/><field name="receipt_credit_line_id"/><field name="bank_credit_statement_id"/></list></field></page>
+                    <page string="Bank Returns"><field name="cheque_return_ids" readonly="1"><list><field name="name"/><field name="reason_id"/><field name="state"/><field name="return_statement_id"/></list></field></page>
+                    <page string="Cheque-funded COD"><field name="cheque_funding_ids" readonly="1"><list><field name="order_id"/><field name="amount"/><field name="returned_by_id"/></list></field></page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+</odoo>

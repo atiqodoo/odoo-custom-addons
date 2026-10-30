@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+attempt_view,attempt viewer,model_pos_cheque_bank_attempt,pos_uncleared_payment_guard.group_pos_uncleared_payment_viewer,1,0,0,0
+attempt_manager,attempt manager,model_pos_cheque_bank_attempt,group_cheque_return_manager,1,1,1,0
+return_view,return viewer,model_pos_cheque_bank_return,pos_uncleared_payment_guard.group_pos_uncleared_payment_viewer,1,0,0,0
+return_manager,return manager,model_pos_cheque_bank_return,group_cheque_return_manager,1,1,1,0
+funding_view,funding viewer,model_pos_cheque_cod_funding,pos_uncleared_payment_guard.group_pos_uncleared_payment_viewer,1,0,0,0
+funding_manager,funding manager,model_pos_cheque_cod_funding,group_cheque_return_manager,1,1,1,0
+fee_view,fee viewer,model_pos_cheque_bank_fee,group_cheque_return_manager,1,0,0,0
+fee_accountant,fee accountant,model_pos_cheque_bank_fee,group_cheque_return_accountant,1,1,1,0
+reason_reader,return reason reader,model_pos_cheque_return_reason,group_cheque_return_manager,1,0,0,0
+reason_admin,return reason administrator,model_pos_cheque_return_reason,base.group_system,1,1,1,1
+return_wizard,return workflow wizard,model_pos_cheque_return_wizard,group_cheque_return_manager,1,1,1,1
+funding_wizard,funding workflow wizard,model_pos_cheque_funding_wizard,group_cheque_return_manager,1,1,1,1

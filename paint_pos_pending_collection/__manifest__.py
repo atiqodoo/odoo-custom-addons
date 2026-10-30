@@ -41,10 +41,10 @@
     "data": [
         "data/sequence_data.xml",
         "data/stock_location_data.xml",
-        "security/ir.model.access.csv",
         "security/pending_collection_security.xml",
-        "views/menu_views.xml",
+        "security/ir.model.access.csv",
         "views/paint_pending_collection_views.xml",
+        "views/menu_views.xml",
         "views/pos_order_views.xml",
         "views/register_deferred_collection_wizard_views.xml",
         "report/pending_collection_label_report.xml",

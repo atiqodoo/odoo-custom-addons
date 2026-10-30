@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="document_source_links.SourceLinks">
+        <div class="d-flex flex-column gap-1">
+            <t t-foreach="links" t-as="link" t-key="link.model + ':' + link.id">
+                <div>
+                    <span class="text-muted me-1"><t t-esc="link.role"/>:</span>
+                    <button type="button" class="btn btn-link p-0 text-start"
+                            t-att-disabled="state.opening || !props.record.resId"
+                            t-on-click="() => this.openSource(link)">
+                        <t t-esc="link.name"/>
+                        <i class="fa fa-external-link ms-1" aria-hidden="true"/>
+                    </button>
+                </div>
+            </t>
+            <span t-if="!links.length" class="text-muted">No linked source document</span>
+        </div>
+    </t>
+</templates>

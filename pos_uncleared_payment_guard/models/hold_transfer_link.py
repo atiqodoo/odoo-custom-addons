@@ -1,6 +1,6 @@
 import logging
 
-from odoo import api, fields, models, _
+from odoo import Command, api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger("pos_uncleared_payment_guard.transfer_link")
@@ -11,12 +11,13 @@ class HoldTransferLink(models.Model):
 
     linked_transfer_move_id = fields.Many2one(
         "account.move", string="Selected Cheque Transfer", readonly=True,
-        copy=False, index=True, check_company=True, tracking=True, ondelete="restrict",
+        copy=False, index=True, check_company=True, tracking=True, ondelete="set null",
     )
     confirmed_bank_statement_line_ids = fields.Many2many(
         "account.bank.statement.line", string="Confirmed Bank Transactions", readonly=True, copy=False,
     )
     transfer_link_manual_release = fields.Boolean(readonly=True, copy=False)
+    previous_transfer_reference = fields.Char(readonly=True, copy=False, tracking=True)
 
     _sql_constraints = [(
         "linked_cheque_transfer_unique", "unique(linked_transfer_move_id)",
@@ -60,9 +61,17 @@ class HoldTransferLink(models.Model):
     def _upg_transfer_lines(self):
         """Validate the deliberately narrow contract: one whole cheque per two-line transfer."""
         self.ensure_one()
-        move = self.linked_transfer_move_id
-        if not move or move.state != "posted" or move.company_id != self.company_id:
+        return self._upg_validate_transfer_move(self.linked_transfer_move_id)
+
+    def _upg_validate_transfer_move(self, move, require_posted=True):
+        """Shared transfer contract; extensions may validate a draft before posting."""
+        self.ensure_one()
+        if not move or move.company_id != self.company_id or (
+            move.state != "posted" if require_posted else move.state not in ("draft", "posted")
+        ):
             raise ValidationError(_("Select a posted transfer from the cheque's company."))
+        if move.reversed_entry_id or move.reversal_move_ids.filtered(lambda reversal: reversal.state == "posted"):
+            raise ValidationError(_("The selected transfer has been reversed. Review its accounting before confirming clearance."))
         if self.currency_id != self.company_id.currency_id or move.currency_id != self.currency_id:
             raise ValidationError(_("Link Transfer currently supports company-currency cheques only."))
         if not self.deposit_bank_journal_id or self.deposit_bank_journal_id.company_id != self.company_id:
@@ -87,9 +96,27 @@ class HoldTransferLink(models.Model):
             targets.account_id == self.deposit_bank_account_id
             and direct_statement and direct_statement.journal_id == bank
         )
-        if not direct_bank and (targets.account_id not in outstanding or not targets.account_id.reconcile):
+        eligible = outstanding | self.company_id.transfer_account_id
+        if not direct_bank and (targets.account_id not in eligible or not targets.account_id.reconcile):
             raise ValidationError(_("The debit must use the selected bank's configured, reconcilable Outstanding Receipts account."))
         return sources, targets
+
+    def _upg_detach_transfer(self, reason, reference=False):
+        """Accounting hooks may detach their own deleted entry without requiring a POS role."""
+        for hold in self:
+            transfer = hold.linked_transfer_move_id
+            vals = {
+                "previous_transfer_reference": reference or transfer.exists().name or hold.previous_transfer_reference,
+                "linked_transfer_move_id": False,
+                "accounting_transfer_move_id": False,
+                "bank_statement_line_id": False,
+                "confirmed_bank_statement_line_ids": [Command.clear()],
+                "accounting_detection_note": reason,
+            }
+            if hold.state == "accounting_cleared":
+                vals["state"] = "manual_cleared" if hold.transfer_link_manual_release else "pending"
+            super(HoldTransferLink, hold).write(vals)
+            _logger.debug("[UPG][DETACH_TRANSFER][END] hold_id=%s move_id=%s", hold.id, transfer.id)
 
     def _upg_link_transfer(self, move):
         self.ensure_one()

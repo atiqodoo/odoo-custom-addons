@@ -1,0 +1,8 @@
+<odoo>
+    <record id="fee_list" model="ir.ui.view"><field name="name">account.cheque.fee.list</field><field name="model">account.cheque.fee</field><field name="arch" type="xml">
+        <list delete="false"><field name="attempt_id"/><field name="statement_id"/><field name="kind"/><field name="refund_of_id"/><field name="amount"/><field name="currency_id" column_invisible="True"/><field name="company_id" groups="base.group_multi_company"/></list></field></record>
+    <record id="fee_form" model="ir.ui.view"><field name="name">account.cheque.fee.form</field><field name="model">account.cheque.fee</field><field name="arch" type="xml">
+        <form edit="false" delete="false"><sheet><group><field name="attempt_id"/><field name="company_id" invisible="1"/><field name="currency_id" invisible="1"/><field name="statement_id" domain="[('company_id','=',company_id)]"/><field name="kind"/><field name="refund_of_id" invisible="kind != 'refund'" required="kind == 'refund'" domain="[('attempt_id','=',attempt_id),('kind','=','charge')]"/><field name="amount"/></group></sheet></form></field></record>
+    <record id="fee_action" model="ir.actions.act_window"><field name="name">Bank Fees / Refunds</field><field name="res_model">account.cheque.fee</field><field name="view_mode">list,form</field></record>
+    <menuitem id="menu_fees" name="Bank Fees / Refunds" parent="menu_root" action="fee_action" sequence="40"/>
+</odoo>

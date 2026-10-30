@@ -1,0 +1,23 @@
+<odoo>
+    <record id="account_move_cheque_deposit_form" model="ir.ui.view">
+        <field name="name">account.move.cheque.deposit.form</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/notebook" position="before">
+                <field name="pcd_requires_receipt" invisible="1"/>
+                <group string="Cheque Deposit" invisible="move_type != 'entry'" groups="pos_uncleared_payment_guard.group_pos_uncleared_payment_viewer">
+                    <div class="alert alert-warning" invisible="not pcd_requires_receipt or state != 'draft'" colspan="2">
+                        Select the cheque and upload its bank deposit receipt before posting. Save a new entry before uploading the receipt.
+                    </div>
+                    <field name="pcd_hold_id" readonly="state != 'draft'"
+                           domain="[('company_id', '=', company_id), ('state', 'in', ['pending', 'accounting_transfer_seen', 'manual_cleared']), ('payment_method_id.pcd_is_cheque', '=', True), ('pos_config_id.pcd_enabled', '=', True)]"
+                           options="{'no_create': True}"/>
+                    <field name="pcd_deposit_date" readonly="state != 'draft'" invisible="not pcd_hold_id and not pcd_requires_receipt"/>
+                    <field name="pcd_receipt_ids" widget="many2many_binary" readonly="state != 'draft'"
+                           invisible="not pcd_hold_id and not pcd_requires_receipt"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

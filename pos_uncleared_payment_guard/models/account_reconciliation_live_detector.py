@@ -6,6 +6,16 @@ from odoo import api, models
 _logger = logging.getLogger("pos_uncleared_payment_guard.live_detector")
 
 
+def _run_live_detection(env, records, reason, operation):
+    # Optional audit detection must never poison the caller's accounting transaction.
+    try:
+        with env.cr.savepoint():
+            Hold = env["pos.uncleared.payment.hold"].sudo().with_context(upg_skip_live_detector=True)
+            getattr(Hold, operation)(records, reason)
+    except Exception:
+        _logger.exception("[UPG][LIVE_DETECTION][ERROR] operation=%s record_ids=%s reason=%s", operation, records.ids, reason)
+
+
 class AccountBankStatementLine(models.Model):
     _inherit = "account.bank.statement.line"
 
@@ -44,9 +54,7 @@ class AccountBankStatementLine(models.Model):
             lines.mapped("display_name"),
             lines.mapped("journal_id.display_name"),
         )
-        self.env["pos.uncleared.payment.hold"].sudo().with_context(
-            upg_skip_live_detector=True
-        )._upg_detect_for_accounting_lines(lines, reason)
+        _run_live_detection(self.env, lines, reason, "_upg_detect_for_accounting_lines")
 
 
 class AccountPartialReconcile(models.Model):
@@ -76,13 +84,22 @@ class AccountPartialReconcile(models.Model):
             reason,
             statement_lines.mapped("display_name"),
         )
-        self.env["pos.uncleared.payment.hold"].sudo().with_context(
-            upg_skip_live_detector=True
-        )._upg_detect_for_accounting_lines(statement_lines, reason)
+        _run_live_detection(self.env, statement_lines, reason, "_upg_detect_for_accounting_lines")
 
 
 class AccountMove(models.Model):
     _inherit = "account.move"
+
+    def unlink(self):
+        linked = self.env["pos.uncleared.payment.hold"].sudo().search([
+            ("linked_transfer_move_id", "in", self.ids),
+        ])
+        references = {hold.id: hold.linked_transfer_move_id.name for hold in linked}
+        # The accounting move's own access checks and deletion rules remain authoritative.
+        result = super().unlink()
+        for hold in linked:
+            hold._upg_detach_transfer("Selected accounting entry was deleted through standard accounting.", references[hold.id])
+        return result
 
     def action_post(self):
         result = super().action_post()
@@ -141,6 +158,4 @@ class AccountMoveLine(models.Model):
             lines.mapped("account_id.display_name"),
             lines.mapped("journal_id.display_name"),
         )
-        self.env["pos.uncleared.payment.hold"].sudo().with_context(
-            upg_skip_live_detector=True
-        )._upg_detect_for_move_lines(lines, reason)
+        _run_live_detection(self.env, lines, reason, "_upg_detect_for_move_lines")

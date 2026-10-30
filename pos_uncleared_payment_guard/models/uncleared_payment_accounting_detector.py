@@ -51,8 +51,12 @@ class UnclearedPaymentAccountingDetector(models.AbstractModel):
         return True
 
     @api.model
-    def _confirmed_bank_evidence(self, hold, target):
+    def _confirmed_bank_evidence(self, hold, target, visited=None):
+        visited = set(visited or ())
         statements = self.env["account.bank.statement.line"]
+        if target.id in visited:
+            return statements, 0.0
+        visited.add(target.id)
         direct = target.statement_line_id
         if direct:
             if self._valid_statement(hold, direct):
@@ -66,10 +70,22 @@ class UnclearedPaymentAccountingDetector(models.AbstractModel):
             statement = credit.statement_line_id
             if (partial.debit_move_id != target or credit.account_id != target.account_id
                     or partial.company_id != hold.company_id or credit.move_id.state != "posted"
-                    or not statement or not self._valid_statement(hold, statement)):
+                    or credit.move_id.reversal_move_ids.filtered(lambda move: move.state == "posted")):
                 continue
-            confirmed += partial.amount
-            statements |= statement
+            if statement and self._valid_statement(hold, statement):
+                confirmed += partial.amount
+                statements |= statement
+            elif target.account_id == hold.company_id.transfer_account_id:
+                # Follow the exact clearing-account match to the incoming side of
+                # a standard Odoo internal transfer, never descriptions or amounts alone.
+                incoming = credit.move_id.line_ids.filtered(
+                    lambda line: line.debit > 0 and line.account_id in
+                    hold.deposit_bank_journal_id.inbound_payment_method_line_ids.payment_account_id
+                )
+                if len(incoming) == 1 and len(credit.move_id.line_ids) == 2:
+                    evidence, amount = self._confirmed_bank_evidence(hold, incoming, visited)
+                    confirmed += min(partial.amount, amount)
+                    statements |= evidence
         return statements, confirmed
 
     @api.model
@@ -78,6 +94,7 @@ class UnclearedPaymentAccountingDetector(models.AbstractModel):
             statement.company_id == hold.company_id
             and statement.journal_id == hold.deposit_bank_journal_id
             and statement.move_id.state == "posted"
+            and not statement.move_id.reversal_move_ids.filtered(lambda move: move.state == "posted")
             and statement.is_reconciled and statement.amount > 0
             and (statement.currency_id or statement.company_id.currency_id) == hold.currency_id
         )

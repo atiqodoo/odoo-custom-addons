@@ -1,0 +1,46 @@
+<templates xml:space="preserve">
+    <t t-name="pos_cheque_deposit_control.Navbar" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
+        <xpath expr="//CashierName" position="before">
+            <ChequeDepositBanner/>
+        </xpath>
+    </t>
+    <t t-name="pos_cheque_deposit_control.ReminderBanner">
+        <button t-if="pos.config.pcd_enabled and (state.count !== 0 or state.stale)" type="button"
+                class="btn btn-warning d-flex flex-column text-start" t-on-click="open">
+            <span><i class="fa fa-bank me-1"/><t t-esc="label"/></span>
+            <small t-if="state.stale">Unable to refresh. Showing last checked information.</small>
+        </button>
+    </t>
+    <t t-name="pos_cheque_deposit_control.ReminderDialog">
+        <Dialog title="'Cheques Due for Banking'" size="'lg'">
+            <t t-set-slot="header">
+                <h4 class="modal-title flex-grow-1">Cheques Due for Banking</h4>
+                <button type="button" class="btn-close" aria-label="Dismiss banking reminder" title="Dismiss banking reminder" t-on-click="props.close"/>
+            </t>
+            <div class="alert alert-info">Bank these cheques and record the transfer with its bank deposit receipt. A deposit does not mean the cheque has cleared.</div>
+            <p>Click X to continue using POS. This reminder will return while cheques are still due for banking.</p>
+            <div t-if="state.error" class="alert alert-warning">Unable to refresh cheque status. Any displayed information is from the last successful check.</div>
+            <div t-if="state.loading" role="status">Checking cheque deposits…</div>
+            <p t-if="!state.loading and !state.error and !state.count">No cheques are currently due for banking.</p>
+            <div class="table-responsive" t-if="state.rows.length">
+                <table class="table table-striped">
+                    <thead><tr><th>Cheque</th><th>Due date</th><th>Amount</th><th>Destination bank</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="state.rows" t-as="row" t-key="row.id">
+                            <td><t t-esc="row.cheque_number || row.name"/><small class="d-block text-muted" t-esc="row.name"/></td>
+                            <td t-esc="row.cheque_date"/>
+                            <td><t t-esc="row.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})"/> <t t-esc="row.currency"/></td>
+                            <td t-esc="row.bank"/>
+                        </tr>
+                    </tbody>
+                </table>
+                <p><t t-esc="state.count"/> cheque(s) due for banking</p>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-att-disabled="state.loading || state.offset === 0" t-on-click="() => this.load(Math.max(0, state.offset - state.limit))">Previous</button>
+                <button class="btn btn-secondary" t-att-disabled="state.loading || state.offset + state.limit >= state.count" t-on-click="() => this.load(state.offset + state.limit)">Next</button>
+                <button class="btn btn-secondary" t-att-disabled="state.loading" t-on-click="() => this.load(state.offset)">Refresh</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

@@ -1,0 +1,41 @@
+<odoo>
+    <record id="book_list" model="ir.ui.view"><field name="name">account.cheque.book.list</field><field name="model">account.cheque.book</field><field name="arch" type="xml">
+        <list decoration-muted="state == 'closed'"><field name="name"/><field name="journal_id"/><field name="first_number"/><field name="last_number"/><field name="leaf_count"/><field name="available_count"/><field name="outstanding_count"/><field name="custodian_id"/><field name="state" widget="badge"/><field name="company_id" groups="base.group_multi_company"/></list>
+    </field></record>
+    <record id="book_form" model="ir.ui.view"><field name="name">account.cheque.book.form</field><field name="model">account.cheque.book</field><field name="arch" type="xml">
+        <form><header>
+            <button name="action_activate" type="object" string="Activate / Generate Leaves" class="btn-primary" invisible="state != 'draft'" groups="account_cheque_book_management.group_cheque_manager"/>
+            <button name="action_suspend" type="object" string="Suspend" invisible="state != 'active'" groups="account_cheque_book_management.group_cheque_manager"/>
+            <button name="action_resume" type="object" string="Resume" invisible="state != 'suspended'" groups="account_cheque_book_management.group_cheque_manager"/>
+            <button name="action_close" type="object" string="Close Book" invisible="state not in ('active','suspended')" groups="account_cheque_book_management.group_cheque_manager"/>
+            <field name="state" widget="statusbar"/>
+        </header><sheet><div class="oe_title"><h1><field name="name" placeholder="Cheque book reference"/></h1></div><group>
+            <group><field name="company_id" groups="base.group_multi_company" readonly="state != 'draft'"/><field name="journal_id" readonly="state != 'draft'"/><field name="bank_account_id" readonly="1"/><field name="custodian_id"/><field name="received_date"/></group>
+            <group><field name="first_number" readonly="state != 'draft'"/><field name="leaf_count" readonly="state != 'draft'"/><field name="last_number"/><field name="available_count"/><field name="outstanding_count"/></group>
+        </group><notebook><page string="Leaves"><field name="leaf_ids" readonly="1"><list decoration-danger="state in ('returned','review')" decoration-muted="state in ('damaged','cancelled','replaced')"><field name="number"/><field name="state"/><field name="current_attempt_id"/><field name="replacement_for_id"/></list></field></page></notebook></sheet><chatter/></form>
+    </field></record>
+    <record id="leaf_list" model="ir.ui.view"><field name="name">account.cheque.leaf.list</field><field name="model">account.cheque.leaf</field><field name="arch" type="xml">
+        <list create="false" delete="false" decoration-danger="state in ('returned','review')"><field name="number"/><field name="book_id"/><field name="journal_id"/><field name="state" widget="badge"/><field name="current_attempt_id"/><field name="replacement_for_id"/><field name="company_id" groups="base.group_multi_company"/></list>
+    </field></record>
+    <record id="leaf_search" model="ir.ui.view"><field name="name">account.cheque.leaf.search</field><field name="model">account.cheque.leaf</field><field name="arch" type="xml">
+        <search><field name="number"/><field name="book_id"/><field name="journal_id"/><filter name="available" string="Available" domain="[('state','=','available')]"/><filter name="outstanding" string="Outstanding" domain="[('state','in',('reserved','issued','returned','review'))]"/><filter name="exceptions" string="Exceptions" domain="[('state','in',('returned','review','damaged','cancelled'))]"/><group><filter name="book" string="Book" context="{'group_by':'book_id'}"/><filter name="state" string="Status" context="{'group_by':'state'}"/></group></search></field></record>
+    <record id="leaf_form" model="ir.ui.view"><field name="name">account.cheque.leaf.form</field><field name="model">account.cheque.leaf</field><field name="arch" type="xml">
+        <form create="false" delete="false"><header><button name="action_workflow" type="object" string="Cheque Action" class="btn-primary" groups="account_cheque_book_management.group_cheque_user"/><field name="state" widget="statusbar"/></header><sheet><group><field name="number"/><field name="book_id" readonly="1"/><field name="journal_id"/><field name="company_id" groups="base.group_multi_company"/><field name="current_attempt_id"/><field name="replacement_for_id"/></group><notebook>
+            <page string="Banking Attempts"><field name="attempt_ids"><list create="false" delete="false"><field name="number"/><field name="payment_id"/><field name="partner_id"/><field name="amount"/><field name="currency_id" column_invisible="True"/><field name="state"/><field name="stop_state"/></list></field></page>
+            <page string="Audit Trail"><field name="event_ids"><list create="false" delete="false"><field name="create_date"/><field name="action"/><field name="user_id"/><field name="note"/></list></field></page>
+        </notebook></sheet><chatter/></form>
+    </field></record>
+    <record id="attempt_list" model="ir.ui.view"><field name="name">account.cheque.attempt.list</field><field name="model">account.cheque.attempt</field><field name="arch" type="xml">
+        <list create="false" delete="false"><field name="leaf_id"/><field name="number"/><field name="payment_id"/><field name="partner_id"/><field name="amount"/><field name="currency_id" column_invisible="True"/><field name="state"/><field name="reason_id"/><field name="stop_state"/></list></field></record>
+    <record id="attempt_form" model="ir.ui.view"><field name="name">account.cheque.attempt.form</field><field name="model">account.cheque.attempt</field><field name="arch" type="xml">
+        <form create="false" edit="false" delete="false"><sheet><group><group><field name="leaf_id"/><field name="number"/><field name="payment_id"/><field name="partner_id"/><field name="amount"/><field name="currency_id" invisible="1"/><field name="state"/></group><group><field name="reason_id"/><field name="note"/><field name="bank_statement_id"/><field name="return_statement_id"/><field name="reversal_move_id"/><field name="delivered_date"/><field name="receipt_reference"/><field name="stop_state"/><field name="stop_reference"/></group></group><field name="original_debt_ids"/></sheet><chatter/></form></field></record>
+    <record id="book_action" model="ir.actions.act_window"><field name="name">Cheque Books</field><field name="res_model">account.cheque.book</field><field name="view_mode">list,form</field></record>
+    <record id="leaf_action" model="ir.actions.act_window"><field name="name">Leaves Register</field><field name="res_model">account.cheque.leaf</field><field name="view_mode">list,form</field></record>
+    <record id="attempt_action" model="ir.actions.act_window"><field name="name">Banking Attempts / Returns</field><field name="res_model">account.cheque.attempt</field><field name="view_mode">list,form</field></record>
+    <record id="reason_action" model="ir.actions.act_window"><field name="name">Return Reasons</field><field name="res_model">account.cheque.reason</field><field name="view_mode">list,form</field></record>
+    <menuitem id="menu_root" name="Cheque Books" sequence="45" groups="account.group_account_readonly"/>
+    <menuitem id="menu_books" name="Cheque Books" parent="menu_root" action="book_action" sequence="10"/>
+    <menuitem id="menu_leaves" name="Leaves Register" parent="menu_root" action="leaf_action" sequence="20"/>
+    <menuitem id="menu_attempts" name="Banking Attempts / Returns" parent="menu_root" action="attempt_action" sequence="30"/>
+    <menuitem id="menu_reasons" name="Return Reasons" parent="menu_root" action="reason_action" sequence="90" groups="account_cheque_book_management.group_cheque_manager"/>
+</odoo>

@@ -1,0 +1,22 @@
+<odoo>
+    <record id="pos_config_cheque_deposit_form" model="ir.ui.view">
+        <field name="name">pos.config.cheque.deposit.form</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="pos_uncleared_payment_guard.view_pos_config_form_upg"/>
+        <field name="arch" type="xml">
+            <xpath expr="//setting[@id='upg_uncleared_payment_guard']" position="after">
+                <setting id="pcd_deposit_control" string="Cheque Banking Control" groups="point_of_sale.group_pos_manager"
+                         help="Require cheque selection and bank deposit receipts for configured cheque-to-bank transfers. Uses the allowed destination bank journals above; select one or more banks.">
+                    <field name="pcd_enabled"/>
+                    <div invisible="not pcd_enabled">
+                        <label for="pcd_refresh_seconds"/>
+                        <field name="pcd_refresh_seconds"/>
+                        <label for="pcd_popup_interval_seconds"/>
+                        <field name="pcd_popup_interval_seconds"/>
+                        <div class="text-muted">Due cheques automatically open a blocking reminder. Cashiers must dismiss it with X. This interval starts after dismissal.</div>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>
