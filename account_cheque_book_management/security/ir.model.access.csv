@@ -1,0 +1,15 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+book_read,book reader,model_account_cheque_book,account.group_account_readonly,1,0,0,0
+book_user,book operator,model_account_cheque_book,group_cheque_user,1,1,0,0
+book_manager,book manager,model_account_cheque_book,group_cheque_manager,1,1,1,1
+leaf_read,leaf reader,model_account_cheque_leaf,account.group_account_readonly,1,0,0,0
+leaf_user,leaf operator,model_account_cheque_leaf,group_cheque_user,1,1,1,0
+attempt_read,attempt reader,model_account_cheque_attempt,account.group_account_readonly,1,0,0,0
+attempt_user,attempt operator,model_account_cheque_attempt,group_cheque_user,1,1,1,0
+event_read,event reader,model_account_cheque_event,account.group_account_readonly,1,0,0,0
+event_user,event operator,model_account_cheque_event,group_cheque_user,1,0,1,0
+reason_read,reason reader,model_account_cheque_reason,account.group_account_readonly,1,0,0,0
+reason_manager,reason manager,model_account_cheque_reason,group_cheque_manager,1,1,1,0
+workflow_user,cheque workflow,model_account_cheque_workflow,group_cheque_user,1,1,1,1
+fee_read,fee reader,model_account_cheque_fee,account.group_account_readonly,1,0,0,0
+fee_accountant,fee accountant,model_account_cheque_fee,group_cheque_accountant,1,0,1,0

@@ -1,0 +1,16 @@
+<odoo>
+    <record id="journal_cheque_policy" model="ir.ui.view"><field name="name">account.journal.cheque.policy</field><field name="model">account.journal</field><field name="inherit_id" ref="journal_cheque_books"/><field name="arch" type="xml">
+        <field name="cheque_book_enabled" position="after"><field name="cheque_validity_days" invisible="not cheque_book_enabled"/><field name="cheque_separate_approval" invisible="not cheque_book_enabled"/></field></field></record>
+    <record id="attempt_approval_details" model="ir.ui.view"><field name="name">account.cheque.attempt.approval</field><field name="model">account.cheque.attempt</field><field name="inherit_id" ref="attempt_form"/><field name="arch" type="xml">
+        <field name="state" position="after"><field name="approved_by_id"/><field name="approved_date"/><field name="signed_by_id"/><field name="signed_date"/></field></field></record>
+    <record id="leaf_list_amounts" model="ir.ui.view"><field name="name">account.cheque.leaf.amounts</field><field name="model">account.cheque.leaf</field><field name="inherit_id" ref="leaf_list"/><field name="arch" type="xml">
+        <field name="current_attempt_id" position="after"><field name="partner_id"/><field name="amount"/><field name="currency_id" column_invisible="True"/></field></field></record>
+    <record id="leaf_pivot" model="ir.ui.view"><field name="name">account.cheque.leaf.pivot</field><field name="model">account.cheque.leaf</field><field name="arch" type="xml">
+        <pivot string="Cheque Principal by Bank and Status"><field name="currency_id" type="row"/><field name="journal_id" type="row"/><field name="state" type="col"/><field name="amount" type="measure"/></pivot></field></record>
+    <record id="outstanding_action" model="ir.actions.act_window"><field name="name">Issued / Uncleared Cheques</field><field name="res_model">account.cheque.leaf</field><field name="view_mode">list,pivot,form</field><field name="domain">[('state','in',('issued','review'))]</field></record>
+    <record id="returned_action" model="ir.actions.act_window"><field name="name">Returned Cheques</field><field name="res_model">account.cheque.leaf</field><field name="view_mode">list,form</field><field name="domain">[('state','=','returned')]</field></record>
+    <record id="approval_action" model="ir.actions.act_window"><field name="name">Cheques Awaiting Approval</field><field name="res_model">account.payment</field><field name="view_mode">list,form</field><field name="domain">[('cheque_leaf_id','!=',False),('state','=','draft')]</field></record>
+    <menuitem id="menu_approval" name="Awaiting Approval" parent="menu_root" action="approval_action" sequence="15"/>
+    <menuitem id="menu_outstanding" name="Issued / Uncleared" parent="menu_root" action="outstanding_action" sequence="25"/>
+    <menuitem id="menu_returned" name="Returned Cheques" parent="menu_root" action="returned_action" sequence="26"/>
+</odoo>
