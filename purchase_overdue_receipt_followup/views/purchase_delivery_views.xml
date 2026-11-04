@@ -1,0 +1,67 @@
+<odoo>
+    <record id="purchase_delivery_plan_form" model="ir.ui.view">
+        <field name="name">purchase.order.delivery.plan</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase_net_price_compute.purchase_order_form_inherit_netprice"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="delivery_planning" string="Delivery Planning">
+                    <div class="alert alert-info">Draft dates are provisional. Final automatic arrival is calculated from actual PO approval. Fixed dates and line overrides are preserved. Use Reschedule Delivery for confirmed orders.</div>
+                    <div class="alert alert-warning" invisible="delivery_mode != 'vendor' or delivery_policy_id">No active vendor delivery policy: standard Odoo scheduling applies.</div>
+                    <group>
+                        <group>
+                            <field name="delivery_mode" readonly="state not in ['draft', 'sent', 'to approve']"/>
+                            <field name="delivery_policy_id"/>
+                            <field name="delivery_calendar_id" readonly="delivery_mode == 'vendor' or state not in ['draft', 'sent', 'to approve']"/>
+                            <field name="delivery_timezone"/>
+                            <field name="delivery_days" readonly="delivery_mode != 'duration' or state not in ['draft', 'sent', 'to approve']"/>
+                            <field name="delivery_hours" widget="float_time" readonly="delivery_mode != 'duration' or state not in ['draft', 'sent', 'to approve']"/>
+                            <field name="delivery_day_hours"/><field name="delivery_total_hours"/>
+                        </group>
+                        <group>
+                            <field name="delivery_use_preferred_time" readonly="delivery_mode != 'duration' or state not in ['draft', 'sent', 'to approve']"/>
+                            <field name="delivery_preferred_time" widget="float_time" invisible="not delivery_use_preferred_time" readonly="delivery_mode != 'duration' or state not in ['draft', 'sent', 'to approve']"/>
+                            <field name="delivery_fixed_arrival" invisible="delivery_mode != 'fixed'" required="delivery_mode == 'fixed'" readonly="state not in ['draft', 'sent', 'to approve']"/>
+                            <field name="delivery_preview_start" readonly="state not in ['draft', 'sent', 'to approve']"/>
+                            <field name="delivery_start_at"/><field name="delivery_original_arrival"/><field name="delivery_current_arrival"/>
+                            <field name="delivery_revision_user_id"/><field name="delivery_revision_at"/>
+                        </group>
+                    </group>
+                    <field name="delivery_change_reason" readonly="1"/>
+                    <button name="action_preview_delivery" type="object" string="Preview Arrival" class="btn-primary" invisible="state not in ['draft', 'sent', 'to approve']"/>
+                    <button name="action_restore_vendor_delivery" type="object" string="Restore Vendor Default" invisible="state not in ['draft', 'sent', 'to approve']"/>
+                    <button name="action_reschedule_delivery" type="object" string="Reschedule Delivery" class="btn-primary" invisible="state != 'purchase'"/>
+                </page>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_qty']" position="after">
+                <field name="delivery_manual_arrival" optional="hide" readonly="parent.state not in ['draft', 'sent', 'to approve']"/>
+                <field name="delivery_fixed_arrival" optional="hide" readonly="not delivery_manual_arrival or parent.state not in ['draft', 'sent', 'to approve']"/>
+                <field name="delivery_original_arrival" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="delivery_reschedule_form" model="ir.ui.view">
+        <field name="name">purchase.delivery.reschedule.form</field>
+        <field name="model">purchase.delivery.reschedule</field>
+        <field name="arch" type="xml">
+            <form string="Reschedule Outstanding Delivery">
+            <group>
+                <group><field name="order_id"/><field name="company_id"/><field name="arrival_mode"/>
+                    <field name="calendar_id" readonly="arrival_mode == 'vendor'"/><field name="days" readonly="arrival_mode != 'duration'"/>
+                    <field name="hours" widget="float_time" readonly="arrival_mode != 'duration'"/>
+                </group>
+                <group><field name="fixed_arrival" required="arrival_mode == 'fixed'" invisible="arrival_mode != 'fixed'"/>
+                    <field name="use_preferred_time" readonly="arrival_mode != 'duration'"/>
+                    <field name="preferred_time" widget="float_time" invisible="not use_preferred_time" readonly="arrival_mode != 'duration'"/>
+                </group>
+            </group>
+            <field name="reason" required="1" placeholder="Reason for changing the supplier's delivery promise..."/>
+            <field name="line_ids"><list editable="bottom" create="0" delete="0">
+                <field name="order_line_id"/><field name="product_id"/><field name="manual_arrival"/>
+                <field name="fixed_arrival" readonly="not manual_arrival" required="manual_arrival"/>
+            </list></field>
+            <footer><button name="action_apply" type="object" string="Apply to Outstanding Receipts" class="btn-primary"/><button special="cancel" string="Cancel"/></footer>
+            </form>
+        </field>
+    </record>
+</odoo>

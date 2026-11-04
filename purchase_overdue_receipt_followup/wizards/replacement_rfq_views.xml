@@ -1,0 +1,32 @@
+<odoo>
+    <record id="receipt_replacement_form" model="ir.ui.view">
+        <field name="name">purchase.receipt.replacement.form</field>
+        <field name="model">purchase.receipt.replacement</field>
+        <field name="arch" type="xml">
+            <form string="Follow Up Overdue Supply" create="0">
+                <div class="alert alert-warning">These receipts are overdue during receiving hours. A replacement does not cancel the original order: follow up with the supplier to avoid duplicate delivery.</div>
+                <group>
+                    <group><field name="followup_id"/><field name="company_id"/><field name="product_id"/>
+                        <field name="overdue_qty"/><field name="suggested_qty"/><field name="uom_id"/></group>
+                    <group><field name="product_tmpl_id" invisible="1"/><field name="vendor_id" invisible="1"/>
+                        <field name="supplier_id" options="{'no_create': True}"/>
+                        <field name="quantity"/><field name="expected_date"/><field name="target_order_id" options="{'no_create': True}"/>
+                    </group>
+                </group>
+                <group string="New RFQ Vendor Details" invisible="target_order_id">
+                    <field name="vendor_reference_type_id"/><field name="vendor_reference"/>
+                    <field name="vendor_department_id"/><field name="vendor_contact_id"/>
+                </group>
+                <field name="reason" placeholder="Vendor follow-up result and reason for requesting replacement supply..."/>
+                <footer>
+                    <button name="action_create_rfq" type="object" string="Request Replacement RFQ" class="btn-primary"
+                            confirm="The original receipt remains open. Have you reviewed other stock and incoming supply, and recorded why a replacement is needed?"/>
+                    <button name="action_compare_stock" type="object" string="Compare Similar Stock"/>
+                    <button name="action_open_receipts" type="object" string="Open Receipts"/>
+                    <button name="action_open_purchase_orders" type="object" string="Open POs"/>
+                    <button string="Follow Up Later" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

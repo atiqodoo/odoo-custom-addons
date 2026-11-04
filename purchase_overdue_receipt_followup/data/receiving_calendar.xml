@@ -1,0 +1,15 @@
+<odoo noupdate="1">
+    <!-- Editable business configuration, separate from employee working schedules. -->
+    <record id="receiving_calendar" model="resource.calendar">
+        <field name="name">Receiving: Mon–Fri 08–17 / Sat 08–13</field>
+        <field name="company_id" eval="False"/>
+        <field name="tz">Africa/Nairobi</field>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+            (0, 0, {'name': 'Monday', 'dayofweek': '0', 'hour_from': 8, 'hour_to': 17, 'day_period': 'morning'}),
+            (0, 0, {'name': 'Tuesday', 'dayofweek': '1', 'hour_from': 8, 'hour_to': 17, 'day_period': 'morning'}),
+            (0, 0, {'name': 'Wednesday', 'dayofweek': '2', 'hour_from': 8, 'hour_to': 17, 'day_period': 'morning'}),
+            (0, 0, {'name': 'Thursday', 'dayofweek': '3', 'hour_from': 8, 'hour_to': 17, 'day_period': 'morning'}),
+            (0, 0, {'name': 'Friday', 'dayofweek': '4', 'hour_from': 8, 'hour_to': 17, 'day_period': 'morning'}),
+            (0, 0, {'name': 'Saturday', 'dayofweek': '5', 'hour_from': 8, 'hour_to': 13, 'day_period': 'morning'})]"/>
+    </record>
+</odoo>

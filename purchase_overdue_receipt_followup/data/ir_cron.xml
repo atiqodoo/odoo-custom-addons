@@ -1,0 +1,12 @@
+<odoo noupdate="1">
+    <record id="cron_overdue_receipt_followup" model="ir.cron">
+        <field name="name">Purchases: Check Overdue Receipts</field>
+        <field name="model_id" ref="model_purchase_receipt_followup"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_scan()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>
