@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_variant_compare_purchase,variant.compare.purchase,model_purchase_variant_stock_compare,purchase.group_purchase_user,1,1,1,1
+access_variant_compare_line_purchase,variant.compare.line.purchase,model_purchase_variant_stock_compare_line,purchase.group_purchase_user,1,1,1,1
+access_colour_compare_purchase,colour.compare.purchase,paint_colour_master.model_colour_code,purchase.group_purchase_user,1,0,0,0
+access_fandeck_compare_purchase,fandeck.compare.purchase,paint_colour_master.model_colour_fandeck,purchase.group_purchase_user,1,0,0,0
