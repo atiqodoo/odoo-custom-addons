@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_partner_form_vendor_bill_price_basis" model="ir.ui.view">
+        <field name="name">res.partner.form.vendor.bill.price.basis</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="purchase_net_price_compute.res_partner_form_inherit_vendor_invoice_profile"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vendor_invoice_profile']" position="after">
+                <field name="vendor_bill_price_basis"
+                       groups="purchase.group_purchase_manager"
+                       invisible="vendor_invoice_profile != 'standard'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

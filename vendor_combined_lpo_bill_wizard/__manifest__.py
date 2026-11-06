@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Vendor Combined LPO Bill Wizard',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'category': 'Purchase',
     'summary': 'Create one vendor bill from multiple LPOs with vendor price validation',
     'description': """
@@ -22,6 +22,7 @@ vendor, company, currency, and invoice calculation profile.
         'views/combined_lpo_bill_wizard_views.xml',
         'views/purchase_order_views.xml',
         'views/account_move_views.xml',
+        'views/vendor_bill_price_basis_views.xml',
     ],
     'installable': True,
     'application': False,

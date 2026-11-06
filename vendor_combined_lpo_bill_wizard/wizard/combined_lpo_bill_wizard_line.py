@@ -19,6 +19,7 @@ _logger = logging.getLogger(__name__)
 
 class CombinedLpoBillWizardLine(models.TransientModel):
     _name = 'combined.lpo.bill.wizard.line'
+    _inherit = ['vendor.bill.price.basis.line.mixin']
     _description = 'Combined LPO Vendor Bill Wizard Line'
 
     wizard_id = fields.Many2one(
@@ -176,7 +177,11 @@ class CombinedLpoBillWizardLine(models.TransientModel):
         'applied_freight',
         'gamma_tint_percentage',
         'purchase_tax_ids',
+        'purchase_tax_ids.amount',
+        'purchase_tax_ids.price_include',
+        'purchase_tax_ids.children_tax_ids.amount',
         'wizard_id.vendor_invoice_profile',
+        'wizard_id.vendor_price_basis',
         'wizard_id.invoice_allocation_ratio',
         'vendor_promised_cost_vat_incl',
     )
@@ -344,6 +349,7 @@ class CombinedLpoBillWizardLine(models.TransientModel):
         unit_excl = amounts.get('bill_unit_price_excl_vat', 0.0)
         subtotal_excl = amounts.get('subtotal_excl_vat', unit_excl * (self.product_qty or 0.0))
         return {
+            'wizard_vendor_price_basis': self.wizard_id._get_price_basis_audit_value(),
             'wizard_vendor_list_unit_price': self.vendor_price,
             'wizard_vendor_line_total': self.vendor_line_total,
             'wizard_discount_percentage': self.applied_discount,

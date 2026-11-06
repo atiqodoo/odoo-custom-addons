@@ -1,0 +1,63 @@
+<odoo>
+    <record id="vendor_delivery_policy_list" model="ir.ui.view">
+        <field name="name">purchase.vendor.delivery.policy.list</field>
+        <field name="model">purchase.vendor.delivery.policy</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+            <field name="company_id" groups="base.group_multi_company"/>
+            <field name="company_id" column_invisible="True" groups="!base.group_multi_company"/>
+            <field name="partner_id"/><field name="days"/><field name="hours" widget="float_time"/>
+            <field name="calendar_id" domain="[('company_id', 'in', [False, company_id]), ('flexible_hours', '=', False)]"/>
+            <field name="use_preferred_time"/><field name="preferred_time" widget="float_time" readonly="not use_preferred_time"/>
+            <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="vendor_delivery_policy_form" model="ir.ui.view">
+        <field name="name">purchase.vendor.delivery.policy.form</field>
+        <field name="model">purchase.vendor.delivery.policy</field>
+        <field name="arch" type="xml">
+            <form><sheet>
+            <group><field name="active"/><field name="company_id"/><field name="partner_id"/>
+                <field name="calendar_id"/><field name="days"/><field name="hours" widget="float_time"/>
+                <field name="use_preferred_time"/><field name="preferred_time" widget="float_time" invisible="not use_preferred_time"/>
+            </group>
+            <div class="alert alert-info">Days use the purchasing company's configured hours per lead-time day. Only open receiving hours count. A blank calendar uses the company receiving calendar. Changing defaults does not reschedule confirmed POs.</div>
+            </sheet></form>
+        </field>
+    </record>
+    <record id="vendor_delivery_policy_search" model="ir.ui.view">
+        <field name="name">purchase.vendor.delivery.policy.search</field>
+        <field name="model">purchase.vendor.delivery.policy</field>
+        <field name="arch" type="xml">
+            <search><field name="partner_id"/>
+            <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+    <record id="vendor_delivery_policy_action" model="ir.actions.act_window">
+        <field name="name">Vendor Delivery Policies</field>
+        <field name="res_model">purchase.vendor.delivery.policy</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="vendor_delivery_policy_menu" name="Vendor Delivery Policies" parent="purchase.menu_purchase_config"
+              action="vendor_delivery_policy_action" groups="purchase.group_purchase_manager" sequence="45"/>
+    <record id="partner_delivery_policy_form" model="ir.ui.view">
+        <field name="name">res.partner.vendor.delivery.policies</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="vendor_delivery_policies" string="Delivery Policies" groups="purchase.group_purchase_user" invisible="not is_company and parent_id">
+                    <field name="delivery_policy_ids" context="{'default_partner_id': id}">
+                        <list editable="bottom"><field name="company_id"/><field name="days"/>
+                            <field name="hours" widget="float_time"/><field name="calendar_id"/>
+                            <field name="use_preferred_time"/><field name="preferred_time" widget="float_time"/>
+                            <field name="active" optional="hide"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

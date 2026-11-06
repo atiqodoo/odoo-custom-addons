@@ -1,0 +1,27 @@
+<odoo>
+    <record id="vendor_delivery_policy_company_rule" model="ir.rule">
+        <field name="name">Vendor delivery policy company</field>
+        <field name="model_id" ref="model_purchase_vendor_delivery_policy"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="delivery_reschedule_company_rule" model="ir.rule">
+        <field name="name">Delivery revision company</field>
+        <field name="model_id" ref="model_purchase_delivery_reschedule"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="delivery_reschedule_line_company_rule" model="ir.rule">
+        <field name="name">Delivery revision line company</field>
+        <field name="model_id" ref="model_purchase_delivery_reschedule_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="receipt_followup_company_rule" model="ir.rule">
+        <field name="name">Receipt follow-up company</field>
+        <field name="model_id" ref="model_purchase_receipt_followup"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="receipt_replacement_company_rule" model="ir.rule">
+        <field name="name">Receipt replacement company</field>
+        <field name="model_id" ref="model_purchase_receipt_replacement"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

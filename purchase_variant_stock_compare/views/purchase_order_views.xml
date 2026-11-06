@@ -1,0 +1,13 @@
+<odoo>
+    <record id="purchase_order_form_stock_compare" model="ir.ui.view">
+        <field name="name">purchase.order.form.stock.compare</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase_net_price_compute.purchase_order_form_inherit_netprice"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_qty']" position="before">
+                <button name="action_compare_similar_stock" type="object" string="Compare Stock" icon="fa-exchange"
+                        groups="purchase.group_purchase_user" invisible="display_type or not product_id or parent.state not in ['draft', 'sent']"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

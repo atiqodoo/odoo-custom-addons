@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_combined_lpo_bill_wizard_price_basis" model="ir.ui.view">
+        <field name="name">combined.lpo.bill.wizard.price.basis</field>
+        <field name="model">combined.lpo.bill.wizard</field>
+        <field name="inherit_id" ref="vendor_combined_lpo_bill_wizard.view_combined_lpo_bill_wizard_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group[1]" position="after">
+                <group string="Vendor Price Entry">
+                    <field name="supports_vendor_price_basis" invisible="1"/>
+                    <field name="vendor_price_basis" widget="radio" options="{'horizontal': true}"
+                           invisible="not supports_vendor_price_basis"/>
+                    <div invisible="supports_vendor_price_basis">Price basis is controlled by the configured vendor formula.</div>
+                    <div invisible="not supports_vendor_price_basis" class="text-muted">
+                        Select the basis of the vendor unit/list prices before discount and freight.
+                        For prices already adjusted, enter zero discount and freight.
+                        The final invoice total always includes VAT.
+                    </div>
+                </group>
+            </xpath>
+            <xpath expr="//field[@name='po_unit_price']" position="attributes">
+                <attribute name="string">PO Unit Price (Excl. VAT)</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

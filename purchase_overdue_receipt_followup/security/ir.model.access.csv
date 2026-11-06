@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_receipt_followup_purchase,receipt.followup.purchase,model_purchase_receipt_followup,purchase.group_purchase_user,1,0,0,0
+access_receipt_followup_system,receipt.followup.system,model_purchase_receipt_followup,base.group_system,1,1,1,1
+access_receipt_replacement_purchase,receipt.replacement.purchase,model_purchase_receipt_replacement,purchase.group_purchase_user,1,1,1,1
+access_vendor_delivery_policy_user,vendor.delivery.policy.user,model_purchase_vendor_delivery_policy,purchase.group_purchase_user,1,0,0,0
+access_vendor_delivery_policy_manager,vendor.delivery.policy.manager,model_purchase_vendor_delivery_policy,purchase.group_purchase_manager,1,1,1,1
+access_delivery_reschedule_user,delivery.reschedule.user,model_purchase_delivery_reschedule,purchase.group_purchase_user,1,1,1,1
+access_delivery_reschedule_line_user,delivery.reschedule.line.user,model_purchase_delivery_reschedule_line,purchase.group_purchase_user,1,1,1,1

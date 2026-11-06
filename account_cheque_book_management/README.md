@@ -57,6 +57,9 @@ rewritten or retroactively required to upload a copy.
 One payment uses one leaf. Group compatible bills for one vendor to pay with one
 cheque. A registration producing multiple payments is rejected with an explanation;
 register those separately, choosing an individual leaf for each payment.
+Cheque book and leaf selectors remain visible when the selection spans multiple
+payment groups. Pay each group separately; another vendor's bills can use another
+available leaf from the same book while earlier cheques are awaiting clearance.
 
 Saving reserves the leaf atomically. A second reservation is rejected. Protected
 payment details cannot be silently changed or reset after reservation. Void the

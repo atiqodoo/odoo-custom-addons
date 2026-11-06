@@ -225,8 +225,12 @@ class VendorBillVariancePolicyMixin(models.AbstractModel):
 
     def action_dismiss_invoice_variance_warning(self):
         for wizard in self:
+            if hasattr(wizard, '_invalidate_stale_price_basis_review'):
+                wizard._invalidate_stale_price_basis_review()
             before = wizard.variance_warning_dismiss_count
             wizard.variance_warning_dismiss_count = before + 1
+            if hasattr(wizard, '_remember_price_basis_review'):
+                wizard._remember_price_basis_review()
             values = wizard._get_variance_policy_values()
             _logger.warning(
                 '%s dismiss wizard_model=%s wizard_id=%s vendor_id=%s before=%s after=%s '
@@ -529,6 +533,7 @@ class VendorBillVariancePolicyMixin(models.AbstractModel):
                 'purchase_order': line.purchase_id.name if 'purchase_id' in line._fields and line.purchase_id else False,
                 'quantity': line.product_qty,
                 'vendor_list_unit_price': getattr(line, 'vendor_price', 0.0),
+                'vendor_price_basis': self._get_price_basis_audit_value() if hasattr(self, '_get_price_basis_audit_value') else False,
                 'vendor_line_total': getattr(line, 'vendor_line_total', 0.0),
                 'discount_percentage': getattr(line, 'applied_discount', 0.0),
                 'freight_percentage': getattr(line, 'applied_freight', 0.0),

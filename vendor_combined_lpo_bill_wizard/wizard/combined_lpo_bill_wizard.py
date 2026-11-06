@@ -21,7 +21,8 @@ _logger = logging.getLogger(__name__)
 
 class CombinedLpoBillWizard(models.TransientModel):
     _name = 'combined.lpo.bill.wizard'
-    _inherit = ['vendor.bill.wizard.display.mixin', 'vendor.bill.variance.policy.mixin']
+    _inherit = ['vendor.bill.wizard.display.mixin', 'vendor.bill.variance.policy.mixin',
+                'vendor.bill.price.basis.mixin']
     _description = 'Combined LPO Vendor Bill Wizard'
 
     partner_id = fields.Many2one('res.partner', string='Vendor', required=True, readonly=True)
@@ -190,6 +191,13 @@ class CombinedLpoBillWizard(models.TransientModel):
         self.ensure_one()
         return CombinedLpoProfileAdapter(self)
 
+    def _get_price_basis_vendor(self):
+        self.ensure_one()
+        return self.partner_id.commercial_partner_id
+
+    def _get_price_basis_orders(self):
+        return self.purchase_ids
+
     def _debug_payload(self):
         self.ensure_one()
         return wizard_payload(self)
@@ -336,6 +344,7 @@ class CombinedLpoBillWizard(models.TransientModel):
 
     def action_approve_promised_cost_discrepancy(self):
         self.ensure_one()
+        self._invalidate_stale_price_basis_review()
         approver = self._get_price_discrepancy_approver()
         if not approver:
             raise ValidationError(_(
@@ -354,6 +363,7 @@ class CombinedLpoBillWizard(models.TransientModel):
             'promised_cost_discrepancy_approved': True,
             'promised_cost_discrepancy_approved_by_id': self.env.user.id,
         })
+        self._remember_price_basis_review()
         _logger.info(
             '[CLPO_PROMISE] approved wizard_id=%s purchase_ids=%s approver_id=%s line_ids=%s',
             self.id,
@@ -480,6 +490,7 @@ class CombinedLpoBillWizard(models.TransientModel):
         self.ensure_one()
         _logger.info('[CLPO_VALIDATE] create_start payload=%s', self._debug_payload())
         try:
+            self._validate_price_basis()
             self._validate_source_scope()
             self._check_duplicate_vendor_reference()
             self._profile_adapter().validate_wizard()

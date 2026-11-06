@@ -40,8 +40,8 @@ class TestChequeBooks(AccountTestInvoicingCommon):
             values.setdefault('cheque_copy_filename', 'completed-cheque.pdf')
         return self.env['account.cheque.workflow'].create({'leaf_id': leaf.id, 'action': action, 'note': 'Test audit evidence', **values}).action_apply()
 
-    def _bill(self, amount=100):
-        bill = self.env['account.move'].create({'move_type': 'in_invoice', 'partner_id': self.vendor.id, 'invoice_date': fields.Date.today(), 'invoice_line_ids': [Command.create({'name': 'Goods', 'quantity': 1, 'price_unit': amount, 'account_id': self.company_data['default_account_expense'].id, 'tax_ids': [Command.clear()]})]})
+    def _bill(self, amount=100, vendor=None):
+        bill = self.env['account.move'].create({'move_type': 'in_invoice', 'partner_id': (vendor or self.vendor).id, 'invoice_date': fields.Date.today(), 'invoice_line_ids': [Command.create({'name': 'Goods', 'quantity': 1, 'price_unit': amount, 'account_id': self.company_data['default_account_expense'].id, 'tax_ids': [Command.clear()]})]})
         bill.action_post()
         return bill
 
@@ -130,6 +130,41 @@ class TestChequeBooks(AccountTestInvoicingCommon):
         self.assertEqual(len(payment), 1)
         self.assertEqual(payment.amount, 100)
         self.assertEqual(bills.mapped('amount_residual'), [0, 0])
+
+    def test_same_book_pays_different_vendors_with_different_leaves(self):
+        book = self._book()
+        first = self._pay_bill(self._bill(), book.leaf_ids[0])
+        other_vendor = self.env['res.partner'].create({'name': 'Second cheque vendor'})
+        other_bills = self._bill(60, vendor=other_vendor) | self._bill(40, vendor=other_vendor)
+        second = self._pay_bill(other_bills, book.leaf_ids[1])
+        self.assertEqual(first.cheque_book_id, second.cheque_book_id)
+        self.assertNotEqual(first.cheque_leaf_id, second.cheque_leaf_id)
+        self.assertEqual(second.partner_id, other_vendor)
+        self.assertEqual(second.amount, 100)
+        self.assertEqual(other_bills.mapped('amount_residual'), [0, 0])
+
+    def test_multiple_batches_keep_cheque_selectors_visible(self):
+        book = self._book()
+        other_vendor = self.env['res.partner'].create({'name': 'Other batch vendor'})
+        bills = self._bill() | self._bill(vendor=other_vendor)
+        wizard = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bills.ids,
+        ).create({'journal_id': self.bank.id, 'payment_method_line_id': self.method.id})
+        self.assertEqual(len(wizard.batches), 2)
+        self.assertFalse(wizard.partner_type)
+        self.assertTrue(wizard.cheque_managed)
+        # Form assignment checks that these fields are actually visible/editable.
+        with Form(wizard) as form:
+            form.cheque_book_id = book
+            form.cheque_leaf_id = book.leaf_ids[0]
+            form.cheque_copy = self.CHEQUE_COPY
+        with self.assertRaisesRegex(UserError, 'One selected leaf can fund only one payment'):
+            wizard._create_payments()
+        self.assertEqual(book.leaf_ids[0].state, 'available')
+        self.assertFalse(book.leaf_ids[0].attempt_ids)
+        manual = self.bank.outbound_payment_method_line_ids.filtered(lambda method: method.code == 'manual')
+        wizard.payment_method_line_id = manual
+        self.assertFalse(wizard.cheque_managed)
 
     def test_return_reopens_only_failed_payment_and_retry(self):
         leaf = self._book().leaf_ids[0]

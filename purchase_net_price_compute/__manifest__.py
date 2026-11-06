@@ -1,6 +1,6 @@
 {
     'name': 'Purchase Net Price Compute',
-    'version': '18.0.2.3.1',
+    'version': '18.0.2.4.0',
     'depends': [
         'web',
         'purchase_stock',
@@ -22,6 +22,7 @@
         'views/product_vendor_pricing_views.xml',  # Load this FIRST
         'views/res_partner_views.xml',
         'views/vendor_invoice_profile_views.xml',
+        'views/vendor_bill_price_basis_views.xml',
         'views/vendor_reference_type_views.xml',
         'views/vendor_document_tally_views.xml',
         'views/res_users_views.xml',

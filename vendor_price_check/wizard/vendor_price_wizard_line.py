@@ -6,6 +6,7 @@ _logger = logging.getLogger(__name__)
 
 class VendorPriceWizardLine(models.TransientModel):
     _name = 'vendor.price.wizard.line'
+    _inherit = ['vendor.bill.price.basis.line.mixin']
     _description = 'Vendor Price Wizard Line'
 
     wizard_id = fields.Many2one('vendor.price.wizard', string='Wizard', required=True, ondelete='cascade')
@@ -84,6 +85,7 @@ class VendorPriceWizardLine(models.TransientModel):
     def _prepare_common_bill_line_audit_vals(self):
         self.ensure_one()
         return {
+            'wizard_vendor_price_basis': self.wizard_id._get_price_basis_audit_value(),
             'wizard_vendor_list_unit_price': self.vendor_price,
             'wizard_vendor_line_total': self._get_optional_field_value('vendor_line_total', 0.0),
             'wizard_discount_percentage': self.applied_discount,
@@ -106,20 +108,22 @@ class VendorPriceWizardLine(models.TransientModel):
             'wizard_computed_promised_cost_diff_vat_incl': self.promised_cost_difference_vat_incl,
         }
 
-    @api.depends('vendor_price', 'applied_discount', 'applied_freight')
+    @api.depends('vendor_price', 'applied_discount', 'applied_freight',
+                 'wizard_id.vendor_price_basis', 'purchase_line_id.taxes_id',
+                 'purchase_line_id.taxes_id.amount', 'purchase_line_id.taxes_id.price_include',
+                 'purchase_line_id.taxes_id.children_tax_ids.amount',
+                 'product_qty', 'currency_id')
     def _compute_calculated_subtotal(self):
         for line in self:
             _logger.debug(f"Computing subtotal for line {line.id}: vendor_price={line.vendor_price}, applied_discount={line.applied_discount}%, applied_freight={line.applied_freight}%")
             # Always apply custom pricing formula since use_custom_pricing is True
-            subtotal = line.vendor_price * (1 - (line.applied_discount or 0.0) / 100) * (1 + (line.applied_freight or 0.0) / 100)
-            line.calculated_subtotal = round(subtotal, 2)
+            line.calculated_subtotal = line.wizard_id._get_standard_bill_unit_price(line, round_exclusive=True)
 
     @api.onchange('vendor_price', 'applied_discount', 'applied_freight')
     def _onchange_pricing_fields(self):
         _logger.debug(f"Onchange triggered for line {self.id}: vendor_price={self.vendor_price}, applied_discount={self.applied_discount}%, applied_freight={self.applied_freight}%")
         # Always apply custom pricing formula since use_custom_pricing is True
-        subtotal = self.vendor_price * (1 - (self.applied_discount or 0.0) / 100) * (1 + (self.applied_freight or 0.0) / 100)
-        self.calculated_subtotal = round(subtotal, 2)
+        self._compute_calculated_subtotal()
 
     @api.depends(
         'calculated_subtotal',

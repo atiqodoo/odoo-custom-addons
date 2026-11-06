@@ -1,6 +1,6 @@
 {
     'name': 'Vendor Price Check',
-    'version': '18.0.2.1.0',
+    'version': '18.0.2.2.0',
     'category': 'Purchase',
     'summary': 'Check vendor bill prices against historical data',
     'description': """
@@ -29,6 +29,7 @@
         'views/account_move_views.xml',
         'views/crown_invoice_audit_views.xml',
         'views/vendor_bill_invoice_variance_audit_views.xml',
+        'views/vendor_bill_price_basis_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

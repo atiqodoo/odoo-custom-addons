@@ -87,15 +87,15 @@
                                     <field name="sequence" widget="handle"/>
                                     <field name="mark_type"/>
                                     <field name="product_id" readonly="1"/>
-                                    <field name="description" readonly="1"/>
-                                    <field name="quantity_ordered" readonly="1"/>
-                                    <field name="quantity_received" readonly="1"/>
-                                    <field name="quantity_billed" readonly="1"/>
-                                    <field name="product_uom_id" readonly="1"/>
-                                    <field name="unit_price" readonly="1"/>
-                                    <field name="final_unit_price" readonly="1"/>
-                                    <field name="line_total" readonly="1"/>
-                                    <field name="note"/>
+                                    <field name="description" readonly="1" optional="hide"/>
+                                    <field name="quantity_ordered" readonly="1" optional="hide"/>
+                                    <field name="quantity_received" readonly="1" optional="hide"/>
+                                    <field name="quantity_billed" readonly="1" optional="show"/>
+                                    <field name="product_uom_id" readonly="1" optional="show"/>
+                                    <field name="unit_price" readonly="1" optional="hide"/>
+                                    <field name="final_unit_price" readonly="1" optional="show"/>
+                                    <field name="line_total" readonly="1" optional="show"/>
+                                    <field name="note" optional="hide"/>
                                     <button name="action_open_source_line"
                                             type="object"
                                             string="Open Line"

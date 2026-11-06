@@ -1,0 +1,14 @@
+<odoo>
+    <record id="purchase_rfq_home_scheduler_button" model="ir.ui.view">
+        <field name="name">purchase.rfq.home.scheduler.button</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_kpis_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list/header" position="inside">
+                <button name="action_run_scheduler_from_rfq" type="object" string="Run Scheduler"
+                        icon="fa-refresh" display="always" groups="base.group_system"
+                        help="Queue the database-wide procurement scheduler and overdue receipt check. Working-hour rules still apply."/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

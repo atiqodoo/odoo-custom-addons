@@ -55,6 +55,7 @@ class CombinedLpoBillBuilder:
 
         bill_vals = {
             'move_type': 'in_invoice',
+            'company_id': wizard.company_id.id,
             'partner_id': wizard.partner_id.id,
             'invoice_date': wizard.invoice_date,
             'invoice_origin': invoice_origin,

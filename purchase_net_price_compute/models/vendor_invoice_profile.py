@@ -7,6 +7,10 @@ from odoo import fields, models
 _logger = logging.getLogger(__name__)
 
 VENDOR_INVOICE_PROFILE_STANDARD = 'standard'
+VENDOR_PRICE_BASIS_SELECTION = [
+    ('excluded', 'VAT Exclusive'),
+    ('included', 'VAT Inclusive'),
+]
 VENDOR_INVOICE_PROFILE_CROWN = 'crown_paints'
 VENDOR_INVOICE_PROFILE_SELECTION = [
     (VENDOR_INVOICE_PROFILE_STANDARD, 'Standard Vendor Invoice'),
@@ -37,6 +41,15 @@ class ResPartnerVendorInvoiceProfile(models.Model):
             'Child contacts inherit the commercial company profile at runtime.'
         ),
     )
+    vendor_bill_price_basis = fields.Selection(
+        selection=VENDOR_PRICE_BASIS_SELECTION,
+        string='Default Vendor Bill Price Basis',
+        default='excluded',
+        required=True,
+        tracking=True,
+        help='Default for standard vendor bill price entry. Specialized invoice formulae control their own price basis.',
+    )
+
     invoice_variance_currency_id = fields.Many2one(
         'res.currency',
         string='Invoice Variance Currency',
@@ -83,6 +96,10 @@ class ResPartnerVendorInvoiceProfile(models.Model):
                 partner.company_id.currency_id
                 or company_currency
             )
+
+    def get_vendor_bill_price_basis(self):
+        self.ensure_one()
+        return self.commercial_partner_id.vendor_bill_price_basis or 'excluded'
 
     def get_vendor_invoice_profile(self):
         """Return the commercial vendor profile without relying on its name."""

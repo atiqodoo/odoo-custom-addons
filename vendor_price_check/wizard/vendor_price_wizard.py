@@ -11,7 +11,8 @@ _logger = logging.getLogger(__name__)
 
 class VendorPriceWizard(models.TransientModel):
     _name = 'vendor.price.wizard'
-    _inherit = ['vendor.bill.wizard.display.mixin', 'vendor.bill.variance.policy.mixin']
+    _inherit = ['vendor.bill.wizard.display.mixin', 'vendor.bill.variance.policy.mixin',
+                'vendor.bill.price.basis.mixin']
     _description = 'Vendor Price Wizard'
 
     purchase_id = fields.Many2one('purchase.order', string='Purchase Order', required=True)
@@ -47,6 +48,13 @@ class VendorPriceWizard(models.TransientModel):
     )
 
     # Extension hooks keep profile-specific calculation code out of this core flow.
+    def _get_price_basis_vendor(self):
+        self.ensure_one()
+        return self.purchase_id.partner_id.commercial_partner_id
+
+    def _get_price_basis_orders(self):
+        return self.purchase_id
+
     def _validate_invoice_profile_inputs(self):
         self.ensure_one()
         self._validate_required_vendor_invoice_final_total()
@@ -102,6 +110,7 @@ class VendorPriceWizard(models.TransientModel):
 
     def action_approve_promised_cost_discrepancy(self):
         self.ensure_one()
+        self._invalidate_stale_price_basis_review()
         approver = self._get_price_discrepancy_approver()
         if not approver:
             raise ValidationError(_(
@@ -119,6 +128,7 @@ class VendorPriceWizard(models.TransientModel):
             'promised_cost_discrepancy_approved': True,
             'promised_cost_discrepancy_approved_by_id': self.env.user.id,
         })
+        self._remember_price_basis_review()
         _logger.info(
             '[VPC_PROMISE] approved wizard_id=%s po_id=%s approver_id=%s',
             self.id,
@@ -178,6 +188,7 @@ class VendorPriceWizard(models.TransientModel):
 
     def action_create_bill(self):
         self.ensure_one()
+        self._validate_price_basis()
         _logger.info(
             '[VPC_WIZARD] bill_create_start wizard_id=%s po_id=%s po=%s vendor_id=%s lines=%s',
             self.id,
@@ -206,6 +217,7 @@ class VendorPriceWizard(models.TransientModel):
         profile_bill_vals = self._prepare_profile_bill_vals()
         bill_vals = {
             'move_type': 'in_invoice',
+            'company_id': self.purchase_id.company_id.id,
             'partner_id': self.purchase_id.partner_id.id,
             'purchase_id': self.purchase_id.id,
             'invoice_origin': self.purchase_id.name,

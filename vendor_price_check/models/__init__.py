@@ -7,6 +7,7 @@ _logger = logging.getLogger(__name__)
 from . import account_move
 from . import account_move_line
 from . import vendor_bill_wizard_display_mixin
+from . import vendor_bill_price_basis_mixin
 from . import vendor_bill_variance_policy_mixin
 from . import vendor_bill_invoice_variance_audit
 from . import res_config_settings

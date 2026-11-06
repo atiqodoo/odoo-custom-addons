@@ -53,11 +53,7 @@ class CombinedLpoProfileAdapter:
         return self._prepare_standard_amounts(line)
 
     def _prepare_standard_amounts(self, line):
-        unit = (
-            (line.vendor_price or 0.0)
-            * (1 - (line.applied_discount or 0.0) / 100.0)
-            * (1 + (line.applied_freight or 0.0) / 100.0)
-        )
+        unit = self.wizard._get_standard_bill_unit_price(line)
         return {
             'bill_unit_price_excl_vat': unit,
             'gross_total': (line.vendor_price or 0.0) * (line.product_qty or 0.0),

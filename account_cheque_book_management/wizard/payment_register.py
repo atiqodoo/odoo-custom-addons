@@ -12,10 +12,21 @@ class ChequePaymentRegister(models.TransientModel):
     cheque_copy = fields.Binary(string='Completed Cheque Copy', attachment=False)
     cheque_copy_filename = fields.Char()
 
-    @api.depends('journal_id.cheque_book_enabled', 'payment_method_code', 'payment_type', 'partner_type')
+    @api.depends('journal_id.cheque_book_enabled', 'payment_method_code', 'batches')
     def _compute_cheque_managed(self):
         for wizard in self:
-            wizard.cheque_managed = bool(wizard.journal_id.cheque_book_enabled and wizard.payment_method_code == 'check_printing' and wizard.payment_type == 'outbound' and wizard.partner_type == 'supplier')
+            # Odoo clears partner_type when the selected bills form multiple
+            # batches. Inspect the actual batches so cheque controls stay visible
+            # and the one-leaf-per-payment safeguard still applies.
+            wizard.cheque_managed = bool(
+                wizard.journal_id.cheque_book_enabled
+                and wizard.payment_method_code == 'check_printing'
+                and any(
+                    batch['payment_values']['payment_type'] == 'outbound'
+                    and batch['payment_values']['partner_type'] == 'supplier'
+                    for batch in wizard.batches
+                )
+            )
 
     @api.onchange('journal_id', 'payment_method_line_id')
     def _onchange_cheque_journal(self):
