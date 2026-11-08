@@ -182,6 +182,7 @@ class PosOrder(models.Model):
         """
         cod_new = []
         normal = []
+        merged = {}
 
         for order in orders:
             is_cod = order.get('is_cod', False)
@@ -215,8 +216,6 @@ class PosOrder(models.Model):
                 cod_new.append(order_copy)
             else:
                 normal.append(order)
-
-        merged = {}
 
         if normal:
             r = super().sync_from_ui(normal)

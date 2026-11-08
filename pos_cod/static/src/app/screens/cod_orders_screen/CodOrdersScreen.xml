@@ -73,6 +73,7 @@
                             </div>
 
                             <div class="cod-meta">
+                                <span>Collect: <t t-esc="formatCollectionPromise(order.cod_promised_payment_at)"/></span>
                                 <span><i class="fa fa-clock-o"/> <t t-esc="formatDate(order.date_order)"/></span>
                                 <span><i class="fa fa-truck"/> <t t-esc="employeeName(order)"/></span>
                             </div>

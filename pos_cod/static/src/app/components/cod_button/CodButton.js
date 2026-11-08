@@ -157,6 +157,7 @@ patch(ProductScreen.prototype, {
             serialized.delivery_employee_id = employee_id;
             serialized.delivery_address     = delivery_address || "";
             serialized.delivery_notes       = delivery_notes  || "";
+            serialized.cod_promised_payment_at = result.payload.cod_promised_payment_at || false;
 
             codWarn(COMPONENT, "onCodButtonClick", "Sending COD order to backend...");
             const backendResult = await this.pos.cod_create_order(serialized);

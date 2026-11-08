@@ -7,6 +7,7 @@ import { NumberPopup } from "@point_of_sale/app/utils/input_popups/number_popup"
 import { CodLineDetailsDialog } from "@pos_cod/app/components/cod_line_details_dialog/CodLineDetailsDialog";
 import { CodReturnDialog } from "@pos_cod/app/components/cod_return_dialog/CodReturnDialog";
 import { codWarn, codError } from "@pos_cod/app/utils/cod_logger";
+import { formatPromise } from "@pos_cod/app/utils/cod_promise";
 
 const COMPONENT = "CodOrdersScreen";
 
@@ -67,6 +68,10 @@ export class CodOrdersScreen extends Component {
         } catch {
             return dateStr;
         }
+    }
+
+    formatCollectionPromise(value) {
+        return formatPromise(value, this.pos.config.cod_collection_timezone);
     }
 
     partnerName(order) {

@@ -81,6 +81,7 @@ patch(PosStore.prototype, {
                         "delivery_employee_id",
                         "cod_state",
                         "date_order",
+                        "cod_promised_payment_at",
                     ],
                 },
             );
@@ -146,6 +147,7 @@ patch(PosStore.prototype, {
 
             // Refresh pending list so banner count is updated immediately.
             await this.cod_fetch_pending_orders();
+            window.dispatchEvent(new Event("pos-cod:collection-status-changed"));
 
             return result;
 
@@ -212,6 +214,7 @@ patch(PosStore.prototype, {
                     `Payment collected for order ${result.order_name} (amount: ${result.amount}).`,
                 );
                 await this.cod_fetch_pending_orders();
+                window.dispatchEvent(new Event("pos-cod:collection-status-changed"));
             } else {
                 codError(COMPONENT, "cod_collect_payment", "Backend error:", result.message);
             }

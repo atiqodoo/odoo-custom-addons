@@ -16,7 +16,7 @@
 #   the overdue invoice query used by Gate 1.5 of pos_credit_limit.
 {
     'name': 'POS Cash on Delivery',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'category': 'Point of Sale',
     'summary': 'COD: stock deducted at dispatch, payment collected at delivery',
     'author': 'Custom Development',
@@ -34,12 +34,16 @@
         'views/pos_order_views.xml',
         'views/account_move_cod_log_views.xml',
         'views/pos_cod_transaction_log_views.xml',
+        'views/cod_promise_views.xml',
     ],
     'assets': {
         'point_of_sale._assets_pos': [
             # Layer 0 — Logger utility (no dependencies)
             'pos_cod/static/src/app/utils/cod_logger.js',
             'pos_cod/static/src/app/utils/cod_quantity_guard.js',
+            'pos_cod/static/src/app/utils/cod_promise.js',
+            'pos_cod/static/src/app/components/cod_reminder/CodReminder.js',
+            'pos_cod/static/src/app/components/cod_reminder/CodReminder.xml',
             # Layer 1 — Store patch (RPC methods on PosStore)
             'pos_cod/static/src/app/patches/pos_store_patch.js',
             # Layer 2 — UI components (depend on logger + store)

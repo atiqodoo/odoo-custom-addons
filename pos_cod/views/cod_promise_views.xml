@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_config_cod_collection_promises" model="ir.ui.view">
+        <field name="name">pos.config.cod.collection.promises</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="pos_cod.view_pos_config_form_inherit_cod"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='cod_ar_account_id']/ancestor::setting" position="after">
+                <setting string="COD Collection Promises" invisible="not cod_enabled">
+                    <field name="cod_collection_promises_enabled"/>
+                    <div class="content-group" invisible="not cod_collection_promises_enabled">
+                        <label for="cod_collection_delay_days"/>
+                        <field name="cod_collection_delay_days"/>
+                        <div class="text-muted">Calendar days: 0 = dispatch day, 1 = next day, 2 = two days later. Cashiers can edit the date and time before dispatch.</div>
+                        <label for="cod_collection_hour"/>
+                        <field name="cod_collection_hour" widget="float_time"/>
+                        <label for="cod_collection_timezone"/>
+                        <field name="cod_collection_timezone"/>
+                        <label for="cod_reminder_interval_minutes"/>
+                        <field name="cod_reminder_interval_minutes"/>
+                        <label for="cod_reminder_refresh_seconds"/>
+                        <field name="cod_reminder_refresh_seconds"/>
+                        <div class="text-muted">The repeat interval starts after X is clicked. Reminders include accessible overdue COD orders across this company and previous sessions. Reload open POS terminals after changing settings.</div>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+    <record id="res_config_settings_cod_collection_promises" model="ir.ui.view">
+        <field name="name">res.config.settings.cod.collection.promises</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@id='pos_interface_section']" position="inside">
+                <setting string="COD Collection Promises and Reminders" help="Requires Cash on Delivery to be enabled on the selected POS.">
+                    <field name="cod_collection_promises_enabled"/>
+                    <div class="content-group" invisible="not cod_collection_promises_enabled">
+                        <label for="cod_collection_delay_days"/>
+                        <field name="cod_collection_delay_days"/>
+                        <div class="text-muted">0 = dispatch day; 1 = next day; 2 = two days later. Both date and time remain editable in the COD wizard.</div>
+                        <label for="cod_collection_hour"/>
+                        <field name="cod_collection_hour" widget="float_time"/>
+                        <label for="cod_collection_timezone"/>
+                        <field name="cod_collection_timezone"/>
+                        <label for="cod_reminder_interval_minutes"/>
+                        <field name="cod_reminder_interval_minutes"/>
+                        <label for="cod_reminder_refresh_seconds"/>
+                        <field name="cod_reminder_refresh_seconds"/>
+                        <div class="text-muted">Repeat timing starts after dismissal with X. Reload open POS terminals after changing settings.</div>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+    <record id="pos_order_cod_collection_promise" model="ir.ui.view">
+        <field name="name">pos.order.cod.collection.promise</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="pos_cod.view_pos_order_form_inherit_cod"/>
+        <field name="arch" type="xml">
+            <field name="delivery_notes" position="after">
+                <field name="cod_promised_payment_at" invisible="not is_cod" readonly="1"/>
+            </field>
+        </field>
+    </record>
+    <record id="pos_cod_list_collection_promise" model="ir.ui.view">
+        <field name="name">pos.cod.list.collection.promise</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="pos_cod.view_pos_cod_orders_list"/>
+        <field name="arch" type="xml">
+            <field name="date_order" position="after">
+                <field name="cod_promised_payment_at" optional="show"/>
+            </field>
+        </field>
+    </record>
+</odoo>

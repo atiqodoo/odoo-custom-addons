@@ -11,3 +11,4 @@ from . import pos_cod_discount
 from . import pos_session
 from . import res_partner
 from . import stock_quant
+from . import cod_promise

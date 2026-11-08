@@ -59,6 +59,22 @@
                     </textarea>
                 </div>
 
+                <div t-if="state.promiseEnabled" class="border-top pt-3 mt-3">
+                    <label class="form-label fw-semibold">Promised Collection Date and Time *</label>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <DateTimeInput type="'date'" value="promiseCalendarDate" format="'dd/MM/yyyy'"
+                                       onChange.bind="onPromiseDateChange" placeholder="'DD/MM/YYYY'"/>
+                        <input type="number" class="form-control" style="width: 5rem" min="1" max="12"
+                               aria-label="Collection hour" t-model="state.promiseHour"/>
+                        <span>:</span>
+                        <input type="number" class="form-control" style="width: 5rem" min="0" max="59"
+                               aria-label="Collection minute" t-model="state.promiseMinute"/>
+                        <select class="form-select" style="width: 6rem" aria-label="AM or PM" t-model="state.promisePeriod">
+                            <option value="AM">AM</option><option value="PM">PM</option>
+                        </select>
+                    </div>
+                    <div class="text-muted mt-2">Timezone: <t t-esc="state.promiseTimezone"/>. You can edit both date and time before dispatch.</div>
+                </div>
             </t>
             <t t-set-slot="footer">
                 <button class="btn btn-secondary" t-on-click="cancel">Cancel</button>

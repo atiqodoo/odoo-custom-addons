@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_cod.CodReminder"><span class="d-none"/></t>
+    <t t-name="pos_cod.CodOverdueDialog">
+        <Dialog title="'Overdue COD Collections'" contentClass="'cod-overdue-reminder'" footer="false">
+            <t t-set-slot="header">
+                <h4 class="modal-title flex-grow-1">Overdue COD Collections</h4>
+                <button type="button" class="btn-close" aria-label="Close overdue COD reminder" t-on-click="props.close"/>
+            </t>
+            <div t-if="props.status.stale" class="alert alert-warning" role="alert">
+                Connection unavailable. Showing the last known collection status.
+            </div>
+            <p><strong t-esc="props.status.count"/> COD order(s) have passed their promised collection time.
+                Close with X to continue using the POS.</p>
+            <div class="table-responsive" style="max-height: 55vh; overflow: auto;">
+                <table class="table table-striped">
+                    <thead><tr><th>Order</th><th>Customer</th><th>Delivery Employee</th><th>Promised Collection</th><th>Balance Due</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="props.status.rows" t-as="row" t-key="row.id">
+                            <td t-esc="row.name"/><td t-esc="row.customer"/><td t-esc="row.employee"/>
+                            <td t-esc="formatDate(row.promised_at)"/><td t-esc="formatAmount(row)"/>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex gap-2 align-items-center mt-2">
+                <button class="btn btn-secondary" t-att-disabled="props.status.loading or props.status.offset === 0"
+                        t-on-click="() => props.load(Math.max(0, props.status.offset - props.status.limit))">Previous</button>
+                <button class="btn btn-secondary" t-att-disabled="props.status.loading or props.status.offset + props.status.limit >= props.status.count"
+                        t-on-click="() => props.load(props.status.offset + props.status.limit)">Next</button>
+                <button class="btn btn-light" t-att-disabled="props.status.loading" t-on-click="() => props.load()">Refresh</button>
+            </div>
+            <small class="text-muted">Timezone: <t t-esc="props.status.timezone"/>. Collection remains outstanding after dismissal.</small>
+        </Dialog>
+    </t>
+    <t t-name="pos_cod.NavbarCollectionReminder" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
+        <xpath expr="//CashierName" position="before"><CodReminder/></xpath>
+    </t>
+</templates>
