@@ -8,3 +8,5 @@ from . import product_product
 from . import account_move
 from . import stock_picking
 from . import stock_landed_cost
+from . import pos_auto_price_state
+from . import product_pricelist_item

@@ -1,0 +1,12 @@
+<odoo>
+    <record id="price_log_company_rule" model="ir.rule">
+        <field name="name">Auto price logs: allowed companies</field>
+        <field name="model_id" ref="model_pos_auto_variant_price_log"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="price_state_company_rule" model="ir.rule">
+        <field name="name">Auto price baselines: allowed companies</field>
+        <field name="model_id" ref="model_pos_auto_variant_price_state"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

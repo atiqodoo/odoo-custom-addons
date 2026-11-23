@@ -14,8 +14,9 @@
                 <field name="new_inclusive_cost"/>
                 <field name="cost_difference"/>
                 <field name="rounded_increase"/>
-                <field name="old_sale_price"/>
-                <field name="new_sale_price"/>
+                <field name="old_sale_price" optional="hide"/>
+                <field name="new_sale_price" optional="hide"/>
+                <field name="pricelist_id"/>
                 <field name="old_pricelist_price"/>
                 <field name="new_pricelist_price"/>
                 <field name="profit_amount_change"/>
@@ -52,7 +53,7 @@
                         <field name="old_cost"/>
                         <field name="new_cost"/>
                         <field name="include_vat"/>
-                        <field name="vat_rate"/>
+                        <field name="tax_ids" widget="many2many_tags"/>
                         <field name="old_inclusive_cost"/>
                         <field name="new_inclusive_cost"/>
                         <field name="cost_difference"/>
@@ -62,11 +63,13 @@
                         <field name="rounded_increase"/>
                         <field name="old_sale_price"/>
                         <field name="new_sale_price"/>
+                        <field name="pricelist_id"/>
+                        <field name="source_pricelist_item_id"/>
                         <field name="pricelist_item_id"/>
                         <field name="old_pricelist_price"/>
                         <field name="new_pricelist_price"/>
                     </group>
-                    <group string="Profit After Round Off">
+                    <group string="Price Less Tax-Inclusive Cost">
                         <field name="old_profit_amount"/>
                         <field name="new_profit_amount"/>
                         <field name="profit_amount_change"/>

@@ -6,10 +6,14 @@
         <field name="inherit_id" ref="product.product_normal_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//page[@name='general_information']" position="inside">
-                <group string="POS Auto Price Tracking">
-                    <field name="pos_auto_price_last_inclusive_cost" readonly="1"/>
-                    <field name="pos_auto_price_last_sale_price" readonly="1"/>
-                    <field name="pos_auto_price_last_log_id" readonly="1"/>
+                <group string="POS Auto Price Baselines" groups="point_of_sale.group_pos_manager">
+                    <field name="pos_auto_price_state_ids" readonly="1">
+                        <list create="false" edit="false" delete="false">
+                            <field name="company_id"/>
+                            <field name="pricelist_id"/>
+                            <field name="last_cost" string="Last Processed Cost Excl. Tax"/>
+                        </list>
+                    </field>
                 </group>
             </xpath>
         </field>

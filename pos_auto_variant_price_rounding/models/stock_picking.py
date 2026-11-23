@@ -3,6 +3,7 @@
 import logging
 
 from odoo import models
+from odoo.service.model import PG_CONCURRENCY_EXCEPTIONS_TO_RETRY
 
 _logger = logging.getLogger(__name__)
 
@@ -19,8 +20,8 @@ class StockPicking(models.Model):
                 continue
             products = picking.move_ids.filtered(lambda move: move.state not in ("done", "cancel")).mapped("product_id")
             if products:
-                snapshots[picking.id] = {product.id: product.standard_price for product in products}
-                _logger.debug("[POS_AUTO_PRICE] receipt snapshot picking=%s costs=%s", picking.name, snapshots[picking.id])
+                snapshots[picking.id] = {product.id: product.standard_price for product in products.with_company(picking.company_id)}
+                _logger.debug("[POS_AUTO_PRICE][RECEIPT][START] snapshot picking=%s costs=%s", picking.name, snapshots[picking.id])
 
         result = super()._action_done()
 
@@ -31,7 +32,10 @@ class StockPicking(models.Model):
                 continue
             products = self.env["product.product"].browse(old_costs.keys())
             try:
-                service.process_products(products, old_cost_by_product=old_costs, trigger="receipt", source=picking)
+                service.with_company(picking.company_id)._process_products(products, old_cost_by_product=old_costs, trigger="receipt", source=picking)
+            except PG_CONCURRENCY_EXCEPTIONS_TO_RETRY:
+                raise
             except Exception:
-                _logger.exception("[POS_AUTO_PRICE] receipt processing failed for picking=%s", picking.name)
+                _logger.exception("[POS_AUTO_PRICE][RECEIPT][ERROR] processing failed for picking=%s", picking.name)
+        _logger.debug("[POS_AUTO_PRICE][RECEIPT][END] record_ids=%s", self.ids)
         return result

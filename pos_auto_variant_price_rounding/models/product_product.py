@@ -3,12 +3,18 @@
 import logging
 
 from odoo import fields, models
+from odoo.service.model import PG_CONCURRENCY_EXCEPTIONS_TO_RETRY
 
 _logger = logging.getLogger(__name__)
 
 
 class ProductProduct(models.Model):
     _inherit = "product.product"
+
+    pos_auto_price_state_ids = fields.One2many(
+        "pos.auto.variant.price.state", "product_id", string="Pricelist Cost Baselines", readonly=True,
+        groups="point_of_sale.group_pos_manager",
+    )
 
     pos_auto_price_last_inclusive_cost = fields.Float(
         string="Last Auto Price Inclusive Cost",
@@ -38,18 +44,21 @@ class ProductProduct(models.Model):
         old_cost_by_product = {}
         if should_track:
             old_cost_by_product = {product.id: product.standard_price for product in self}
-            _logger.debug("[POS_AUTO_PRICE] manual cost snapshot=%s vals=%s", old_cost_by_product, vals)
+            _logger.debug("[POS_AUTO_PRICE][COST_WRITE][START] product_ids=%s", self.ids)
 
         result = super().write(vals)
 
         if should_track:
             try:
-                self.env["pos.auto.variant.price.service"].process_products(
+                self.env["pos.auto.variant.price.service"]._process_products(
                     self,
                     old_cost_by_product=old_cost_by_product,
                     trigger="manual_cost",
                     source=None,
                 )
+            except PG_CONCURRENCY_EXCEPTIONS_TO_RETRY:
+                raise
             except Exception:
-                _logger.exception("[POS_AUTO_PRICE] manual cost processing failed for products=%s", self.ids)
+                _logger.exception("[POS_AUTO_PRICE][COST_WRITE][ERROR] product_ids=%s", self.ids)
+            _logger.debug("[POS_AUTO_PRICE][COST_WRITE][END] product_ids=%s", self.ids)
         return result

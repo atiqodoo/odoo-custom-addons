@@ -6,6 +6,9 @@ from odoo import fields, models
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
+    auto_variant_price_allow_sale_fallback = fields.Boolean(related="pos_config_id.auto_variant_price_allow_sale_fallback", readonly=False)
+    auto_variant_price_sync_interval = fields.Integer(related="pos_config_id.auto_variant_price_sync_interval", readonly=False)
+
     auto_variant_price_enabled = fields.Boolean(
         related="pos_config_id.auto_variant_price_enabled",
         readonly=False,

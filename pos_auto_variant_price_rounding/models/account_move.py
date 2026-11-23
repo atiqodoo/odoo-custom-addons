@@ -3,6 +3,7 @@
 import logging
 
 from odoo import models
+from odoo.service.model import PG_CONCURRENCY_EXCEPTIONS_TO_RETRY
 
 _logger = logging.getLogger(__name__)
 
@@ -19,8 +20,8 @@ class AccountMove(models.Model):
                 lambda line: line.product_id and line.display_type in (False, "product")
             ).mapped("product_id")
             if products:
-                snapshots[move.id] = {product.id: product.standard_price for product in products}
-                _logger.debug("[POS_AUTO_PRICE] vendor bill snapshot bill=%s costs=%s", move.display_name, snapshots[move.id])
+                snapshots[move.id] = {product.id: product.standard_price for product in products.with_company(move.company_id)}
+                _logger.debug("[POS_AUTO_PRICE][BILL][START] snapshot bill=%s costs=%s", move.display_name, snapshots[move.id])
 
         posted = super()._post(soft=soft)
 
@@ -31,12 +32,15 @@ class AccountMove(models.Model):
                 continue
             products = self.env["product.product"].browse(old_costs.keys())
             try:
-                service.with_company(move.company_id).process_products(
+                service.with_company(move.company_id)._process_products(
                     products,
                     old_cost_by_product=old_costs,
                     trigger="vendor_bill",
                     source=move,
                 )
+            except PG_CONCURRENCY_EXCEPTIONS_TO_RETRY:
+                raise
             except Exception:
-                _logger.exception("[POS_AUTO_PRICE] vendor bill processing failed for bill=%s", move.display_name)
+                _logger.exception("[POS_AUTO_PRICE][BILL][ERROR] processing failed for bill=%s", move.display_name)
+        _logger.debug("[POS_AUTO_PRICE][BILL][END] record_ids=%s", self.ids)
         return posted

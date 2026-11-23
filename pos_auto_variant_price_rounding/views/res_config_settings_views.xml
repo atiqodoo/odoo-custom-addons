@@ -19,12 +19,16 @@
                                 <field name="auto_variant_price_rounding_step"/>
                             </div>
                             <div class="row mt16">
-                                <label for="auto_variant_price_include_vat" string="Include VAT" class="col-lg-4 o_light_label"/>
+                                <label for="auto_variant_price_include_vat" string="Include Purchase Taxes" class="col-lg-4 o_light_label"/>
                                 <field name="auto_variant_price_include_vat"/>
                             </div>
                             <div class="row mt16">
-                                <label for="auto_variant_price_vat_rate" string="VAT Rate (%)" class="col-lg-4 o_light_label"/>
-                                <field name="auto_variant_price_vat_rate"/>
+                                <label for="auto_variant_price_allow_sale_fallback" class="col-lg-4 o_light_label"/>
+                                <field name="auto_variant_price_allow_sale_fallback"/>
+                            </div>
+                            <div class="row mt16">
+                                <label for="auto_variant_price_sync_interval" class="col-lg-4 o_light_label"/>
+                                <field name="auto_variant_price_sync_interval"/>
                             </div>
                         </div>
                     </setting>
