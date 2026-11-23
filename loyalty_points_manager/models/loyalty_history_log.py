@@ -37,6 +37,7 @@ class LoyaltyHistoryLog(models.Model):
         related="card_id.points",
         store=True,
         readonly=True,
+        aggregator=False,
     )
     net_points = fields.Float(
         string="Net Points",

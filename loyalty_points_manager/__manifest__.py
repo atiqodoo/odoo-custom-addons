@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Loyalty Points Manager',
-    'version': '18.0.1.0.1',
+    'version': '18.0.1.2.0',
     'category': 'Sales',
     'summary': 'Manual management of customer loyalty points with accounting integration',
     'description': """
@@ -31,11 +31,14 @@
         'sensible_pos_offline_sale_order',
     ],
     'data': [
+        'security/loyalty_audit_security.xml',
         'security/ir.model.access.csv',
         'views/res_partner_loyalty_policy_views.xml',
         'views/loyalty_tier_views.xml',
         'views/loyalty_points_adjustment_views.xml',
         'views/loyalty_history_log_views.xml',
+        'views/loyalty_audit_views.xml',
+        'views/loyalty_reporting_views.xml',
         'wizard/loyalty_points_wizard_views.xml',
     ],
     'assets': {

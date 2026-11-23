@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_loyalty_audit_line_form" model="ir.ui.view">
+        <field name="name">loyalty.audit.line.form</field>
+        <field name="model">loyalty.audit.line</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <group><field name="product_name"/><field name="category_name"/>
+                            <field name="quantity"/><field name="uom_name"/>
+                            <field name="unit_price"/><field name="discount"/><field name="amount"/></group>
+                        <group><field name="event_id"/><field name="source_model"/><field name="source_line_id"/>
+                            <field name="base_share"/><field name="method"/><field name="full_order_points"/>
+                            <field name="earned"/><field name="used"/></group>
+                    </group>
+                    <group string="Captured rule calculation"><field name="explanation" nolabel="1"/></group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_loyalty_audit_event_list" model="ir.ui.view">
+        <field name="name">loyalty.audit.event.list</field>
+        <field name="model">loyalty.audit.event</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="captured_at"/><field name="source_reference"/><field name="history_id"/><field name="trigger"/>
+                <field name="origin_session_id" optional="hide"/><field name="collection_session_id" optional="hide"/>
+                <field name="evidence_quality"/><field name="tier_name"/><field name="policy"/>
+                <field name="balance_before"/><field name="issued" sum="Issued"/>
+                <field name="used" sum="Used"/><field name="balance_after"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_loyalty_audit_event_form" model="ir.ui.view">
+        <field name="name">loyalty.audit.event.form</field>
+        <field name="model">loyalty.audit.event</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <group><field name="history_id"/><field name="card_id"/><field name="source_reference"/>
+                            <field name="source_model"/><field name="source_order_id"/>
+                            <field name="origin_session_id"/><field name="collection_session_id"/>
+                            <field name="trigger"/><field name="captured_at"/>
+                            <field name="company_id"/><field name="evidence_quality"/><field name="policy"/>
+                            <field name="tier_name"/><field name="multiplier"/><field name="reason"/></group>
+                        <group><field name="balance_before"/><field name="base_points"/>
+                            <field name="issued"/><field name="used"/><field name="balance_after"/>
+                            <field name="event_key"/><field name="create_uid"/></group>
+                    </group>
+                    <notebook>
+                        <page string="Order Lines">
+                            <field name="line_ids" readonly="1">
+                                <list create="0" edit="0" delete="0">
+                                    <field name="product_name"/><field name="quantity"/><field name="uom_name"/>
+                                    <field name="amount"/><field name="base_share"/><field name="method"/>
+                                    <field name="full_order_points" optional="hide"/>
+                                    <field name="earned" sum="Earned"/><field name="used" sum="Used"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Tier Evaluation">
+                            <field name="condition_ids" readonly="1">
+                                <list create="0" edit="0" delete="0" decoration-success="passed" decoration-danger="not passed">
+                                    <field name="tier_name"/><field name="condition_type"/><field name="operator"/>
+                                    <field name="actual"/><field name="expected"/><field name="passed"/><field name="tier_passed"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Payment / Award Gate"><field name="payment_details" readonly="1"/></page>
+                        <page string="Full Evidence"><field name="evidence_json" readonly="1"/></page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <!-- Extend the standard form too: card links and the History action can both select it. -->
+    <record id="view_loyalty_history_audit_form" model="ir.ui.view">
+        <field name="name">loyalty.history.audit.form</field>
+        <field name="model">loyalty.history</field>
+        <field name="inherit_id" ref="loyalty.loyalty_history_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="attributes">
+                <attribute name="create">0</attribute><attribute name="edit">0</attribute><attribute name="delete">0</attribute>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <group string="Loyalty Audit" groups="loyalty_points_manager.group_loyalty_auditor">
+                    <group><field name="partner_id"/><field name="program_id"/>
+                        <field name="audit_status" widget="badge"/>
+                        <field name="current_points_balance" string="Current Balance (live)"/></group>
+                    <group><field name="net_points"/><field name="create_date"/>
+                        <field name="audit_issued_difference"/><field name="audit_used_difference"/>
+                        <field name="company_id" groups="base.group_multi_company"/></group>
+                </group>
+                <div class="alert alert-info" groups="loyalty_points_manager.group_loyalty_auditor"
+                     invisible="audit_status != 'unavailable'">
+                    No original calculation snapshot is available. Current source lines below are reference values only.
+                </div>
+                <notebook groups="loyalty_points_manager.group_loyalty_auditor">
+                    <page string="Order Line Audit">
+                        <p>Base shares are allocations of the authoritative order total, not independently calculated base-rule awards.
+                           Open a line for captured rule details; open an event for tier evaluations and balance snapshots.</p>
+                        <field name="audit_line_ids" readonly="1">
+                            <list create="0" edit="0" delete="0">
+                                <field name="event_id"/><field name="product_name"/><field name="quantity"/>
+                                <field name="uom_name"/><field name="amount"/><field name="base_share"/>
+                                <field name="method"/><field name="earned" sum="Earned"/><field name="used" sum="Used"/>
+                            </list>
+                        </field>
+                    </page>
+                    <page string="Audit Events"><field name="audit_event_ids" readonly="1"/></page>
+                    <page string="Current Source Lines"><field name="current_source_lines_html" nolabel="1"/></page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+    <record id="action_lpm_history_audit_list" model="ir.actions.act_window.view">
+        <field name="sequence">0</field><field name="view_mode">list</field>
+        <field name="view_id" ref="view_lpm_loyalty_history_log_list"/>
+        <field name="act_window_id" ref="action_lpm_loyalty_history_log"/>
+    </record>
+    <record id="action_lpm_history_audit_form" model="ir.actions.act_window.view">
+        <field name="sequence">1</field><field name="view_mode">form</field>
+        <field name="view_id" ref="loyalty.loyalty_history_form"/>
+        <field name="act_window_id" ref="action_lpm_loyalty_history_log"/>
+    </record>
+    <record id="action_lpm_audit_events" model="ir.actions.act_window">
+        <field name="name">Audit Events</field><field name="res_model">loyalty.audit.event</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_lpm_audit_events" name="Audit Events" parent="menu_loyalty_points_root"
+              action="action_lpm_audit_events" groups="loyalty_points_manager.group_loyalty_auditor" sequence="31"/>
+</odoo>

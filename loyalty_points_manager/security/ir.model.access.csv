@@ -9,3 +9,9 @@ access_loyalty_tier_condition_user,loyalty.tier.condition.user,model_loyalty_tie
 access_loyalty_tier_condition_manager,loyalty.tier.condition.manager,model_loyalty_tier_condition,sales_team.group_sale_manager,1,1,1,1
 access_loyalty_tier_product_rule_user,loyalty.tier.product.rule.user,model_loyalty_tier_product_rule,base.group_user,1,0,0,0
 access_loyalty_tier_product_rule_manager,loyalty.tier.product.rule.manager,model_loyalty_tier_product_rule,sales_team.group_sale_manager,1,1,1,1
+access_loyalty_audit_event,loyalty.audit.event.auditor,model_loyalty_audit_event,loyalty_points_manager.group_loyalty_auditor,1,0,0,0
+access_loyalty_audit_line,loyalty.audit.line.auditor,model_loyalty_audit_line,loyalty_points_manager.group_loyalty_auditor,1,0,0,0
+access_loyalty_audit_condition,loyalty.audit.condition.auditor,model_loyalty_audit_condition,loyalty_points_manager.group_loyalty_auditor,1,0,0,0
+access_loyalty_customer_report,loyalty.customer.report.auditor,model_loyalty_customer_report,loyalty_points_manager.group_loyalty_auditor,1,0,0,0
+access_loyalty_movement_report,loyalty.movement.report.auditor,model_loyalty_movement_report,loyalty_points_manager.group_loyalty_auditor,1,0,0,0
+access_loyalty_report_options,loyalty.report.options.auditor,model_loyalty_report_options,loyalty_points_manager.group_loyalty_auditor,1,1,1,1

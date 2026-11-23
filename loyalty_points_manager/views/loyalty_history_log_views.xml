@@ -16,7 +16,7 @@
                 <field name="partner_id"/>
                 <field name="program_id"/>
                 <field name="card_id" string="Loyalty Card"/>
-                <field name="current_points_balance" sum="Current Balance"/>
+                <field name="current_points_balance"/>
                 <field name="source_type"/>
                 <field name="source_reference"/>
                 <field name="description"/>
@@ -132,7 +132,6 @@
                 <field name="issued" type="measure"/>
                 <field name="used" type="measure"/>
                 <field name="net_points" type="measure"/>
-                <field name="current_points_balance" type="measure"/>
             </pivot>
         </field>
     </record>
@@ -146,7 +145,6 @@
                 <field name="issued" type="measure"/>
                 <field name="used" type="measure"/>
                 <field name="net_points" type="measure"/>
-                <field name="current_points_balance" type="measure"/>
             </graph>
         </field>
     </record>

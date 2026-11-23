@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_loyalty_report_options" model="ir.ui.view">
+        <field name="name">loyalty.report.options.form</field><field name="model">loyalty.report.options</field>
+        <field name="arch" type="xml">
+            <form string="Loyalty Report Options">
+                <group><field name="report_type"/><field name="date_from"/><field name="date_to"/>
+                    <field name="as_of"/><field name="dormant_days"/></group>
+                <p>Period dates select point movements. Balance As Of selects the historical closing balance.
+                   Zero inactivity days disables dormancy. Purchase activity uses qualifying confirmed/paid orders.</p>
+                <footer><button name="action_open_report" type="object" string="Open Report" class="btn-primary"/>
+                    <button special="cancel" string="Cancel"/></footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_loyalty_report_options" model="ir.actions.act_window">
+        <field name="name">Loyalty Report Options</field><field name="res_model">loyalty.report.options</field>
+        <field name="view_mode">form</field><field name="target">new</field>
+    </record>
+    <record id="view_loyalty_customer_report_list" model="ir.ui.view">
+        <field name="name">loyalty.customer.report.list</field><field name="model">loyalty.customer.report</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" default_order="current_balance desc" decoration-warning="dormant">
+                <header><button name="%(action_loyalty_report_options)d" type="action" string="Report Options" display="always"/></header>
+                <field name="partner_id"/><field name="program_id"/>
+                <field name="current_balance" sum="Current Balance"/>
+                <field name="balance_as_of" sum="Known Closing Balances"/><field name="as_of_date"/>
+                <field name="balance_quality" widget="badge"/>
+                <field name="peak_recorded_balance" optional="hide"/><field name="peak_date" optional="hide"/>
+                <field name="peak_quality" optional="hide"/><field name="historical_coverage_start" optional="hide"/>
+                <field name="lifetime_issued" sum="Recorded Issued" optional="hide"/>
+                <field name="lifetime_used" sum="Recorded Used"/>
+                <field name="period_issued" sum="Period Issued"/><field name="period_used" sum="Period Used"/>
+                <field name="last_purchase"/><field name="days_since_purchase"/>
+                <field name="dormant_days" optional="hide"/><field name="dormant"/>
+                <field name="never_purchased" optional="hide"/><field name="never_redeemed" optional="hide"/>
+                <field name="last_earning" optional="hide"/><field name="last_redemption" optional="hide"/>
+                <field name="card_count" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_loyalty_customer_report_form" model="ir.ui.view">
+        <field name="name">loyalty.customer.report.form</field><field name="model">loyalty.customer.report</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <header><button name="action_open_movements" type="object" string="Point Movements" class="btn-primary"/></header>
+                <sheet>
+                    <group><group><field name="partner_id"/><field name="program_id"/><field name="company_id"/>
+                        <field name="card_count"/><field name="current_balance"/></group>
+                        <group><field name="as_of_date"/><field name="balance_as_of"/><field name="balance_quality"/>
+                            <field name="peak_recorded_balance"/><field name="peak_date"/><field name="peak_quality"/>
+                            <field name="historical_coverage_start"/></group></group>
+                    <group><group string="Point Movements"><field name="lifetime_issued"/><field name="lifetime_used"/>
+                        <field name="lifetime_adjustments"/><field name="period_issued"/><field name="period_used"/></group>
+                        <group string="Activity"><field name="last_purchase"/><field name="days_since_purchase"/>
+                            <field name="last_earning"/><field name="last_redemption"/><field name="dormant_days"/>
+                            <field name="dormant"/><field name="never_purchased"/><field name="never_redeemed"/></group></group>
+                    <p>Historical values cover the stated evidence interval. Insufficient history is not a zero balance.
+                       Reconstructed history uses legacy record creation dates, which may differ from actual movement times.
+                       Compare or total balances within the same loyalty program.</p>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_loyalty_customer_report_search" model="ir.ui.view">
+        <field name="name">loyalty.customer.report.search</field><field name="model">loyalty.customer.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/><field name="program_id"/><field name="current_balance"/>
+                <field name="balance_as_of"/><field name="peak_recorded_balance"/><field name="lifetime_used"/>
+                <field name="period_used"/><field name="days_since_purchase"/>
+                <filter name="positive" string="Positive Balance" domain="[('current_balance', '&gt;', 0)]"/>
+                <filter name="zero" string="Zero Balance" domain="[('current_balance', '=', 0)]"/>
+                <filter name="negative" string="Negative Balance" domain="[('current_balance', '&lt;', 0)]"/>
+                <separator/>
+                <filter name="dormant" string="Dormant Purchasers" domain="[('dormant', '=', True)]"/>
+                <filter name="dormant_balance" string="Dormant with Points" domain="[('dormant', '=', True), ('current_balance', '&gt;', 0)]"/>
+                <filter name="never_purchased" string="Never Purchased" domain="[('never_purchased', '=', True)]"/>
+                <filter name="never_redeemed" string="Never Redeemed" domain="[('never_redeemed', '=', True)]"/>
+                <separator/>
+                <filter name="known_history" string="Known Historical Balance" domain="[('balance_quality', '!=', 'unavailable')]"/>
+                <filter name="unknown_history" string="Insufficient History" domain="[('balance_quality', '=', 'unavailable')]"/>
+                <filter name="known_peak" string="Known Recorded Peak" domain="[('peak_quality', '!=', 'unavailable')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_customer" string="Customer" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_program" string="Program" context="{'group_by': 'program_id'}"/>
+                    <filter name="group_company" string="Company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                    <filter name="group_dormant" string="Dormancy" context="{'group_by': 'dormant'}"/>
+                    <filter name="group_quality" string="Balance Evidence" context="{'group_by': 'balance_quality'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_loyalty_customer_report_pivot" model="ir.ui.view">
+        <field name="name">loyalty.customer.report.pivot</field><field name="model">loyalty.customer.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Customer Loyalty Summary">
+                <field name="partner_id" type="row"/><field name="program_id" type="col"/>
+                <field name="current_balance" type="measure"/><field name="period_used" type="measure"/>
+                <field name="lifetime_used" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_loyalty_customer_report_graph" model="ir.ui.view">
+        <field name="name">loyalty.customer.report.graph</field><field name="model">loyalty.customer.report</field>
+        <field name="arch" type="xml">
+            <graph string="Customer Loyalty Balances" type="bar">
+                <field name="partner_id"/><field name="current_balance" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="action_loyalty_customer_report" model="ir.actions.act_window">
+        <field name="name">Customer Loyalty Summary</field><field name="res_model">loyalty.customer.report</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="search_view_id" ref="view_loyalty_customer_report_search"/>
+    </record>
+    <record id="view_loyalty_movement_report_list" model="ir.ui.view">
+        <field name="name">loyalty.movement.report.list</field><field name="model">loyalty.movement.report</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <header><button name="%(action_loyalty_report_options)d" type="action" string="Report Options"
+                    context="{'default_report_type': 'movements'}" display="always"/></header>
+                <field name="date"/><field name="partner_id"/><field name="program_id"/>
+                <field name="source_type"/><field name="source_reference"/>
+                <field name="origin_session_id"/><field name="collection_session_id" optional="hide"/>
+                <field name="issued" sum="Issued"/><field name="used" sum="Used"/>
+                <field name="adjustment_points" sum="Adjustments" optional="hide"/><field name="net_points" sum="Net"/>
+                <field name="date_quality"/><field name="evidence_quality" optional="hide"/>
+                <field name="event_id" optional="hide"/><field name="history_id" optional="hide"/>
+                <field name="pos_order_id" optional="hide"/><field name="sale_order_id" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_loyalty_movement_report_search" model="ir.ui.view">
+        <field name="name">loyalty.movement.report.search</field><field name="model">loyalty.movement.report</field>
+        <field name="arch" type="xml">
+            <search><field name="partner_id"/><field name="program_id"/><field name="source_reference"/>
+                <field name="origin_session_id"/><field name="collection_session_id"/>
+                <field name="pos_order_id"/><field name="sale_order_id"/>
+                <filter name="used" string="Used Points" domain="[('used', '&gt;', 0)]"/>
+                <filter name="issued" string="Issued Points" domain="[('issued', '&gt;', 0)]"/>
+                <separator/><filter name="pos" string="POS" domain="[('source_type', '=', 'pos')]"/>
+                <filter name="sale" string="Sales" domain="[('source_type', '=', 'sale')]"/>
+                <separator/><filter name="captured" string="Captured Movement Time" domain="[('date_quality', '=', 'captured')]"/>
+                <filter name="legacy" string="Legacy Dates" domain="[('date_quality', '=', 'reconstructed')]"/>
+                <separator/><filter name="date" string="Movement Date" date="date"/>
+                <group expand="0" string="Group By">
+                    <filter name="customer" string="Customer" context="{'group_by': 'partner_id'}"/>
+                    <filter name="program" string="Program" context="{'group_by': 'program_id'}"/>
+                    <filter name="order" string="Order Reference" context="{'group_by': 'source_reference'}"/>
+                    <filter name="pos_order" string="POS Order" context="{'group_by': 'pos_order_id'}"/>
+                    <filter name="sale_order" string="Sales Order" context="{'group_by': 'sale_order_id'}"/>
+                    <filter name="session" string="Order POS Session" context="{'group_by': 'origin_session_id'}"/>
+                    <filter name="collection" string="COD Collection Session" context="{'group_by': 'collection_session_id'}"/>
+                    <filter name="month" string="Month" context="{'group_by': 'date:month'}"/>
+                    <filter name="source" string="Source" context="{'group_by': 'source_type'}"/>
+                    <filter name="company" string="Company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_loyalty_movement_report_pivot" model="ir.ui.view">
+        <field name="name">loyalty.movement.report.pivot</field><field name="model">loyalty.movement.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Loyalty Point Movements">
+                <field name="partner_id" type="row"/><field name="date" interval="month" type="col"/>
+                <field name="issued" type="measure"/><field name="used" type="measure"/><field name="net_points" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_loyalty_movement_report_graph" model="ir.ui.view">
+        <field name="name">loyalty.movement.report.graph</field><field name="model">loyalty.movement.report</field>
+        <field name="arch" type="xml">
+            <graph string="Loyalty Activity" type="bar">
+                <field name="date" interval="month"/><field name="issued" type="measure"/><field name="used" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="action_loyalty_movement_report" model="ir.actions.act_window">
+        <field name="name">Loyalty Point Movements</field><field name="res_model">loyalty.movement.report</field>
+        <field name="view_mode">list,pivot,graph</field><field name="search_view_id" ref="view_loyalty_movement_report_search"/>
+    </record>
+    <menuitem id="menu_loyalty_reporting" name="Reporting" parent="menu_loyalty_points_root"
+        groups="loyalty_points_manager.group_loyalty_auditor" sequence="40"/>
+    <menuitem id="menu_loyalty_customer_report" name="Customer Summary" parent="menu_loyalty_reporting"
+        action="action_loyalty_customer_report" sequence="10"/>
+    <menuitem id="menu_loyalty_movement_report" name="Point Movements" parent="menu_loyalty_reporting"
+        action="action_loyalty_movement_report" sequence="20"/>
+    <menuitem id="menu_loyalty_report_options" name="Report Options" parent="menu_loyalty_reporting"
+        action="action_loyalty_report_options" sequence="30"/>
+</odoo>

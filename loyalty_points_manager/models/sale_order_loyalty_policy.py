@@ -5,6 +5,7 @@ from collections import defaultdict
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 from odoo.fields import Command
+from .loyalty_audit import _audit_result_summary
 
 _logger = logging.getLogger(__name__)
 
@@ -97,8 +98,18 @@ class SaleOrderLoyaltyPolicy(models.Model):
         return points_per_coupon
 
     def _action_cancel(self):
+        evidence = {}
+        for order in self.filtered(lambda record: record.state == 'sale'):
+            events = self.env['loyalty.audit.event'].sudo().search([
+                ('history_id.order_model', '=', order._name), ('history_id.order_id', '=', order.id),
+            ])
+            evidence[order.id] = (events, {card.id: card.points for card in events.card_id})
         awarded = self.filtered("lpm_backend_loyalty_awarded")
         res = super()._action_cancel()
+        for order in self:
+            if order.id in evidence:
+                events, before_by_card = evidence[order.id]
+                events._record_cancellation(order, before_by_card)
         if awarded:
             awarded.sudo().write({
                 "lpm_backend_loyalty_awarded": False,
@@ -136,7 +147,12 @@ class SaleOrderLoyaltyPolicy(models.Model):
             })
 
         if create_values:
-            self.env["loyalty.history"].sudo().create(create_values)
+            histories = self.env["loyalty.history"].sudo().create(create_values)
+            for history in histories:
+                self.env["loyalty.audit.event"]._record(
+                    history, self, event_key="sale_redeem:%s" % history.id,
+                    trigger="Sales confirmation redemption", before=history.card_id.points,
+                )
             _logger.info(
                 "%s CONFIRM_HISTORY_USED_ONLY | order=%s | order_id=%s | rows=%s",
                 _SO_HEAD,
@@ -281,7 +297,7 @@ class SaleOrderLoyaltyPolicy(models.Model):
                     self.id,
                     coupon_point.coupon_id.id,
                     base_points,
-                    tier_result,
+                    _audit_result_summary(tier_result),
                 )
                 continue
 
@@ -312,6 +328,12 @@ class SaleOrderLoyaltyPolicy(models.Model):
                     "used": 0.0,
                 })
 
+            self.env["loyalty.audit.event"]._record(
+                history, self, tier_result, event_key="sale_award:%s:%s" % (self.id, card.id),
+                trigger="Sales award: %s" % trigger, issued=points, used=0.0, before=before,
+                extra={"delivery_status": self.delivery_status, "invoice_status": self.invoice_status,
+                       "paid": self._lpm_is_fully_paid_for_loyalty()},
+            )
             issued_rows.append({
                 "card_id": card.id,
                 "base_issued": base_points,
@@ -319,7 +341,7 @@ class SaleOrderLoyaltyPolicy(models.Model):
                 "before": before,
                 "after": after,
                 "history_id": history.id,
-                "tier_result": tier_result,
+                "tier_result": _audit_result_summary(tier_result),
             })
 
         if issued_rows:

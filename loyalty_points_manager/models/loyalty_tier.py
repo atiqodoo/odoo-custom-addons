@@ -5,6 +5,7 @@ import operator
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+from .loyalty_audit import _AuditCapture
 
 _logger = logging.getLogger(__name__)
 
@@ -157,6 +158,25 @@ class LoyaltyTierEngine(models.AbstractModel):
     _description = "Loyalty Tier Engine"
 
     def lpm_apply_tier_earning_policy(self, partner, program, source_order, base_points, source_label=None):
+        # Collect evidence from the actual calculation, before any card mutation.
+        _logger.debug("[LPM][TIER_AUDIT][START] source=%s program_id=%s", source_label, program.id)
+        trace = _AuditCapture({"evaluations": [], "product_lines": {}, "fallback_lines": []})
+        engine = self.with_context(lpm_tier_audit_trace=trace)
+        try:
+            result = engine._lpm_apply_tier_earning_policy(
+                partner, program, source_order, base_points, source_label=source_label,
+            )
+            result["audit"] = self.env["loyalty.audit.event"]._prepare_evidence(
+                source_order, program, result, trace,
+            )
+        except Exception:
+            _logger.exception("[LPM][TIER_AUDIT][ERROR] source=%s program_id=%s", source_label, program.id)
+            raise
+        _logger.debug("[LPM][TIER_AUDIT][END] source=%s program_id=%s final_points=%s",
+                      source_label, program.id, result["final_points"])
+        return result
+
+    def _lpm_apply_tier_earning_policy(self, partner, program, source_order, base_points, source_label=None):
         partner = partner.commercial_partner_id or partner
         program = program.sudo()
         base_points = float(base_points or 0.0)
@@ -237,6 +257,9 @@ class LoyaltyTierEngine(models.AbstractModel):
                 matched |= tier
 
         selected = matched[-1:] if matched else self.env["loyalty.tier"]
+        trace = self.env.context.get("lpm_tier_audit_trace")
+        if trace is not None:
+            trace["evaluations"] = evaluations
         _logger.info(
             "%s RESULT | source=%s | partner=%s | partner_id=%s | program=%s | program_id=%s "
             "| selected_tier=%s | selected_tier_id=%s | evaluations=%s",
@@ -428,6 +451,7 @@ class LoyaltyTierEngine(models.AbstractModel):
         rules = rules or tier.product_rule_ids.filtered("active").sorted(lambda rule: (rule.sequence, rule.id))
         line_total = 0.0
         matched_rule_ids = []
+        rule_details = []
         for rule in rules:
             if not self._lpm_product_rule_matches_line(rule, line):
                 continue
@@ -438,6 +462,15 @@ class LoyaltyTierEngine(models.AbstractModel):
             line_points = qty * float(rule.points_per_qty or 0.0) + amount * float(rule.points_per_amount or 0.0)
             line_total += line_points
             matched_rule_ids.append(rule.id)
+            rule_details.append({
+                "rule_id": rule.id, "quantity_in_rule_uom": qty,
+                "uom": rule.uom_id.display_name, "points_per_qty": rule.points_per_qty,
+                "points_per_amount": rule.points_per_amount, "amount": amount,
+                "points": line_points, "minimum_qty": rule.min_qty,
+                "stop_at_first_match": rule.stop_at_first_match,
+                "category": rule.categ_id.display_name,
+                "product": rule.product_id.display_name or rule.product_tmpl_id.display_name,
+            })
             _logger.debug(
                 "%s PRODUCT_RULE | source=%s | tier_id=%s | rule_id=%s | line_id=%s "
                 "| product_id=%s | qty=%.6f | amount=%.6f | line_points=%.6f",
@@ -453,6 +486,11 @@ class LoyaltyTierEngine(models.AbstractModel):
             )
             if rule.stop_at_first_match:
                 break
+        trace = self.env.context.get("lpm_tier_audit_trace")
+        if trace is not None:
+            trace["product_lines"][str(line.id)] = {
+                "points": round(line_total, 6), "rules": rule_details,
+            }
         return {
             "points": round(line_total, 6),
             "matched": bool(matched_rule_ids),
@@ -508,6 +546,9 @@ class LoyaltyTierEngine(models.AbstractModel):
                 })
 
             final_points = round(total, 6)
+            trace = self.env.context.get("lpm_tier_audit_trace")
+            if trace is not None:
+                trace["fallback_lines"] = details
             _logger.info(
                 "%s VARIANT_FALLBACK_END | source=%s | tier_id=%s | base_points=%.6f "
                 "| final_points=%.6f | details=%s",
@@ -595,6 +636,9 @@ class LoyaltyTierEngine(models.AbstractModel):
         }
 
     def _lpm_log_apply(self, partner, program, source_order, base_points, final_points, policy=None, reason=None, source_label=None):
+        trace = self.env.context.get("lpm_tier_audit_trace")
+        if trace is not None:
+            trace["reason"] = reason
         _logger.info(
             "%s SKIPPED | source=%s | partner=%s | partner_id=%s | program=%s | program_id=%s "
             "| policy=%s | reason=%s | base=%.6f | final=%.6f",

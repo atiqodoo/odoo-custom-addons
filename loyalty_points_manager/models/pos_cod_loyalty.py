@@ -3,6 +3,7 @@ import logging
 import json
 
 from odoo import api, fields, models
+from .loyalty_audit import _AuditCapture, _audit_result_summary
 
 _logger = logging.getLogger(__name__)
 
@@ -25,7 +26,10 @@ class PosOrderCodLoyalty(models.Model):
             try:
                 order = self._lpm_resolve_cod_order_from_result(result)
                 if order:
-                    loyalty_result = order._lpm_award_cod_payment_points(result)
+                    # A successful collection may survive a loyalty error, but
+                    # the card movement and its evidence must succeed together.
+                    with self.env.cr.savepoint():
+                        loyalty_result = order._lpm_award_cod_payment_points(result)
                     if loyalty_result:
                         result['loyalty_points'] = loyalty_result
             except Exception as exc:
@@ -58,6 +62,9 @@ class PosOrderCodLoyalty(models.Model):
         return self.browse()
 
     def _lpm_award_cod_payment_points(self, result):
+        return self.with_context(lpm_cod_audit_results=_AuditCapture({}))._lpm_award_cod_payment_points_with_audit(result)
+
+    def _lpm_award_cod_payment_points_with_audit(self, result):
         self.ensure_one()
         if not self.is_cod or not self.partner_id:
             return False
@@ -120,7 +127,7 @@ class PosOrderCodLoyalty(models.Model):
             row = self.env.cr.fetchone()
             before = float(row[0] if row else (card.points or 0.0))
             card.sudo().write({'points': before + delta})
-            self.env['loyalty.history'].sudo().create({
+            history = self.env['loyalty.history'].sudo().create({
                 'card_id': card.id,
                 'order_model': self._name,
                 'order_id': self.id,
@@ -128,6 +135,18 @@ class PosOrderCodLoyalty(models.Model):
                 'issued': delta,
                 'used': 0.0,
             })
+            snapshot = self._lpm_cod_tier_snapshots().get(str(program.id))
+            tier_result = self.env.context.get('lpm_cod_audit_results', {}).get(program.id) or snapshot
+            self.env['loyalty.audit.event']._record(
+                history, self, tier_result, event_key='cod:%s' % history.id,
+                trigger='COD payment collection', before=before,
+                extra={'payment_amount': payment_amount, 'cumulative_paid': cumulative_paid,
+                       'collection_session_id': self.cod_collection_session_id.id,
+                       'paid_ratio': paid_ratio, 'previously_issued': already_issued,
+                       'target_issued': target_issued, 'tier_full_points': tier_full_points,
+                       'freeze_policy': program.lpm_cod_tier_freeze_policy,
+                       'evidence_available': bool(tier_result and tier_result.get('audit'))},
+            )
             updates.append({
                 'program_id': program.id,
                 'program_name': program.display_name,
@@ -155,9 +174,14 @@ class PosOrderCodLoyalty(models.Model):
 
     def _lpm_cod_tier_adjusted_full_points(self, program, full_points):
         self.ensure_one()
-        if program.lpm_tier_earning_policy == "none":
+        if program.lpm_tier_earning_policy == 'none':
+            tier_result = self.env['loyalty.tier.engine'].lpm_apply_tier_earning_policy(
+                self.partner_id, program, self, full_points, source_label='cod_payment_collection',
+            )
+            audit_results = self.env.context.get('lpm_cod_audit_results')
+            if audit_results is not None:
+                audit_results[program.id] = tier_result
             return full_points
-
         snapshots = self._lpm_cod_tier_snapshots()
         program_key = str(program.id)
         if program.lpm_cod_tier_freeze_policy == "order" and program_key in snapshots:
@@ -170,7 +194,7 @@ class PosOrderCodLoyalty(models.Model):
                 program.id,
                 full_points,
                 float(snapshot.get("final_points") or full_points),
-                snapshot,
+                _audit_result_summary(snapshot),
             )
             return float(snapshot.get("final_points") or full_points)
 
@@ -182,6 +206,9 @@ class PosOrderCodLoyalty(models.Model):
             source_label="cod_payment_collection",
         )
         final_points = float(tier_result["final_points"] or 0.0)
+        audit_results = self.env.context.get('lpm_cod_audit_results')
+        if audit_results is not None:
+            audit_results[program.id] = tier_result
         if program.lpm_cod_tier_freeze_policy == "order":
             snapshots[program_key] = tier_result
             self.sudo().write({"lpm_cod_tier_snapshot_json": json.dumps(snapshots, sort_keys=True)})
@@ -193,7 +220,7 @@ class PosOrderCodLoyalty(models.Model):
                 program.id,
                 full_points,
                 final_points,
-                tier_result,
+                _audit_result_summary(tier_result),
             )
         return final_points
 

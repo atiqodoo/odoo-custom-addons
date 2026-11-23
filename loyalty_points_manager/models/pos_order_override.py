@@ -3,6 +3,7 @@ import logging
 from odoo import _, models, api
 from odoo.exceptions import ValidationError
 from odoo.tools import float_is_zero
+from .loyalty_audit import _AUDIT_CONTEXT_TOKEN, _AuditCapture, _audit_result_summary
 
 _logger = logging.getLogger(__name__)
 
@@ -301,7 +302,12 @@ class PosOrderLoyaltyOverride(models.Model):
                 'order_model': sale_order._name,
                 'order_id': sale_order.id,
             })
-        self.env['loyalty.history'].sudo().create(history_vals)
+        history = self.env['loyalty.history'].sudo().create(history_vals)
+        if sale_order:
+            self.env['loyalty.audit.event']._record(
+                history, sale_order, event_key='intercept:%s' % history.id,
+                trigger='POS to Sales redemption',
+            )
 
     # -------------------------------------------------------------------------
     # Zero-payment earning guard — mirrors frontend order_model_patch.js
@@ -326,6 +332,9 @@ class PosOrderLoyaltyOverride(models.Model):
         coupon_data keys may be str or int (JSON always sends str; Odoo internals
         may pass int).  All key comparisons are normalised to str.
         """
+        # Evidence belongs to the server, never to a submitted UI payload.
+        coupon_data = {key: {k: v for k, v in vals.items() if k != '_lpm_audit_result'}
+                       for key, vals in coupon_data.items()}
         precision = (self.currency_id.rounding if self.currency_id else None) or 0.01
 
         _logger.info(
@@ -474,7 +483,37 @@ class PosOrderLoyaltyOverride(models.Model):
              for k, v in coupon_data.items()},
         )
 
-        return super().confirm_coupon_programs(coupon_data)
+        return super(PosOrderLoyaltyOverride, self.with_context(
+            lpm_audit_coupons=_AuditCapture({str(key): vals for key, vals in coupon_data.items()}),
+            lpm_audit_token=_AUDIT_CONTEXT_TOKEN,
+        )).confirm_coupon_programs(coupon_data)
+
+    def add_loyalty_history_lines(self, coupon_data, coupon_updates):
+        """Attach evidence after standard history creation resolves new card IDs."""
+        self.ensure_one()
+        audit = (self.env.context.get('lpm_audit_coupons', {})
+                 if self.env.context.get('lpm_audit_token') is _AUDIT_CONTEXT_TOKEN else {})
+        id_mapping = {int(row['old_id']): int(row['id']) for row in coupon_updates}
+        results = {}
+        corrected = []
+        for row in coupon_data:
+            original_id = int(row['card_id'])
+            vals = audit.get(str(original_id), {})
+            card_id = id_mapping.get(original_id, original_id)
+            results[card_id] = vals.get('_lpm_audit_result')
+            # Standard history derives issued/used from the net delta. Retain
+            # both movements for transactions that earn and redeem together.
+            corrected.append({**row, 'won': vals.get('won', row['won']),
+                              'spent': vals.get('spent', row['spent'])})
+        domain = [('order_model', '=', self._name), ('order_id', '=', self.id)]
+        previous = self.env['loyalty.history'].sudo().search(domain)
+        result = super().add_loyalty_history_lines(corrected, coupon_updates)
+        for history in self.env['loyalty.history'].sudo().search(domain) - previous:
+            self.env['loyalty.audit.event']._record(
+                history, self, results.get(history.card_id.id),
+                event_key='pos:%s' % history.id, trigger='POS confirmation',
+            )
+        return result
 
     def _lpm_apply_tier_earning_policy_to_coupon_data(self, coupon_data):
         self.ensure_one()
@@ -492,7 +531,7 @@ class PosOrderLoyaltyOverride(models.Model):
                 continue
 
             program = self._lpm_program_from_coupon_data(coupon_key, vals)
-            if not program or program.lpm_tier_earning_policy == "none":
+            if not program:
                 adjusted[coupon_key] = vals
                 continue
 
@@ -519,9 +558,10 @@ class PosOrderLoyaltyOverride(models.Model):
                 final_won,
                 spent,
                 new_points,
-                tier_result,
+                _audit_result_summary(tier_result),
             )
-            adjusted[coupon_key] = {**vals, 'won': final_won, 'points': new_points}
+            adjusted[coupon_key] = {**vals, 'won': final_won, 'points': new_points,
+                                    '_lpm_audit_result': tier_result}
         return adjusted
 
     def _lpm_program_from_coupon_data(self, coupon_key, vals):
