@@ -4,6 +4,7 @@ from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
 
 from .res_partner import VENDOR_PROFILE_GAMMA
+from .promotion_waiver import WAIVER_TYPES
 
 
 _logger = logging.getLogger(__name__)
@@ -65,6 +66,8 @@ class AccountMove(models.Model):
         copy=False,
         tracking=True,
     )
+    promotion_waiver_type = fields.Selection(WAIVER_TYPES, string='Waiver Type', copy=False)
+    promotion_waiver_ids = fields.One2many('vendor.promotion.waiver', 'bill_id', string='Waiver Audit', readonly=True)
     promotion_release_approved_by_id = fields.Many2one(
         'res.users',
         string='Promotion Release Approved By',
@@ -216,12 +219,20 @@ class AccountMove(models.Model):
     def action_waive_promotion_hold(self):
         for move in self:
             move._check_promotion_release_access()
-            if not move.promotion_release_reason:
+            if not (move.promotion_release_reason or '').strip():
                 raise ValidationError(_('Enter a release/waiver reason before approving early payment.'))
+            if not move.promotion_waiver_type:
+                raise ValidationError(_('Select a promotion waiver type.'))
+            if not move.promotion_payment_hold:
+                raise ValidationError(_('This bill has no active promotion payment hold.'))
+            approved_at = fields.Datetime.now()
+            self.env['vendor.promotion.waiver']._record_approved_waivers(
+                move, move.promotion_waiver_type, move.promotion_release_reason, approved_at
+            )
             move.write({
                 'promotion_release_state': 'waived',
                 'promotion_release_approved_by_id': self.env.user.id,
-                'promotion_release_approved_at': fields.Datetime.now(),
+                'promotion_release_approved_at': approved_at,
             })
             move._sync_promotion_payment_hold()
             _logger.warning(

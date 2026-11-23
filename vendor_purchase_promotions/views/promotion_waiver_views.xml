@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_promotion_waiver_search" model="ir.ui.view">
+        <field name="name">vendor.promotion.waiver.search</field>
+        <field name="model">vendor.promotion.waiver</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="bill_id"/><field name="purchase_id"/><field name="partner_id"/>
+                <field name="promotion_id"/><field name="approved_by_id"/><field name="waiver_type"/>
+                <filter name="open" string="FOC Outstanding" domain="[('fulfillment_state', 'in', ['awaiting', 'partial', 'cancelled'])]"/>
+                <filter name="fulfilled" string="FOC Fulfilled" domain="[('fulfillment_state', '=', 'fulfilled')]"/>
+                <filter name="approved_date" string="Approval Date" date="approved_at"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_type" string="Waiver Type" context="{'group_by': 'waiver_type'}"/>
+                    <filter name="group_vendor" string="Vendor" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_purchase" string="Purchase" context="{'group_by': 'purchase_id'}"/>
+                    <filter name="group_bill" string="Bill" context="{'group_by': 'bill_id'}"/>
+                    <filter name="group_approver" string="Approver" context="{'group_by': 'approved_by_id'}"/>
+                    <filter name="group_date" string="Approval Month" context="{'group_by': 'approved_at:month'}"/>
+                    <filter name="group_company" string="Company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_promotion_waiver_list" model="ir.ui.view">
+        <field name="name">vendor.promotion.waiver.list</field><field name="model">vendor.promotion.waiver</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false" delete="false">
+                <field name="approved_at"/><field name="bill_id"/><field name="purchase_id"/>
+                <field name="partner_id"/><field name="promotion_id"/><field name="waiver_type"/>
+                <field name="charged_qty"/><field name="charged_received_qty"/><field name="promised_foc_qty"/>
+                <field name="received_foc_qty"/><field name="outstanding_foc_qty"/><field name="fulfillment_state"/>
+                <field name="approved_by_id"/><field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_promotion_waiver_form" model="ir.ui.view">
+        <field name="name">vendor.promotion.waiver.form</field><field name="model">vendor.promotion.waiver</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false" delete="false"><sheet>
+                <group><group string="Approval">
+                    <field name="bill_id"/><field name="purchase_id"/><field name="partner_id"/>
+                    <field name="waiver_type"/><field name="reason"/><field name="approved_by_id"/><field name="approved_at"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                </group><group string="Quantities at Approval">
+                    <field name="charged_qty"/><field name="charged_received_qty"/><field name="promised_foc_qty"/>
+                    <field name="received_foc_qty"/><field name="outstanding_foc_qty"/><field name="fulfillment_state"/>
+                </group></group>
+                <group string="Linked Documents"><field name="application_id"/><field name="promotion_id"/>
+                    <field name="charged_line_ids" widget="many2many_tags"/><field name="foc_line_id"/>
+                    <field name="picking_ids" widget="many2many_tags"/><field name="receipt_log_ids" widget="many2many_tags"/>
+                </group>
+            </sheet></form>
+        </field>
+    </record>
+    <record id="action_promotion_waiver" model="ir.actions.act_window">
+        <field name="name">Promotion Waiver Register</field><field name="res_model">vendor.promotion.waiver</field>
+        <field name="view_mode">list,form</field><field name="search_view_id" ref="view_promotion_waiver_search"/>
+        <field name="context">{'create': False}</field>
+    </record>
+    <menuitem id="menu_promotion_waiver" name="Promotion Waiver Register"
+              parent="purchase.menu_procurement_management" action="action_promotion_waiver"
+              groups="purchase.group_purchase_user,account.group_account_user" sequence="72"/>
+</odoo>

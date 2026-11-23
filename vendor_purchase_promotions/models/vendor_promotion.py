@@ -372,6 +372,18 @@ class VendorPurchasePromotionApplication(models.Model):
     product_id = fields.Many2one('product.product', required=True, index=True)
     charged_qty = fields.Float(required=True)
     promised_foc_qty = fields.Float(required=True)
+    charged_received_qty = fields.Float(
+        string='Charged Quantity Received',
+        compute='_compute_charged_progress',
+    )
+    charged_remaining_qty = fields.Float(
+        string='Charged Quantity Remaining',
+        compute='_compute_charged_progress',
+    )
+    promotion_at_risk = fields.Boolean(
+        string='Promotion Requires Follow-up',
+        compute='_compute_charged_progress',
+    )
     received_foc_qty = fields.Float(
         compute='_compute_foc_status',
         store=True,
@@ -452,6 +464,16 @@ class VendorPurchasePromotionApplication(models.Model):
         counts = {application.id: count for application, count in grouped}
         for application in self:
             application.foc_receipt_log_count = counts.get(application.id, 0)
+
+    @api.depends('charged_qty', 'charged_line_id.qty_received',
+                 'charged_line_ids.qty_received')
+    def _compute_charged_progress(self):
+        for application in self:
+            lines = application.charged_line_ids or application.charged_line_id
+            received = sum(lines.mapped('qty_received'))
+            application.charged_received_qty = received
+            application.charged_remaining_qty = max(application.charged_qty - received, 0.0)
+            application.promotion_at_risk = received > 0 and application.charged_remaining_qty > 0
 
     @api.depends(
         'promised_foc_qty',

@@ -20,6 +20,7 @@ Vendor Purchase Promotions
     ],
     'data': [
         'security/ir.model.access.csv',
+        'security/promotion_waiver_security.xml',
         'data/promotion_profiles.xml',
         'data/vendor_promotion_sequence.xml',
         'views/vendor_promotion_views.xml',
@@ -30,6 +31,7 @@ Vendor Purchase Promotions
         'views/promotion_substitution_override_log_views.xml',
         'views/vendor_price_wizard_views.xml',
         'views/account_move_views.xml',
+        'views/promotion_waiver_views.xml',
         'reports/purchase_order_report.xml',
     ],
     'assets': {

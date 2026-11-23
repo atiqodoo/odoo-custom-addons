@@ -5,6 +5,7 @@ from . import vendor_promotion
 from . import promotion_override_log
 from . import promotion_substitution_override_log
 from . import promotion_receipt_log
+from . import promotion_waiver
 from . import purchase_order_line
 from . import purchase_order
 from . import purchase_promotion_checker

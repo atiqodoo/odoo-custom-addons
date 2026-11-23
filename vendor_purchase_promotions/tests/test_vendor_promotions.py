@@ -1,5 +1,7 @@
+from unittest.mock import patch
+
 from odoo import fields
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase
 
 
@@ -8,6 +10,7 @@ class TestVendorPromotions(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.reference_type = cls.env['purchase.vendor.reference.type'].create({'name': 'Promotion Test Reference'})
         cls.vendor = cls.env['res.partner'].create({
             'name': 'Gamma Test Vendor',
             'supplier_rank': 1,
@@ -41,6 +44,8 @@ class TestVendorPromotions(TransactionCase):
     def _create_order(self, qty=22):
         order = self.env['purchase.order'].create({
             'partner_id': self.vendor.id,
+            'vendor_reference_type_id': self.reference_type.id,
+            'partner_ref': 'PROMOTION-TEST',
             'vendor_promised_cost_contact': 'Gamma Sales',
         })
         line = self.env['purchase.order.line'].with_context(
@@ -96,10 +101,116 @@ class TestVendorPromotions(TransactionCase):
         application = order.promotion_application_ids
         self.assertEqual(len(application), 1)
         self.assertEqual(application.charged_qty, 22)
+        self.assertEqual(application.charged_received_qty, 0)
+        self.assertEqual(application.charged_remaining_qty, 22)
         self.assertEqual(application.promised_foc_qty, 2)
         self.assertEqual(application.received_foc_qty, 0)
         self.assertEqual(application.outstanding_foc_qty, 2)
         self.assertEqual(application.fulfillment_state, 'awaiting')
+
+    def test_unreceived_promotion_not_linked_to_gamma_bill(self):
+        order, line = self._create_order()
+        order._sync_vendor_promotions()
+        order._create_promotion_applications()
+        wizard = self.env['vendor.price.wizard'].create({
+            'purchase_id': order.id,
+            'vendor_invoice_profile': 'gamma_paints',
+        })
+        self.env['vendor.price.wizard.line'].create({
+            'wizard_id': wizard.id,
+            'purchase_line_id': line.id,
+            'product_id': line.product_id.id,
+            'vendor_price': 100,
+            'currency_id': order.currency_id.id,
+        })
+        values = wizard._prepare_profile_bill_vals()
+        self.assertEqual(values['promotion_application_ids'], [(6, 0, [])])
+        self.assertEqual(values['promotion_release_state'], 'not_required')
+
+    def test_partially_received_charged_product_does_not_hold_bill(self):
+        order, line = self._create_order()
+        order._sync_vendor_promotions()
+        order._create_promotion_applications()
+        wizard = self.env['vendor.price.wizard'].create({
+            'purchase_id': order.id,
+            'vendor_invoice_profile': 'gamma_paints',
+        })
+        self.env['vendor.price.wizard.line'].create({
+            'wizard_id': wizard.id,
+            'purchase_line_id': line.id,
+            'product_id': line.product_id.id,
+            'vendor_price': 100,
+            'currency_id': order.currency_id.id,
+        })
+        # Exercise the wizard with a received quantity below the deal threshold.
+        with patch.object(type(wizard), '_get_billable_received_qty', return_value=10):
+            values = wizard._prepare_profile_bill_vals()
+        self.assertEqual(values['promotion_application_ids'], [(6, 0, [])])
+        self.assertEqual(values['promotion_release_state'], 'not_required')
+
+    def _promotion_test_wizard(self, order, lines):
+        wizard = self.env['vendor.price.wizard'].create({
+            'purchase_id': order.id, 'vendor_invoice_profile': 'gamma_paints',
+        })
+        for line in lines:
+            self.env['vendor.price.wizard.line'].create({
+                'wizard_id': wizard.id, 'purchase_line_id': line.id,
+                'product_id': line.product_id.id, 'vendor_price': 100,
+                'currency_id': order.currency_id.id,
+            })
+        return wizard
+
+    def test_later_bill_after_deal_completion_has_missing_foc_hold(self):
+        order, line = self._create_order()
+        order._sync_vendor_promotions()
+        order._create_promotion_applications()
+        wizard = self._promotion_test_wizard(order, line)
+        # The helper is mocked: this tests bill preparation, not stock validation.
+        with patch.object(type(wizard), '_get_billable_received_qty', return_value=12):
+            values = wizard._prepare_profile_bill_vals()
+        self.assertEqual(values['promotion_application_ids'], [(6, 0, order.promotion_application_ids.ids)])
+        self.assertEqual(values['promotion_release_state'], 'hold')
+
+    def test_repeating_deal_only_holds_for_completed_reward(self):
+        order, line = self._create_order(qty=44)
+        order._sync_vendor_promotions()
+        order._create_promotion_applications()
+        wizard = self._promotion_test_wizard(order, line)
+        with patch.object(type(wizard), '_get_billable_received_qty', return_value=22):
+            values = wizard._prepare_profile_bill_vals()
+        bill = self.env['account.move'].create({
+            'move_type': 'in_invoice', 'partner_id': self.vendor.id,
+            'promotion_application_ids': values['promotion_application_ids'],
+            'promotion_release_state': values['promotion_release_state'],
+        })
+        self.assertEqual(bill.promotion_outstanding_foc_qty, 2)
+
+    def test_grouped_partial_variants_do_not_hold_bill(self):
+        order, first = self._create_order(qty=11)
+        second_product = self.product.copy({'default_code': 'VPP-TEST-VARIANT'})
+        self.promotion.product_tmpl_ids = [(4, second_product.product_tmpl_id.id)]
+        second = first.copy({'product_id': second_product.id, 'product_qty': 11})
+        order._sync_vendor_promotions()
+        order._create_promotion_applications()
+        self.assertEqual(len(order.promotion_application_ids), 1)
+        self.assertEqual(set(order.promotion_application_ids.charged_line_ids.ids), {first.id, second.id})
+        wizard = self._promotion_test_wizard(order, first)
+        with patch.object(type(wizard), '_get_billable_received_qty', return_value=11):
+            values = wizard._prepare_profile_bill_vals()
+        self.assertEqual(values['promotion_release_state'], 'not_required')
+
+    def test_completed_deal_with_foc_received_has_no_hold(self):
+        order, line = self._create_order()
+        order._sync_vendor_promotions()
+        order._create_promotion_applications()
+        application = order.promotion_application_ids
+        with patch.object(type(application), '_received_foc_qty_from_moves', return_value=2):
+            application._compute_foc_status()
+        wizard = self._promotion_test_wizard(order, line)
+        with patch.object(type(wizard), '_get_billable_received_qty', return_value=22):
+            values = wizard._prepare_profile_bill_vals()
+        self.assertEqual(values['promotion_application_ids'], [(6, 0, application.ids)])
+        self.assertEqual(values['promotion_release_state'], 'released')
 
     def test_grouped_gamma_tiers_select_highest_slab(self):
         second_product = self.env['product.product'].search([
@@ -171,9 +282,29 @@ class TestVendorPromotions(TransactionCase):
             bill.action_register_payment()
 
         bill.promotion_release_reason = 'Manager-approved supplier delay'
+        with self.assertRaises(ValidationError):
+            bill.action_waive_promotion_hold()
+        self.assertFalse(bill.promotion_waiver_ids)
+        bill.promotion_waiver_type = 'supplier_delay'
         bill.action_waive_promotion_hold()
         self.assertFalse(bill.promotion_payment_hold)
         self.assertEqual(bill.promotion_release_state, 'waived')
+        waiver = bill.promotion_waiver_ids
+        self.assertEqual(len(waiver), 1)
+        self.assertEqual(waiver.application_id, order.promotion_application_ids)
+        self.assertEqual(waiver.waiver_type, 'supplier_delay')
+        self.assertEqual(waiver.promised_foc_qty, 2)
+        self.assertEqual(waiver.outstanding_foc_qty, 2)
+        self.assertEqual(waiver.purchase_id, order)
+        self.assertEqual(waiver.approved_by_id, self.env.user)
+        self.assertEqual(waiver.charged_line_ids, order.promotion_application_ids.charged_line_ids)
+        self.assertEqual(waiver.foc_line_id, order.promotion_application_ids.foc_line_id)
+        with self.assertRaises(AccessError):
+            self.env['vendor.promotion.waiver'].create({})
+        with self.assertRaises(AccessError):
+            waiver.write({'reason': 'Altered'})
+        with self.assertRaises(AccessError):
+            waiver.unlink()
 
     def test_fulfilled_foc_is_automatically_released(self):
         order, _line = self._create_order()

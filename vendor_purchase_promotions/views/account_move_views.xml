@@ -38,12 +38,16 @@
                         <field name="promotion_outstanding_foc_qty" readonly="1"/>
                     </group>
                     <group>
+                        <field name="promotion_waiver_type"
+                               readonly="not promotion_payment_hold"
+                               groups="account.group_account_manager,purchase.group_purchase_manager"/>
                         <field name="promotion_release_reason"
                                placeholder="Required when waiving outstanding FOC..."
                                readonly="not promotion_payment_hold"
                                groups="account.group_account_manager,purchase.group_purchase_manager"/>
                         <field name="promotion_release_approved_by_id" readonly="1"/>
                         <field name="promotion_release_approved_at" readonly="1"/>
+                        <field name="promotion_waiver_ids" widget="many2many_tags" readonly="1"/>
                     </group>
                 </group>
                 <group string="Gamma Invoice Audit" invisible="vendor_invoice_profile != 'gamma_paints'">

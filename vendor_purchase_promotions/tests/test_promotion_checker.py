@@ -43,6 +43,12 @@ class TestPromotionCheckerOverride(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.reference_type = cls.env['purchase.vendor.reference.type'].create({'name': 'Checker Test Reference'})
+        cls.profile = cls.env['vendor.promotion.profile'].create({
+            'name': 'Checker Test Profile',
+            'code': 'checker_test_profile',
+            'dismissal_limit': 2,
+        })
         cls.vendor = cls.env['res.partner'].create({
             'name': 'Promotion Checker Vendor',
             'supplier_rank': 1,
@@ -58,6 +64,7 @@ class TestPromotionCheckerOverride(TransactionCase):
             'company_id': cls.env.company.id,
             'partner_id': cls.vendor.id,
             'calculation_profile': 'generic',
+            'promotion_profile_id': cls.profile.id,
             'product_tmpl_ids': [(6, 0, [cls.product.product_tmpl_id.id])],
             'min_charged_qty': 1,
             'buy_qty': 9,
@@ -69,6 +76,8 @@ class TestPromotionCheckerOverride(TransactionCase):
     def _create_order(self, qty=15):
         order = self.env['purchase.order'].create({
             'partner_id': self.vendor.id,
+            'vendor_reference_type_id': self.reference_type.id,
+            'partner_ref': 'CHECKER-TEST',
             'vendor_promised_cost_contact': 'Promotion Checker Test',
         })
         line = self.env['purchase.order.line'].with_context(

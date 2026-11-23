@@ -1,4 +1,6 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_promotion_waiver_purchase,promotion.waiver.purchase,model_vendor_promotion_waiver,purchase.group_purchase_user,1,0,0,0
+access_promotion_waiver_account,promotion.waiver.account,model_vendor_promotion_waiver,account.group_account_user,1,0,0,0
 access_vendor_promotion_profile_user,vendor.promotion.profile.user,model_vendor_promotion_profile,purchase.group_purchase_user,1,0,0,0
 access_vendor_promotion_profile_manager,vendor.promotion.profile.manager,model_vendor_promotion_profile,purchase.group_purchase_manager,1,1,1,1
 access_vendor_purchase_promotion_user,vendor.purchase.promotion.user,model_vendor_purchase_promotion,purchase.group_purchase_user,1,0,0,0

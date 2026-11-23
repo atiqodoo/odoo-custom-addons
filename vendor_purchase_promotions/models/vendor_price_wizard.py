@@ -122,7 +122,15 @@ class VendorPriceWizard(models.TransientModel):
     def _prepare_profile_bill_vals(self):
         values = super()._prepare_profile_bill_vals()
         if self.is_gamma_profile:
-            applications = self.gamma_promotion_application_ids
+            billable_lines = self.line_ids.filtered(
+                lambda line: line.purchase_line_id
+                and self._get_billable_received_qty(line.purchase_line_id) > 0
+            ).mapped('purchase_line_id')
+            applications = self.gamma_promotion_application_ids.filtered(
+                lambda application: bool(
+                    (application.charged_line_ids or application.charged_line_id) & billable_lines
+                )
+            )
             all_foc_received = bool(applications) and not any(
                 application.outstanding_foc_qty > 0 for application in applications
             )

@@ -199,7 +199,9 @@ class StockPicking(models.Model):
         purchase_lines = self.move_ids.purchase_line_id
         applications = self.env['vendor.purchase.promotion.application'].search([
             '|',
+            '|',
             ('charged_line_id', 'in', purchase_lines.ids),
+            ('charged_line_ids', 'in', purchase_lines.ids),
             ('foc_line_id', 'in', purchase_lines.ids),
         ]) if purchase_lines else self.env['vendor.purchase.promotion.application']
         if applications:
