@@ -106,7 +106,8 @@
                                             <field name="policy_line_id" readonly="1"/>
                                             <field name="resolution_requirement" readonly="1"/>
                                             <field name="credit_note_id"/>
-                                            <field name="waiver_reason"/>
+                                            <field name="waiver_type" readonly="1"/>
+                                            <field name="waiver_reason" readonly="1"/>
                                         </group>
                                         <group string="Source">
                                             <field name="source_code" readonly="1"/>

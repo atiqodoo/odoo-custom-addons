@@ -9,3 +9,4 @@ access_vpa_case_user,vendor.payment.audit.case.user,model_vendor_payment_audit_c
 access_vpa_case_manager,vendor.payment.audit.case.manager,model_vendor_payment_audit_case,vendor_payment_auditing.group_vendor_payment_audit_manager,1,1,1,1
 access_vpa_finding_user,vendor.payment.audit.finding.user,model_vendor_payment_audit_finding,vendor_payment_auditing.group_vendor_payment_audit_user,1,1,1,0
 access_vpa_finding_manager,vendor.payment.audit.finding.manager,model_vendor_payment_audit_finding,vendor_payment_auditing.group_vendor_payment_audit_manager,1,1,1,1
+access_vpa_waiver_wizard_user,vendor.payment.audit.waiver.wizard.user,model_vendor_payment_audit_waiver_wizard,vendor_payment_auditing.group_vendor_payment_audit_user,1,1,1,1

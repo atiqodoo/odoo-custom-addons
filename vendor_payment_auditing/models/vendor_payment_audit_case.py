@@ -90,7 +90,7 @@ class VendorPaymentAuditCase(models.Model):
             case.open_finding_count = len(active)
             case.blocking_finding_count = len(blockers)
             case.payment_blocked = bool(blockers)
-            case.block_reason_summary = '\n'.join(blockers.mapped('block_reason'))
+            case.block_reason_summary = '\n'.join(filter(None, blockers.mapped('block_reason')))
             if blockers:
                 case.state = 'blocked'
             elif active:
@@ -108,22 +108,17 @@ class VendorPaymentAuditCase(models.Model):
         return True
 
     def action_approve_waiver(self):
-        for case in self:
-            case._check_waiver_access()
-            blockers = case.finding_ids.filtered(
-                lambda finding: finding.state == 'open' and finding.requires_payment_block
-            )
-            if not blockers:
-                raise ValidationError(_('There are no blocking findings to waive.'))
-            blockers.action_waive()
-            _logger.warning(
-                '[VPA_WAIVER] case_id=%s bill_id=%s finding_ids=%s approver_id=%s',
-                case.id,
-                case.bill_id.id,
-                blockers.ids,
-                self.env.user.id,
-            )
-        return True
+        self.ensure_one()
+        blockers = self.finding_ids.filtered(
+            lambda finding: finding.state == 'open' and finding.requires_payment_block
+        )
+        if not blockers:
+            raise ValidationError(_('There are no blocking findings to waive.'))
+        return {
+            'type': 'ir.actions.act_window', 'name': _('Waive Payment Audit Finding'),
+            'res_model': 'vendor.payment.audit.waiver.wizard', 'view_mode': 'form',
+            'target': 'new', 'context': {'default_case_id': self.id},
+        }
 
     def _check_waiver_access(self):
         self.ensure_one()

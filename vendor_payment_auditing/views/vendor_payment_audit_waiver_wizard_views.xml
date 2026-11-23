@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_payment_audit_waiver_wizard_form" model="ir.ui.view">
+        <field name="name">vendor.payment.audit.waiver.wizard.form</field>
+        <field name="model">vendor.payment.audit.waiver.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Waive One Payment Blocker">
+                <group>
+                    <field name="case_id"/>
+                    <field name="finding_id" options="{'no_create': True}"/>
+                    <field name="waiver_type"/>
+                    <field name="reason" placeholder="Explain why this specific finding may be waived"/>
+                </group>
+                <footer><button name="action_confirm" type="object" string="Approve Waiver" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/></footer>
+            </form>
+        </field>
+    </record>
+</odoo>

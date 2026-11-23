@@ -14,6 +14,9 @@
                 <field name="bill_id"/>
                 <field name="case_state"/>
                 <field name="state"/>
+                <field name="waiver_type" optional="hide"/>
+                <field name="waived_by_id" optional="hide"/>
+                <field name="waived_at" optional="hide"/>
                 <field name="severity"/>
                 <field name="product_id" optional="show"/>
                 <field name="expected_amount" optional="show"/>
@@ -114,7 +117,8 @@
                         </group>
                     </group>
                     <group>
-                        <field name="waiver_reason"/>
+                        <field name="waiver_type" readonly="1"/>
+                        <field name="waiver_reason" readonly="1"/>
                     </group>
                     <group string="Linked Source">
                         <group>

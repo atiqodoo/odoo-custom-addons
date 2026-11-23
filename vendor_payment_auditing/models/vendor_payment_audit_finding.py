@@ -1,11 +1,17 @@
 import json
 import logging
 
-from odoo import fields, models, _
-from odoo.exceptions import ValidationError
+from odoo import api, fields, models, _
+from odoo.exceptions import AccessError, ValidationError
 
 
 _logger = logging.getLogger(__name__)
+WAIVER_TYPES = [
+    ('invoice_variance', 'Invoice Variance'),
+    ('price_discrepancy', 'Price Discrepancy'),
+    ('supplier_delay', 'Supplier Delay'),
+    ('other', 'Other'),
+]
 
 
 class VendorPaymentAuditFinding(models.Model):
@@ -96,6 +102,7 @@ class VendorPaymentAuditFinding(models.Model):
     waived_by_id = fields.Many2one('res.users', readonly=True)
     waived_at = fields.Datetime(readonly=True)
     waiver_reason = fields.Text()
+    waiver_type = fields.Selection(WAIVER_TYPES, string='Waiver Type', copy=False, tracking=True)
     credit_note_id = fields.Many2one(
         'account.move',
         domain="[('move_type', '=', 'in_refund'), ('state', '=', 'posted'), ('partner_id', '=', vendor_id)]",
@@ -247,16 +254,44 @@ class VendorPaymentAuditFinding(models.Model):
         }
 
     def action_waive(self):
-        for finding in self:
-            if not finding.waiver_reason:
-                finding.waiver_reason = _('Waived by authorized audit approver.')
-            finding.write({
-                'state': 'waived',
-                'requires_payment_block': False,
-                'waived_by_id': self.env.user.id,
-                'waived_at': fields.Datetime.now(),
-            })
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window', 'name': _('Waive Payment Audit Finding'),
+            'res_model': 'vendor.payment.audit.waiver.wizard', 'view_mode': 'form',
+            'target': 'new', 'context': {'default_case_id': self.case_id.id, 'default_finding_id': self.id},
+        }
+
+    def _approve_waiver(self, waiver_type, reason):
+        self.ensure_one()
+        if self.state != 'open' or not self.requires_payment_block:
+            raise ValidationError(_('Only an active blocking finding can be waived.'))
+        groups = self.policy_line_id.approval_group_ids
+        if not (self.env.user.has_group('vendor_payment_auditing.group_vendor_payment_audit_manager')
+                or bool(groups & self.env.user.groups_id)):
+            raise AccessError(_('You are not allowed to waive this finding.'))
+        if waiver_type not in dict(self._fields['waiver_type'].selection) or not (reason or '').strip():
+            raise ValidationError(_('Select a waiver type and enter a reason.'))
+        _logger.info('[VPA][WAIVER][START] finding_id=%s bill_id=%s user_id=%s', self.id, self.bill_id.id, self.env.uid)
+        super(VendorPaymentAuditFinding, self).write({
+            'state': 'waived', 'requires_payment_block': False, 'waiver_type': waiver_type,
+            'waiver_reason': reason.strip(), 'waived_by_id': self.env.uid,
+            'waived_at': fields.Datetime.now(),
+        })
+        _logger.info('[VPA][WAIVER][END] finding_id=%s bill_id=%s user_id=%s', self.id, self.bill_id.id, self.env.uid)
         return True
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        protected = {'waiver_type', 'waiver_reason', 'waived_by_id', 'waived_at'}
+        if any(protected.intersection(vals) or vals.get('state') == 'waived' for vals in vals_list):
+            raise AccessError(_('Waiver details can only be recorded through the approval workflow.'))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        protected = {'waiver_type', 'waiver_reason', 'waived_by_id', 'waived_at'}
+        if protected.intersection(vals) or vals.get('state') == 'waived':
+            raise AccessError(_('Waiver details can only be recorded through the approval workflow.'))
+        return super().write(vals)
 
     @staticmethod
     def dumps_payload(payload):

@@ -25,6 +25,22 @@
                     <strong>Vendor payment blocked:</strong>
                     <field name="vendor_payment_audit_block_reason" readonly="1"/>
                 </div>
+                <group string="Active Payment Audit Blockers"
+                       groups="vendor_payment_auditing.group_vendor_payment_audit_user"
+                       invisible="move_type != 'in_invoice' or state != 'posted' or not vendor_payment_audit_blocked">
+                    <field name="vendor_payment_audit_blocking_finding_ids" nolabel="1" readonly="1">
+                        <list create="false" edit="false" delete="false">
+                            <field name="variance_type_id"/>
+                            <field name="name"/>
+                            <field name="severity"/>
+                            <field name="variance_amount"/>
+                            <field name="currency_id" column_invisible="True"/>
+                            <field name="resolution_requirement"/>
+                            <field name="block_reason"/>
+                            <button name="action_open_source" type="object" string="Source" icon="fa-external-link"/>
+                        </list>
+                    </field>
+                </group>
                 <group string="Vendor Payment Audit" invisible="move_type != 'in_invoice'">
                     <field name="vendor_payment_audit_state" readonly="1"/>
                     <field name="vendor_payment_audit_finding_count" readonly="1"/>

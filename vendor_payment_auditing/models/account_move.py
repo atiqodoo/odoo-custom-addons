@@ -42,6 +42,20 @@ class AccountMove(models.Model):
         compute='_compute_vendor_payment_audit_status',
         store=True,
     )
+    vendor_payment_audit_blocking_finding_ids = fields.Many2many(
+        'vendor.payment.audit.finding',
+        string='Active Payment Audit Blockers',
+        compute='_compute_vendor_payment_audit_blocking_findings',
+        groups='vendor_payment_auditing.group_vendor_payment_audit_user',
+    )
+
+    @api.depends('vendor_payment_audit_case_id.finding_ids.state',
+                 'vendor_payment_audit_case_id.finding_ids.requires_payment_block')
+    def _compute_vendor_payment_audit_blocking_findings(self):
+        for move in self:
+            move.vendor_payment_audit_blocking_finding_ids = move.vendor_payment_audit_case_id.finding_ids.filtered(
+                lambda finding: finding.state == 'open' and finding.requires_payment_block
+            )
 
     @api.depends(
         'vendor_payment_audit_case_id.payment_blocked',
