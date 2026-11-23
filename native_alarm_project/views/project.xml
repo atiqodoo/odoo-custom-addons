@@ -1,0 +1,4 @@
+<odoo>
+    <record id="target_task" model="native.alarm.target"><field name="model_id" ref="project.model_project_task"/></record>
+    <record id="target_project" model="native.alarm.target"><field name="model_id" ref="project.model_project_project"/></record>
+</odoo>
