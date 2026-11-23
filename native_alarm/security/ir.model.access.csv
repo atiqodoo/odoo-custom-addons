@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+alarm_user,Own alarms,model_native_alarm,base.group_user,1,1,1,1
+target_user,Read enabled types,model_native_alarm_target,base.group_user,1,0,0,0
+target_manager,Configure types,model_native_alarm_target,native_alarm.group_alarm_manager,1,1,1,1
+device_user,Read authorised devices,model_native_alarm_device,base.group_user,1,0,0,0
+device_manager,Configure devices,model_native_alarm_device,native_alarm.group_alarm_manager,1,1,1,1
+alarm_manager_model_read,Read configurable model metadata,base.model_ir_model,native_alarm.group_alarm_manager,1,0,0,0
+sound_user,Read approved sounds,model_native_alarm_sound,base.group_user,1,0,0,0
+sound_manager,Manage approved sounds,model_native_alarm_sound,native_alarm.group_alarm_manager,1,1,1,1

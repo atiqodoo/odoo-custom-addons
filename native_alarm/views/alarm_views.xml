@@ -1,0 +1,82 @@
+<odoo>
+    <record id="alarm_list" model="ir.ui.view">
+        <field name="name">native.alarm.list</field><field name="model">native.alarm</field>
+        <field name="arch" type="xml">
+            <list create="false" decoration-muted="state != 'scheduled'">
+            <field name="name"/><field name="alarm_at"/><field name="user_id"/>
+            <field name="delivery"/><field name="device_id"/><field name="state"/>
+            <field name="company_id" groups="base.group_multi_company"/>
+        </list></field>
+    </record>
+    <record id="alarm_form" model="ir.ui.view">
+        <field name="name">native.alarm.form</field><field name="model">native.alarm</field>
+        <field name="arch" type="xml">
+            <form string="Set Alarm">
+            <header>
+                <button name="action_stop" type="object" string="Stop" invisible="state != 'scheduled'"/>
+                <button name="action_snooze" type="object" string="Snooze" invisible="state != 'scheduled'"/>
+                <button name="action_cancel" type="object" string="Cancel Alarm" invisible="state != 'scheduled'"/>
+                <button name="action_open_record" type="object" string="Open Source"/>
+                <field name="state" widget="statusbar"/>
+            </header>
+            <sheet>
+                <group><group>
+                    <field name="name"/><field name="alarm_at"/><field name="timezone"/>
+                    <field name="user_id"/><field name="company_id" groups="base.group_multi_company"/>
+                </group><group>
+                    <field name="delivery"/><field name="device_id" invisible="delivery == 'browser'" required="delivery != 'browser'"/>
+                    <field name="snooze_minutes"/><field name="ring_seconds"/><field name="repeat_minutes"/>
+                    <field name="cancel_on_completion"/>
+                </group></group>
+                <group string="Linked record">
+                    <field name="model_id" invisible="1"/>
+                    <field name="res_model" readonly="1"/>
+                    <field name="res_id" widget="many2one_reference_integer" readonly="1"/>
+                    <button name="action_open_record" type="object" string="Open Source" class="oe_link" icon="fa-external-link"/>
+                </group>
+                <div class="alert alert-info" role="alert">Dates use your Odoo timezone. Browser ringing requires Enable Alarm Sound in the top bar. PC ringing requires the companion desktop player. Zero ring seconds means ring until stopped; repeat minutes uses elapsed time, not a daily local-time schedule.</div>
+            </sheet>
+        </form></field>
+    </record>
+    <record id="alarm_action" model="ir.actions.act_window">
+        <field name="name">Alarms</field><field name="res_model">native.alarm</field><field name="view_mode">list,form</field>
+        <field name="help" type="html"><p>Create an alarm using Set Alarm in a record's Action menu.</p></field>
+    </record>
+    <record id="device_list" model="ir.ui.view"><field name="name">native.alarm.device.list</field><field name="model">native.alarm.device</field>
+        <field name="arch" type="xml">
+            <list><field name="name"/><field name="company_id"/><field name="service_user_id"/><field name="last_seen"/><field name="active"/></list></field>
+    </record>
+    <record id="device_form" model="ir.ui.view"><field name="name">native.alarm.device.form</field><field name="model">native.alarm.device</field>
+        <field name="arch" type="xml">
+            <form><sheet><group><field name="name"/><field name="active"/><field name="company_id"/><field name="service_user_id"/><field name="allowed_user_ids" widget="many2many_tags"/><field name="last_seen"/></group>
+            <div class="alert alert-info" role="alert">Use a dedicated internal account with Alarm Companion Account permission and an Odoo API key. Configure the record ID shown in the URL as the companion device ID. Give the account only the required company access.</div>
+        </sheet></form></field>
+    </record>
+    <record id="device_action" model="ir.actions.act_window"><field name="name">Registered PCs</field><field name="res_model">native.alarm.device</field><field name="view_mode">list,form</field></record>
+    <record id="target_list" model="ir.ui.view"><field name="name">native.alarm.target.list</field><field name="model">native.alarm.target</field>
+        <field name="arch" type="xml">
+            <list editable="bottom"><field name="model_id"/><field name="action_id"/></list></field>
+    </record>
+    <record id="target_action" model="ir.actions.act_window"><field name="name">Enabled Record Types</field><field name="res_model">native.alarm.target</field><field name="view_mode">list</field></record>
+    <menuitem id="menu_alarm_root" name="Alarms" sequence="55" groups="base.group_user"/>
+    <menuitem id="menu_alarms" name="Alarms" parent="menu_alarm_root" action="alarm_action"/>
+    <menuitem id="menu_devices" name="Registered PCs" parent="menu_alarm_root" action="device_action" groups="native_alarm.group_alarm_manager"/>
+    <menuitem id="menu_targets" name="Enabled Record Types" parent="menu_alarm_root" action="target_action" groups="native_alarm.group_alarm_manager"/>
+    <record id="activity_alarm_form" model="ir.ui.view">
+        <field name="name">mail.activity.form.alarm</field><field name="model">mail.activity</field>
+        <field name="inherit_id" ref="mail.mail_activity_view_form_popup"/>
+        <field name="arch" type="xml">
+            <xpath expr="//footer" position="inside"><button name="action_set_native_alarm" type="object" string="Set Alarm" groups="base.group_user"/></xpath></field>
+    </record>
+    <record id="activity_schedule_alarm_form" model="ir.ui.view">
+        <field name="name">mail.activity.schedule.alarm</field><field name="model">mail.activity.schedule</field>
+        <field name="inherit_id" ref="mail.mail_activity_schedule_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='date_deadline']" position="after">
+            <field name="native_alarm_enabled"/>
+            <field name="native_alarm_at" invisible="not native_alarm_enabled" required="native_alarm_enabled and not plan_id"/>
+            <field name="native_alarm_delivery" invisible="not native_alarm_enabled"/>
+            <field name="native_alarm_device_id" invisible="not native_alarm_enabled or native_alarm_delivery == 'browser'" required="native_alarm_enabled and native_alarm_delivery != 'browser' and not plan_id"/>
+        </xpath></field>
+    </record>
+</odoo>

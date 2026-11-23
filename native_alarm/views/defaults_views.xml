@@ -1,0 +1,38 @@
+<odoo>
+    <record id="settings_delivery_defaults" model="ir.ui.view">
+        <field name="name">res.config.settings.native.alarm.delivery.defaults</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="native_alarm.settings_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='native_alarm']/block" position="inside">
+                <setting string="Default alarm delivery" help="Prefills new alarms and Schedule Activity. Existing alarms retain their options."><field name="alarm_delivery"/></setting>
+                <setting string="Default alarm PC" help="Only offered to recipients authorised to ring this PC. Otherwise they must choose an authorised PC." invisible="alarm_delivery == 'browser'">
+                    <field name="alarm_device_id" required="alarm_delivery != 'browser'" domain="[('company_id', '=', company_id), ('active', '=', True)]"/>
+                </setting>
+                <setting string="Default repeat (minutes; zero disables repeat)" help="Repeats after clicking Stop, using elapsed minutes."><field name="alarm_repeat_minutes"/></setting>
+                <setting string="Silence when completed by default"><field name="alarm_cancel_on_completion"/></setting>
+            </xpath>
+        </field>
+    </record>
+    <record id="activity_schedule_alarm_options" model="ir.ui.view">
+        <field name="name">mail.activity.schedule.alarm.options</field>
+        <field name="model">mail.activity.schedule</field>
+        <field name="inherit_id" ref="native_alarm.activity_schedule_alarm_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='native_alarm_device_id']" position="after">
+                <field name="native_alarm_ring_seconds" invisible="not native_alarm_enabled"/>
+                <field name="native_alarm_repeat_minutes" invisible="not native_alarm_enabled"/>
+                <field name="native_alarm_snooze_minutes" invisible="not native_alarm_enabled"/>
+                <field name="native_alarm_cancel_on_completion" invisible="not native_alarm_enabled"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="settings_action" model="ir.actions.act_window">
+        <field name="name">Alarm Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field><field name="target">inline</field>
+        <field name="context">{'module': 'native_alarm', 'bin_size': False}</field>
+    </record>
+    <menuitem id="menu_settings" name="Settings" parent="native_alarm.menu_alarm_root"
+              action="settings_action" groups="base.group_system" sequence="90"/>
+</odoo>

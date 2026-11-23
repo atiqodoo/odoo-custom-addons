@@ -1,0 +1,18 @@
+<odoo>
+    <record id="settings_form" model="ir.ui.view">
+        <field name="name">res.config.settings.native.alarm</field><field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+            <app string="Alarms" name="native_alarm" groups="base.group_system">
+                <block title="Alarm delivery defaults">
+                    <setting string="Schedule refresh (seconds)"><field name="alarm_poll_seconds"/></setting>
+                    <setting string="Offline schedule cache (hours)"><field name="alarm_cache_hours"/></setting>
+                    <setting string="Missed alarm tolerance (minutes; zero unlimited)"><field name="alarm_missed_minutes"/></setting>
+                    <setting string="Default snooze (minutes)"><field name="alarm_snooze_minutes"/></setting>
+                    <setting string="Default ring duration (seconds; zero until stopped)"><field name="alarm_ring_seconds"/></setting>
+                </block>
+            </app>
+        </xpath></field>
+    </record>
+</odoo>

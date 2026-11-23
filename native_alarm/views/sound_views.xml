@@ -1,0 +1,37 @@
+<odoo>
+    <record id="alarm_form_sound" model="ir.ui.view">
+        <field name="name">native.alarm.form.sound</field><field name="model">native.alarm</field>
+        <field name="inherit_id" ref="native_alarm.alarm_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='delivery']" position="after"><field name="sound_id" placeholder="Use company default sound"/></xpath>
+        </field>
+    </record>
+    <record id="settings_sound" model="ir.ui.view">
+        <field name="name">res.config.settings.native.alarm.sound</field><field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="native_alarm.settings_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='native_alarm']/block" position="inside">
+                <setting string="Default sound for this company" help="Upload songs in Alarms > Sound Library. Individual alarms may override this choice; empty uses the built-in tone."><field name="alarm_sound_id"/></setting>
+                <setting string="Maximum audio upload (MB)"><field name="alarm_sound_max_mb"/></setting>
+            </xpath>
+        </field>
+    </record>
+    <record id="sound_list" model="ir.ui.view">
+        <field name="name">native.alarm.sound.list</field><field name="model">native.alarm.sound</field>
+        <field name="arch" type="xml">
+            <list><field name="name"/><field name="filename"/><field name="mimetype"/><field name="company_id" groups="base.group_multi_company"/><field name="active"/></list>
+        </field>
+    </record>
+    <record id="sound_form" model="ir.ui.view">
+        <field name="name">native.alarm.sound.form</field><field name="model">native.alarm.sound</field>
+        <field name="arch" type="xml">
+            <form><sheet><group>
+                <field name="name"/><field name="company_id" groups="base.group_multi_company"/><field name="active"/>
+                <field name="filename" invisible="1"/><field name="data" filename="filename"/>
+                <field name="mimetype" readonly="1"/><field name="preview_url" widget="native_alarm_audio" readonly="1"/>
+            </group><div class="alert alert-info" role="alert">MP3 and WAV are recommended. M4A/AAC, OGG, FLAC and WMA playback depends on the browser or Windows media codecs. Save before previewing. This audio stays private to authorised Odoo users.</div></sheet></form>
+        </field>
+    </record>
+    <record id="sound_action" model="ir.actions.act_window"><field name="name">Sound Library</field><field name="res_model">native.alarm.sound</field><field name="view_mode">list,form</field></record>
+    <menuitem id="menu_sounds" name="Sound Library" parent="menu_alarm_root" action="sound_action" groups="base.group_user"/>
+</odoo>
