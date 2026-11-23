@@ -6,6 +6,7 @@ import { makeAwaitable } from "@point_of_sale/app/store/make_awaitable_dialog";
 import { NumberPopup } from "@point_of_sale/app/utils/input_popups/number_popup";
 import { CodLineDetailsDialog } from "@pos_cod/app/components/cod_line_details_dialog/CodLineDetailsDialog";
 import { CodReturnDialog } from "@pos_cod/app/components/cod_return_dialog/CodReturnDialog";
+import { CodArrangementDialog } from "@pos_cod/app/components/cod_arrangement_dialog/CodArrangementDialog";
 import { codWarn, codError } from "@pos_cod/app/utils/cod_logger";
 import { formatPromise } from "@pos_cod/app/utils/cod_promise";
 
@@ -215,6 +216,33 @@ export class CodOrdersScreen extends Component {
 
     onViewLines(order) {
         this.dialog.add(CodLineDetailsDialog, { order });
+    }
+
+    canArrange(order) {
+        if (!order.cod_promised_payment_at) return true;
+        const due = Date.parse(order.cod_promised_payment_at.replace(" ", "T") + "Z");
+        return Number.isFinite(due) && due <= Date.now();
+    }
+
+    async onArrange(order) {
+        const payload = await makeAwaitable(this.dialog, CodArrangementDialog, { order });
+        if (!payload) return;
+        this.state.collecting = true;
+        this.state.message = "";
+        try {
+            const result = await this.pos.cod_set_payment_arrangement(
+                order, payload.promised_at, payload.note
+            );
+            this.state.message = result.success
+                ? `${order.name}: customer arrangement saved.`
+                : `Error: ${result.message}`;
+            this.state.messageType = result.success ? "success" : "error";
+        } catch (error) {
+            this.state.message = `Error: ${error?.message || "Could not save the arrangement."}`;
+            this.state.messageType = "error";
+        } finally {
+            this.state.collecting = false;
+        }
     }
 
     onBack() {

@@ -4,21 +4,35 @@
     <t t-name="pos_cod.CodOverdueDialog">
         <Dialog title="'Overdue COD Collections'" contentClass="'cod-overdue-reminder'" footer="false">
             <t t-set-slot="header">
-                <h4 class="modal-title flex-grow-1">Overdue COD Collections</h4>
+                <h4 class="modal-title flex-grow-1">COD Collection Attention Required</h4>
                 <button type="button" class="btn-close" aria-label="Close overdue COD reminder" t-on-click="props.close"/>
             </t>
             <div t-if="props.status.stale" class="alert alert-warning" role="alert">
                 Connection unavailable. Showing the last known collection status.
             </div>
-            <p><strong t-esc="props.status.count"/> COD order(s) have passed their promised collection time.
-                Close with X to continue using the POS.</p>
-            <div class="table-responsive" style="max-height: 55vh; overflow: auto;">
+            <p>Close with X to continue using the POS.</p>
+            <h6 t-if="props.status.count"><strong t-esc="props.status.count"/> overdue customer promise(s)</h6>
+            <div t-if="props.status.count" class="table-responsive" style="max-height: 35vh; overflow: auto;">
                 <table class="table table-striped">
                     <thead><tr><th>Order</th><th>Customer</th><th>Delivery Employee</th><th>Promised Collection</th><th>Balance Due</th></tr></thead>
                     <tbody>
                         <tr t-foreach="props.status.rows" t-as="row" t-key="row.id">
                             <td t-esc="row.name"/><td t-esc="row.customer"/><td t-esc="row.employee"/>
                             <td t-esc="formatDate(row.promised_at)"/><td t-esc="formatAmount(row)"/>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <h6 t-if="props.status.arrangement_required_count" class="mt-3">
+                <strong t-esc="props.status.arrangement_required_count"/> older open COD order(s) need a first promise
+            </h6>
+            <div t-if="props.status.arrangement_required_count" class="table-responsive" style="max-height: 25vh; overflow: auto;">
+                <table class="table table-striped">
+                    <thead><tr><th>Order</th><th>Customer</th><th>Balance Due</th><th>Action</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="props.status.arrangement_required_rows" t-as="row" t-key="row.id">
+                            <td t-esc="row.name"/><td t-esc="row.customer"/><td t-esc="formatAmount(row)"/>
+                            <td>Open Pending COD Orders and select Create First Promise</td>
                         </tr>
                     </tbody>
                 </table>

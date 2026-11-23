@@ -12,3 +12,4 @@ from . import pos_session
 from . import res_partner
 from . import stock_quant
 from . import cod_promise
+from . import cod_arrangement

@@ -181,6 +181,7 @@ class PosOrder(models.Model):
             orders = orders.filtered(lambda order: order.currency_id.compare_amounts(balances[order.id], 0) > 0)
             future = orders.filtered(lambda order: order.cod_promised_payment_at > now)
             orders = orders - future
+            orders.mapped('cod_arrangement_ids')._finalize_expired(now)
             if offset >= len(orders):
                 offset = 0
             rows = [{
@@ -190,7 +191,28 @@ class PosOrder(models.Model):
                 'promised_at': fields.Datetime.to_string(order.cod_promised_payment_at),
                 'open_amount': balances[order.id], 'currency_id': order.currency_id.id,
             } for order in orders[offset:offset + limit]]
+            required_domain = [
+                ('company_id', '=', config.company_id.id), ('is_cod', '=', True),
+                ('state', 'not in', ['draft', 'cancel']),
+                ('cod_state', 'in', ['pending', 'partial']),
+                ('cod_ar_move_id', '!=', False), ('cod_promised_payment_at', '=', False),
+            ]
+            required_orders = self.search(required_domain, order='date_order, id') if (
+                config.cod_enabled and config.cod_collection_promises_enabled
+            ) else self.browse()
+            required_balances = {order.id: order._cod_open_amount() for order in required_orders}
+            required_orders = required_orders.filtered(
+                lambda order: order.currency_id.compare_amounts(required_balances[order.id], 0) > 0
+            )
+            required_rows = [{
+                'id': order.id, 'name': order.pos_reference or order.name,
+                'customer': order.partner_id.display_name,
+                'open_amount': required_balances[order.id], 'currency_id': order.currency_id.id,
+            } for order in required_orders[:limit]]
             result = {'rows': rows, 'count': len(orders), 'offset': offset, 'limit': limit,
+                      'arrangement_required_rows': required_rows,
+                      'arrangement_required_count': len(required_orders),
+                      'attention_count': len(orders) + len(required_orders),
                       'checked_at': fields.Datetime.to_string(now), 'timezone': config.cod_collection_timezone,
                       'next_due_in_seconds': (future[0].cod_promised_payment_at - now).total_seconds() if future else None}
         except Exception:

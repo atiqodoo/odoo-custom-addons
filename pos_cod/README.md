@@ -14,7 +14,21 @@ The backend checks that the selected promise is later than dispatch time.
 A passed same-day cutoff needs cashier correction; the date never silently
 rolls forward. Dates follow the configured timezone, not the session opening
 or closing date. Saved promises are UTC datetimes and are preserved on retries
-and when settings change. Old orders without a promise are not backfilled.
+and when settings change.
+
+Open older COD orders without a promise appear as **Arrangement Required** in
+the blocking reminder and show **Create First Promise** on their POS card.
+Expired promises show **Record New Promise**. Both actions require a future
+date/time and a customer arrangement note. Every initial promise, legacy
+activation, and re-promise is stored as an immutable arrangement record; an
+expired record is retained when a later promise is created.
+
+The **Point of Sale > COD Arrangements** list and pivot track customer,
+promised amount, amount collected by the deadline, cashier/session, full note,
+outcome, and commitment result. Outcomes distinguish on-time success,
+partial/broken commitments, late payment, returns, and cancellations. The
+server log records arrangement IDs and note lengths; customer note text stays
+in the secured arrangement history instead of being copied to log files.
 
 While POS is running, reminders include accessible, dispatched, collectible
 COD orders in its company across terminals and sessions. Existing collection
@@ -39,4 +53,6 @@ python server/odoo-bin -c <test-config> -d <isolated-test-database> -u pos_cod -
 
 Backend debug headers: `[COD][PROMISE_SETTINGS]`,
 `[COD][PROMISE_SETTINGS_CREATE]`, `[COD][PROMISE_DEFAULTS]`,
-`[COD][PROMISE_VALIDATE]`, and `[COD][OVERDUE_REMINDERS]`.
+`[COD][PROMISE_VALIDATE]`, `[COD][OVERDUE_REMINDERS]`,
+`[COD][ARRANGEMENT_CREATE]`, `[COD][ARRANGEMENT_SET]`, and
+`[COD][ARRANGEMENT_OUTCOME]`.

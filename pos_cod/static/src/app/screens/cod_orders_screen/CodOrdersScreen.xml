@@ -73,7 +73,10 @@
                             </div>
 
                             <div class="cod-meta">
-                                <span>Collect: <t t-esc="formatCollectionPromise(order.cod_promised_payment_at)"/></span>
+                                <span t-att-class="!order.cod_promised_payment_at ? 'text-danger fw-semibold' : ''">
+                                    Collect: <t t-esc="formatCollectionPromise(order.cod_promised_payment_at)"/>
+                                </span>
+                                <span><t t-esc="order.cod_arrangement_count || 0"/> arrangement(s)</span>
                                 <span><i class="fa fa-clock-o"/> <t t-esc="formatDate(order.date_order)"/></span>
                                 <span><i class="fa fa-truck"/> <t t-esc="employeeName(order)"/></span>
                             </div>
@@ -90,6 +93,12 @@
                                             t-on-click.stop="() => this.onViewLines(order)">
                                         <i class="fa fa-list-ul me-1"/>
                                         View Items
+                                    </button>
+                                    <button t-if="canArrange(order)" class="btn btn-warning"
+                                            t-att-disabled="state.collecting"
+                                            t-on-click.stop="() => this.onArrange(order)">
+                                        <t t-if="order.cod_promised_payment_at">Record New Promise</t>
+                                        <t t-else="">Create First Promise</t>
                                     </button>
                                     <button class="btn btn-primary"
                                             t-att-disabled="!state.paymentMethodId or state.collecting"

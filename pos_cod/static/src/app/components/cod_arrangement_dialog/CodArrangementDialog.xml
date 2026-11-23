@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="pos_cod.CodArrangementDialog">
+        <Dialog title="title">
+            <t t-set-slot="default">
+                <div t-if="state.error" class="alert alert-danger" role="alert" t-esc="state.error"/>
+                <div class="mb-3"><strong t-esc="props.order.name"/></div>
+                <div t-if="props.order.cod_promised_payment_at" class="alert alert-warning py-2">
+                    The previous promise has expired. Saving keeps its result and creates a new history entry.
+                </div>
+                <div t-else="" class="alert alert-info py-2">
+                    This older open COD order has no promise. Saving activates its first tracked arrangement.
+                </div>
+                <label class="form-label fw-semibold">New Promised Payment Date and Time *</label>
+                <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                    <DateTimeInput type="'date'" value="promiseCalendarDate" format="'dd/MM/yyyy'"
+                                   onChange.bind="onPromiseDateChange" placeholder="'DD/MM/YYYY'"/>
+                    <input type="number" class="form-control" style="width: 5rem" min="1" max="12"
+                           aria-label="Promise hour" t-model="state.promiseHour"/>
+                    <span>:</span>
+                    <input type="number" class="form-control" style="width: 5rem" min="0" max="59"
+                           aria-label="Promise minute" t-model="state.promiseMinute"/>
+                    <select class="form-select" style="width: 6rem" aria-label="AM or PM" t-model="state.promisePeriod">
+                        <option value="AM">AM</option><option value="PM">PM</option>
+                    </select>
+                </div>
+                <div class="text-muted mb-3">Timezone: <t t-esc="state.timezone"/></div>
+                <label class="form-label fw-semibold">Customer Arrangement Note *</label>
+                <textarea class="form-control" rows="5" maxlength="4000"
+                          placeholder="Record what the customer said, the commitment made, and useful follow-up details."
+                          t-on-input="onNoteInput"><t t-esc="state.note"/></textarea>
+            </t>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-on-click="cancel">Cancel</button>
+                <button class="btn btn-primary ms-2" t-att-disabled="state.loading" t-on-click="confirm">Save Arrangement</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

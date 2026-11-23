@@ -16,7 +16,7 @@
 #   the overdue invoice query used by Gate 1.5 of pos_credit_limit.
 {
     'name': 'POS Cash on Delivery',
-    'version': '18.0.1.1.0',
+    'version': '18.0.1.2.0',
     'category': 'Point of Sale',
     'summary': 'COD: stock deducted at dispatch, payment collected at delivery',
     'author': 'Custom Development',
@@ -29,12 +29,14 @@
         'pos_fixed_discount',
     ],
     'data': [
+        'security/cod_arrangement_security.xml',
         'security/ir.model.access.csv',
         'views/pos_config_views.xml',
         'views/pos_order_views.xml',
         'views/account_move_cod_log_views.xml',
         'views/pos_cod_transaction_log_views.xml',
         'views/cod_promise_views.xml',
+        'views/cod_arrangement_views.xml',
     ],
     'assets': {
         'point_of_sale._assets_pos': [
@@ -49,6 +51,8 @@
             # Layer 2 — UI components (depend on logger + store)
             'pos_cod/static/src/app/components/cod_wizard/CodWizard.xml',
             'pos_cod/static/src/app/components/cod_wizard/CodWizard.js',
+            'pos_cod/static/src/app/components/cod_arrangement_dialog/CodArrangementDialog.xml',
+            'pos_cod/static/src/app/components/cod_arrangement_dialog/CodArrangementDialog.js',
             'pos_cod/static/src/app/components/cod_banner/CodBanner.xml',
             'pos_cod/static/src/app/components/cod_banner/CodBanner.js',
             # Layer 3 — Dialogs and Screens

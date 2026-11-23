@@ -166,7 +166,91 @@ class TestCodCollectionPromise(TransactionCase):
         order = self.env['pos.order'].search([('uuid', '=', payload['uuid'])])
         self.assertEqual(len(order), 1)
         self.assertEqual(order.cod_promised_payment_at, fields.Datetime.to_datetime(due))
+        self.assertEqual(len(order.cod_arrangement_ids), 1)
+        self.assertEqual(order.cod_arrangement_ids.arrangement_type, 'dispatch')
         retry = dict(payload, cod_promised_payment_at=False)
         self.env['pos.order'].sync_from_ui([retry])
         self.assertEqual(order.cod_promised_payment_at, fields.Datetime.to_datetime(due))
         self.assertEqual(self.env['pos.order'].search_count([('uuid', '=', payload['uuid'])]), 1)
+        self.assertEqual(len(order.cod_arrangement_ids), 1)
+
+    def test_legacy_order_can_activate_first_customer_arrangement(self):
+        order = self.make_order(cod_promised_payment_at=False)
+        due = fields.Datetime.now() + timedelta(days=1)
+        result = self.env['pos.order'].with_user(self.cashier).cod_set_payment_arrangement({
+            'order_id': order.id,
+            'config_id': self.pos_config.id,
+            'session_id': self.session.id,
+            'expected_promised_at': False,
+            'promised_at': fields.Datetime.to_string(due),
+            'note': 'Customer will pay after the afternoon delivery arrives.',
+        })
+        order.invalidate_recordset()
+        self.assertTrue(result['success'])
+        self.assertEqual(order.cod_promised_payment_at, due)
+        self.assertEqual(len(order.cod_arrangement_ids), 1)
+        arrangement = order.cod_arrangement_ids
+        self.assertEqual(arrangement.arrangement_type, 'legacy')
+        self.assertEqual(arrangement.arrangement_note,
+                         'Customer will pay after the afternoon delivery arrives.')
+        self.assertEqual(arrangement.arranged_by_id, self.cashier)
+
+    def test_expired_promise_repromise_preserves_failure_history(self):
+        order = self.make_order()
+        old_due = order.cod_promised_payment_at
+        due = fields.Datetime.now() + timedelta(days=2)
+        result = self.env['pos.order'].with_user(self.cashier).cod_set_payment_arrangement({
+            'order_id': order.id,
+            'config_id': self.pos_config.id,
+            'session_id': self.session.id,
+            'expected_promised_at': fields.Datetime.to_string(old_due),
+            'promised_at': fields.Datetime.to_string(due),
+            'note': 'Customer requested two more days and committed to pay in full.',
+        })
+        arrangements = order.cod_arrangement_ids.sorted('sequence')
+        self.assertTrue(result['success'])
+        self.assertEqual(len(arrangements), 2)
+        self.assertEqual(arrangements[0].outcome, 'broken')
+        self.assertEqual(arrangements[0].commitment_result, 'failure')
+        self.assertEqual(arrangements[1].arrangement_type, 'repromise')
+        self.assertEqual(arrangements[1].previous_promised_at, old_due)
+        self.assertEqual(arrangements[1].outcome, 'active')
+
+    def test_arrangement_rejects_future_replacement_missing_note_and_stale_value(self):
+        future = fields.Datetime.now() + timedelta(days=1)
+        order = self.make_order(cod_promised_payment_at=future)
+        base = {
+            'order_id': order.id, 'config_id': self.pos_config.id,
+            'session_id': self.session.id,
+            'expected_promised_at': fields.Datetime.to_string(future),
+            'promised_at': fields.Datetime.to_string(future + timedelta(days=1)),
+            'note': 'Customer confirmed a new date.',
+        }
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.env['pos.order'].with_user(self.cashier).cod_set_payment_arrangement(base)
+
+        legacy = self.make_order(cod_promised_payment_at=False)
+        missing_note = dict(base, order_id=legacy.id, expected_promised_at=False, note='')
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.env['pos.order'].with_user(self.cashier).cod_set_payment_arrangement(missing_note)
+        stale = dict(base, order_id=legacy.id, expected_promised_at=fields.Datetime.to_string(future))
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.env['pos.order'].with_user(self.cashier).cod_set_payment_arrangement(stale)
+
+    def test_missing_promise_is_reported_as_arrangement_required(self):
+        legacy = self.make_order(cod_promised_payment_at=False)
+        status = self.reminders()
+        self.assertIn(legacy.id, [row['id'] for row in status['arrangement_required_rows']])
+        self.assertGreaterEqual(status['arrangement_required_count'], 1)
+        self.assertEqual(status['attention_count'], status['count'] + status['arrangement_required_count'])
+
+    def test_on_time_collection_marks_commitment_success(self):
+        order = self.make_order(cod_promised_payment_at=fields.Datetime.now() + timedelta(days=1))
+        self.env['pos.cod.collection'].create({
+            'order_id': order.id, 'session_id': self.session.id,
+            'kind': 'payment', 'amount': 100,
+        })
+        arrangement = order.cod_arrangement_ids
+        self.assertEqual(arrangement.outcome, 'kept')
+        self.assertEqual(arrangement.commitment_result, 'success')
+        self.assertEqual(arrangement.amount_collected_by_due, 100)

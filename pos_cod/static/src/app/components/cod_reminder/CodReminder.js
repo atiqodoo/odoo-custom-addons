@@ -44,6 +44,7 @@ export class CodReminder extends Component {
         this.dialog = useService("dialog");
         this.barcode = useService("barcode_reader");
         this.status = useState({ rows: [], count: 0, offset: 0, limit: 40,
+            arrangement_required_rows: [], arrangement_required_count: 0, attention_count: 0,
             loading: false, stale: false, checked_at: null,
             timezone: this.pos.config.cod_collection_timezone });
         this.refresh = this.refresh.bind(this);
@@ -108,7 +109,8 @@ export class CodReminder extends Component {
                 this.deadlineTimer = window.setTimeout(this.onWake,
                     Math.min(Math.max(data.next_due_in_seconds * 1000, 1), 2147483647));
             }
-            if (data.count && !this.popupOpen && performance.now() >= (this.nextPopupAt || 0)) {
+            const attentionCount = data.attention_count ?? data.count;
+            if (attentionCount && !this.popupOpen && performance.now() >= (this.nextPopupAt || 0)) {
                 // Avoid stacking above a payment terminal prompt or another modal.
                 if (!document.querySelector(".o_dialog")) this.open();
             }

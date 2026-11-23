@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_pos_cod_arrangement_allowed_companies" model="ir.rule">
+        <field name="name">COD arrangements: allowed companies</field>
+        <field name="model_id" ref="model_pos_cod_promise_arrangement"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('point_of_sale.group_pos_user'))]"/>
+    </record>
+</odoo>

@@ -82,6 +82,7 @@ patch(PosStore.prototype, {
                         "cod_state",
                         "date_order",
                         "cod_promised_payment_at",
+                        "cod_arrangement_count",
                     ],
                 },
             );
@@ -225,6 +226,22 @@ patch(PosStore.prototype, {
             codError(COMPONENT, "cod_collect_payment", "RPC failed:", err?.message || err);
             return { success: false, message: err?.message || "Network error" };
         }
+    },
+
+    async cod_set_payment_arrangement(order, promisedAt, note) {
+        const result = await this.data.call("pos.order", "cod_set_payment_arrangement", [{
+            order_id: order.server_id || order.id,
+            config_id: this.config.id,
+            session_id: this.session?.id,
+            expected_promised_at: order.cod_promised_payment_at || false,
+            promised_at: promisedAt,
+            note,
+        }]);
+        if (result.success) {
+            await this.cod_fetch_pending_orders();
+            window.dispatchEvent(new Event("pos-cod:collection-status-changed"));
+        }
+        return result;
     },
 
 });
