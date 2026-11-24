@@ -1,0 +1,28 @@
+<odoo>
+    <function model="purchase.order" name="_enable_arrival_alarm_target"/>
+    <record id="purchase_order_form_arrival_alarm" model="ir.ui.view">
+        <field name="name">purchase.order.form.arrival.alarm</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='date_planned_div']" position="inside">
+                <button name="action_set_arrival_alarm" type="object" string="Set Arrival Alarm"
+                        class="btn-link" icon="fa-bell" invisible="state not in ('purchase', 'done') or not date_planned"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="native_alarm_form_purchase_arrival" model="ir.ui.view">
+        <field name="name">native.alarm.form.purchase.arrival</field>
+        <field name="model">native.alarm</field>
+        <field name="inherit_id" ref="native_alarm.alarm_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='alarm_at']" position="after">
+                <field name="purchase_arrival_tracking" invisible="not purchase_arrival_tracking"/>
+                <field name="purchase_arrival_date" invisible="not purchase_arrival_tracking"/>
+            </xpath>
+            <xpath expr="//field[@name='purchase_arrival_date']" position="after">
+                <div class="text-muted" invisible="not purchase_arrival_tracking">If the expected arrival changes, the alarm keeps the same time difference from it.</div>
+            </xpath>
+        </field>
+    </record>
+</odoo>
